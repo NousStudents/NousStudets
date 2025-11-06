@@ -10,6 +10,10 @@ import StudentDashboard from "./pages/StudentDashboard";
 import Timetable from "./pages/Timetable";
 import Exams from "./pages/Exams";
 import Social from "./pages/Social";
+import Profile from "./pages/Profile";
+import AITools from "./pages/AITools";
+import Attendance from "./pages/Attendance";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +32,10 @@ const App = () => (
             <Route path="/timetable" element={<Timetable />} />
             <Route path="/exams" element={<Exams />} />
             <Route path="/social" element={<Social />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/ai-tools" element={<AITools />} />
+            <Route path="/attendance" element={<Attendance />} />
+            <Route path="/notifications" element={<Notifications />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
