@@ -8,58 +8,58 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Professional education theme - trustworthy blues and teals */
-    --background: 210 20% 98%;
-    --foreground: 217 33% 17%;
+    /* Pastel color palette matching UI designs - soft, warm, educational */
+    --background: 40 50% 96%;  /* Warm beige cream background */
+    --foreground: 240 10% 20%;  /* Dark navy-gray text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 217 33% 17%;
+    --card: 35 60% 97%;  /* Soft peachy-cream cards */
+    --card-foreground: 240 10% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 217 33% 17%;
+    --popover: 35 60% 97%;
+    --popover-foreground: 240 10% 20%;
 
-    /* Primary: Trust blue - represents education and knowledge */
-    --primary: 217 91% 60%;
+    /* Primary: Soft purple - main brand color from designs */
+    --primary: 260 30% 60%;  /* Soft medium purple #8B7DB8 */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 217 91% 55%;
+    --primary-hover: 260 35% 55%;
 
-    /* Secondary: Soft teal - professional and modern */
-    --secondary: 199 89% 48%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary: Lighter purple for cards/secondary actions */
+    --secondary: 260 40% 80%;  /* Light lavender */
+    --secondary-foreground: 240 10% 20%;
 
-    /* Success: Educational green */
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
+    /* Success: Soft mint/seafoam green */
+    --success: 150 35% 65%;  /* Pastel mint green */
+    --success-foreground: 240 10% 20%;
 
-    /* Warning: Attention amber */
-    --warning: 38 92% 50%;
+    /* Warning: Soft coral/salmon for notifications */
+    --warning: 10 80% 70%;  /* Soft coral */
     --warning-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 40 40% 92%;  /* Light beige-gray */
+    --muted-foreground: 240 5% 50%;  /* Medium gray */
 
-    --accent: 199 89% 48%;
+    --accent: 260 30% 60%;  /* Match primary purple */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 65% 70%;  /* Soft red */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 60%;
+    --border: 260 20% 85%;  /* Soft purple-gray border */
+    --input: 35 50% 95%;  /* Light cream input background */
+    --ring: 260 30% 60%;  /* Purple focus ring */
 
-    --radius: 0.75rem;
+    --radius: 1.25rem;  /* Larger radius for softer look */
 
-    /* Gradients for modern EdTech feel */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(199 89% 48%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(210 20% 98%) 0%, hsl(217 91% 97%) 100%);
-    --gradient-card: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+    /* Gradients with pastel purple tones */
+    --gradient-primary: linear-gradient(135deg, hsl(260 30% 60%) 0%, hsl(280 35% 70%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(40 50% 96%) 0%, hsl(260 40% 95%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(260 30% 98%) 0%, hsl(35 60% 97%) 100%);
 
-    /* Shadows for depth */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-card: 0 2px 8px rgba(59, 130, 246, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+    /* Soft shadows matching design aesthetic */
+    --shadow-sm: 0 2px 4px rgba(123, 104, 190, 0.08);
+    --shadow-md: 0 4px 12px rgba(123, 104, 190, 0.12);
+    --shadow-lg: 0 8px 24px rgba(123, 104, 190, 0.15);
+    --shadow-card: 0 4px 16px rgba(123, 104, 190, 0.1);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -67,44 +67,44 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 217 33% 10%;
-    --foreground: 210 40% 98%;
+    --background: 260 15% 12%;  /* Dark purple-navy */
+    --foreground: 40 40% 95%;  /* Light cream text */
 
-    --card: 217 33% 15%;
-    --card-foreground: 210 40% 98%;
+    --card: 260 12% 18%;  /* Dark purple card */
+    --card-foreground: 40 40% 95%;
 
-    --popover: 217 33% 15%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 260 12% 18%;
+    --popover-foreground: 40 40% 95%;
 
-    --primary: 217 91% 60%;
+    --primary: 260 35% 65%;  /* Lighter purple for dark mode */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 217 91% 55%;
+    --primary-hover: 260 40% 70%;
 
-    --secondary: 199 89% 48%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 260 25% 35%;  /* Darker purple secondary */
+    --secondary-foreground: 40 40% 95%;
 
-    --success: 142 76% 36%;
+    --success: 150 30% 55%;  /* Muted mint for dark mode */
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 10 70% 65%;  /* Muted coral */
     --warning-foreground: 0 0% 100%;
 
-    --muted: 217 33% 20%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 260 10% 25%;  /* Dark purple-gray */
+    --muted-foreground: 240 5% 65%;
 
-    --accent: 199 89% 48%;
+    --accent: 260 35% 65%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 63% 31%;
+    --destructive: 0 55% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 20%;
-    --input: 217 33% 20%;
-    --ring: 217 91% 60%;
+    --border: 260 15% 25%;
+    --input: 260 12% 20%;
+    --ring: 260 35% 65%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(199 89% 48%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(217 33% 10%) 0%, hsl(217 33% 15%) 100%);
-    --gradient-card: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(260 35% 65%) 0%, hsl(280 40% 70%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(260 15% 12%) 0%, hsl(260 12% 18%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(260 12% 20%) 0%, hsl(260 10% 22%) 100%);
   }
 }
 
