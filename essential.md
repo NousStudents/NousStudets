@@ -1552,6 +1552,232 @@ const signOut = async () => {
 }
 ```
 
+### Admin-Only User Creation System
+
+#### Overview
+For security reasons, **public signup is completely disabled**. Only administrators can create accounts for students, teachers, and parents through a protected admin interface.
+
+#### Security Features
+- ✅ Public signup routes disabled (`disable_signup: true`)
+- ✅ Edge function validates admin role before user creation
+- ✅ All creation actions logged in `audit_logs` table
+- ✅ 403 Access Denied for non-admin attempts
+- ✅ Password must be changed on first login
+- ✅ Secure password reset email flow
+
+#### User Creation Flow
+
+```
+Admin logs in
+     ↓
+Navigates to /admin/users (ProtectedRoute)
+     ↓
+Fills user creation form
+     ↓
+Frontend calls edge function with JWT
+     ↓
+Edge function validates admin role
+     ↓
+Creates auth.users entry (Supabase Auth)
+     ↓
+Creates public.users entry
+     ↓
+Creates user_roles entry
+     ↓
+Creates role-specific entry (teachers/students/parents)
+     ↓
+Logs action in audit_logs
+     ↓
+Optionally sends password reset email
+     ↓
+New user receives credentials from admin
+```
+
+#### Edge Function: admin-create-user
+
+**Location**: `supabase/functions/admin-create-user/index.ts`
+
+**Request**:
+```typescript
+POST /functions/v1/admin-create-user
+Authorization: Bearer <user-jwt-token>
+Content-Type: application/json
+
+{
+  "fullName": "John Doe",
+  "email": "john.doe@school.edu",
+  "role": "student",
+  "schoolId": "uuid-of-school",
+  "password": "SecurePass123!",
+  "sendPasswordResetEmail": false
+}
+```
+
+**Response (Success)**:
+```json
+{
+  "success": true,
+  "user": {
+    "user_id": "uuid",
+    "email": "john.doe@school.edu",
+    "full_name": "John Doe",
+    "role": "student",
+    "school_id": "school-uuid"
+  },
+  "message": "User created successfully"
+}
+```
+
+**Response (Forbidden)**:
+```json
+{
+  "error": "Access Denied: Admin privileges required"
+}
+```
+
+#### Admin UI Component
+
+**Location**: `src/pages/admin/UserManagement.tsx`
+
+**Features**:
+- Form validation for all required fields
+- Role selection (student, teacher, parent, admin)
+- Password field with security notice
+- School ID input (UUID format)
+- Loading states and error handling
+- Success toast notifications
+- Security notice card
+
+**Route Protection**:
+```typescript
+// App.tsx
+<Route 
+  path="/admin/users" 
+  element={
+    <ProtectedRoute roles={["admin"]}>
+      <UserManagement />
+    </ProtectedRoute>
+  } 
+/>
+```
+
+#### Auth Page Changes
+
+**Location**: `src/pages/Auth.tsx`
+
+The signup tab now displays:
+- 🔒 Lock icon
+- "Admin-Only Registration" heading
+- Clear message about disabled public signup
+- Instructions to contact school administrator
+- Notice about first-login password change requirement
+
+#### Audit Logging
+
+**Table**: `audit_logs`
+
+**Columns**:
+- `log_id` (UUID, primary key)
+- `action` (VARCHAR) - e.g., "USER_CREATED"
+- `performed_by` (UUID) - Admin user ID
+- `target_user_id` (UUID) - Created user ID
+- `details` (JSONB) - Full details of action
+- `created_at` (TIMESTAMP)
+
+**Example Log Entry**:
+```json
+{
+  "log_id": "uuid",
+  "action": "USER_CREATED",
+  "performed_by": "admin-user-uuid",
+  "target_user_id": "new-user-uuid",
+  "details": {
+    "email": "student@school.edu",
+    "role": "student",
+    "fullName": "Student Name",
+    "schoolId": "school-uuid"
+  },
+  "created_at": "2025-11-08T12:00:00Z"
+}
+```
+
+**RLS Policies**:
+- Only admins can read audit logs
+- System can insert (SECURITY DEFINER function)
+
+#### Test Accounts (Development Only)
+
+**⚠️ For Testing Purposes Only - Do Not Use in Production**
+
+| Role    | Email                      | Password         |
+|---------|----------------------------|------------------|
+| Admin   | admin@test.local           | Adm!n#2025x      |
+| Student | student.jaya@test.local    | StuJaya!2025     |
+| Parent  | parent.kumar@test.local    | ParKumar#2025    |
+| Teacher | teacher.rao@test.local     | TchRao$2025      |
+
+**Creating Test Accounts**:
+1. Access Backend → Authentication → Users
+2. Click "Add User" 
+3. Enter email and password
+4. Confirm email (auto-confirm enabled)
+5. Use admin UI or direct DB inserts to create corresponding user records
+
+#### Security Considerations
+
+1. **Access Control**:
+   - Edge function validates JWT token
+   - Checks admin role via `user_roles` table
+   - Returns 403 for non-admin users
+   - Logs all creation attempts
+
+2. **Password Security**:
+   - Initial passwords set by admin
+   - Users forced to change on first login
+   - Password strength requirements enforced
+   - Optional password reset email
+
+3. **Data Integrity**:
+   - Atomic operations (rollback on failure)
+   - Cleanup of auth user if profile creation fails
+   - Role-specific table entries created automatically
+   - Foreign key constraints maintained
+
+4. **Audit Trail**:
+   - Every user creation logged
+   - Includes who, what, when, and details
+   - Immutable log (no delete policy)
+   - Admin-only read access
+
+#### Error Handling
+
+**Common Errors**:
+
+1. **Missing Authorization**:
+   ```json
+   { "error": "Missing authorization header" }
+   ```
+
+2. **Invalid Token**:
+   ```json
+   { "error": "Unauthorized" }
+   ```
+
+3. **Non-Admin Access**:
+   ```json
+   { "error": "Access Denied: Admin privileges required" }
+   ```
+
+4. **Duplicate Email**:
+   ```json
+   { "error": "User already registered" }
+   ```
+
+5. **Missing Fields**:
+   ```json
+   { "error": "Missing required fields" }
+   ```
+
 ### Authorization System
 
 #### Role Hierarchy
