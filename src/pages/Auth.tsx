@@ -103,7 +103,7 @@ const Auth = () => {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl">Welcome</CardTitle>
             <CardDescription>
-              Sign in to your account or create a new one
+              Sign in to your account
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -152,87 +152,24 @@ const Auth = () => {
                 </form>
               </TabsContent>
 
-              {/* Signup Tab */}
+              {/* Signup Tab - Disabled */}
               <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="John Doe"
-                      value={signupName}
-                      onChange={(e) => setSignupName(e.target.value)}
-                      required
-                      disabled={signupLoading}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="you@school.com"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      required
-                      disabled={signupLoading}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      required
-                      disabled={signupLoading}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-role">Role</Label>
-                    <Select value={signupRole} onValueChange={setSignupRole} disabled={signupLoading}>
-                      <SelectTrigger id="signup-role">
-                        <SelectValue placeholder="Select your role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="teacher">Teacher</SelectItem>
-                        <SelectItem value="parent">Parent</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-school">School ID</Label>
-                    <Input
-                      id="signup-school"
-                      type="text"
-                      placeholder="Your school UUID"
-                      value={signupSchoolId}
-                      onChange={(e) => setSignupSchoolId(e.target.value)}
-                      required
-                      disabled={signupLoading}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Contact your school administrator for the School ID
+                <div className="space-y-4 mt-4">
+                  <div className="p-6 bg-primary/5 border border-primary/20 rounded-lg text-center space-y-3">
+                    <div className="text-4xl">🔒</div>
+                    <h3 className="font-semibold text-foreground text-lg">Admin-Only Registration</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Accounts for students, teachers, and parents are created only by an administrator. 
+                      Public signup is disabled for security purposes.
                     </p>
+                    <div className="pt-2 border-t border-border/50">
+                      <p className="text-xs text-muted-foreground">
+                        Please contact your school administrator to receive your login credentials.
+                        You will be required to change your password on first login.
+                      </p>
+                    </div>
                   </div>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={signupLoading}
-                  >
-                    {signupLoading ? 'Creating account...' : 'Create Account'}
-                  </Button>
-                </form>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

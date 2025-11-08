@@ -148,6 +148,33 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          log_id: string
+          performed_by: string
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          log_id?: string
+          performed_by: string
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          log_id?: string
+          performed_by?: string
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       classes: {
         Row: {
           class_id: string
@@ -1097,6 +1124,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_user_creation: {
+        Args: { _details: Json; _performed_by: string; _target_user_id: string }
+        Returns: string
       }
     }
     Enums: {
