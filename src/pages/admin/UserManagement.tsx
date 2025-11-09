@@ -165,7 +165,15 @@ export default function UserManagement() {
         },
       });
 
-      if (error) throw error;
+      // Check for errors from the edge function
+      if (error) {
+        throw new Error(error.message || "Failed to create user");
+      }
+
+      // Check for error in the response data
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: "Success",
@@ -186,7 +194,7 @@ export default function UserManagement() {
     } catch (error: any) {
       console.error('Error creating user:', error);
       toast({
-        title: "Error",
+        title: "Error Creating User",
         description: error.message || "Failed to create user",
         variant: "destructive",
       });
