@@ -27,6 +27,17 @@ export default function Profile() {
     role: "",
   });
 
+  const [studentDetails, setStudentDetails] = useState<{
+    roll_no?: string;
+    class_name?: string;
+    section?: string;
+    parent_name?: string;
+    parent_phone?: string;
+    parent_relation?: string;
+    class_teacher_name?: string;
+    class_teacher_phone?: string;
+  } | null>(null);
+
   const [passwords, setPasswords] = useState({
     currentPassword: "",
     newPassword: "",
@@ -54,10 +65,75 @@ export default function Profile() {
       if (userData.role === "student") {
         const { data: studentData } = await supabase
           .from("students")
-          .select("profile_picture")
+          .select(`
+            profile_picture,
+            roll_no,
+            class_id,
+            parent_id,
+            classes!inner(class_name, section, class_teacher_id)
+          `)
           .eq("user_id", userData.user_id)
           .single();
+        
         profilePicture = studentData?.profile_picture || "";
+
+        // Type assertion for classes object
+        const classData = studentData?.classes as any;
+
+        // Fetch parent details
+        let parentDetails = {};
+        if (studentData?.parent_id) {
+          const { data: parentData } = await supabase
+            .from("parents")
+            .select("user_id, relation")
+            .eq("parent_id", studentData.parent_id)
+            .single();
+
+          if (parentData) {
+            const { data: parentUserData } = await supabase
+              .from("users")
+              .select("full_name, phone")
+              .eq("user_id", parentData.user_id)
+              .single();
+
+            parentDetails = {
+              parent_name: parentUserData?.full_name || "",
+              parent_phone: parentUserData?.phone || "",
+              parent_relation: parentData?.relation || "",
+            };
+          }
+        }
+
+        // Fetch class teacher details
+        let classTeacherDetails = {};
+        if (classData?.class_teacher_id) {
+          const { data: teacherData } = await supabase
+            .from("teachers")
+            .select("user_id")
+            .eq("teacher_id", classData.class_teacher_id)
+            .single();
+
+          if (teacherData) {
+            const { data: teacherUserData } = await supabase
+              .from("users")
+              .select("full_name, phone")
+              .eq("user_id", teacherData.user_id)
+              .single();
+
+            classTeacherDetails = {
+              class_teacher_name: teacherUserData?.full_name || "",
+              class_teacher_phone: teacherUserData?.phone || "",
+            };
+          }
+        }
+
+        setStudentDetails({
+          roll_no: studentData?.roll_no || "",
+          class_name: classData?.class_name || "",
+          section: classData?.section || "",
+          ...parentDetails,
+          ...classTeacherDetails,
+        });
       }
 
       setProfile({
@@ -360,6 +436,96 @@ export default function Profile() {
                 Update Profile
               </Button>
             </form>
+
+            {/* Student-specific details */}
+            {profile.role === "student" && studentDetails && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Academic Details</h3>
+                  
+                  {studentDetails.roll_no && (
+                    <div className="space-y-2">
+                      <Label>Roll Number</Label>
+                      <Input
+                        value={studentDetails.roll_no}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                  )}
+
+                  {studentDetails.class_name && (
+                    <div className="space-y-2">
+                      <Label>Class</Label>
+                      <Input
+                        value={`${studentDetails.class_name}${studentDetails.section ? ` - ${studentDetails.section}` : ''}`}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                  )}
+
+                  {studentDetails.class_teacher_name && (
+                    <>
+                      <h3 className="text-lg font-semibold mt-6">Class Teacher</h3>
+                      <div className="space-y-2">
+                        <Label>Name</Label>
+                        <Input
+                          value={studentDetails.class_teacher_name}
+                          disabled
+                          className="bg-muted"
+                        />
+                      </div>
+                      {studentDetails.class_teacher_phone && (
+                        <div className="space-y-2">
+                          <Label>Phone</Label>
+                          <Input
+                            value={studentDetails.class_teacher_phone}
+                            disabled
+                            className="bg-muted"
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {studentDetails.parent_name && (
+                    <>
+                      <h3 className="text-lg font-semibold mt-6">Parent/Guardian Details</h3>
+                      <div className="space-y-2">
+                        <Label>Name</Label>
+                        <Input
+                          value={studentDetails.parent_name}
+                          disabled
+                          className="bg-muted"
+                        />
+                      </div>
+                      {studentDetails.parent_relation && (
+                        <div className="space-y-2">
+                          <Label>Relation</Label>
+                          <Input
+                            value={studentDetails.parent_relation}
+                            disabled
+                            className="bg-muted capitalize"
+                          />
+                        </div>
+                      )}
+                      {studentDetails.parent_phone && (
+                        <div className="space-y-2">
+                          <Label>Phone</Label>
+                          <Input
+                            value={studentDetails.parent_phone}
+                            disabled
+                            className="bg-muted"
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </>
+            )}
 
             <Separator />
 

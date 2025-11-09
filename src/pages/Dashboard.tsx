@@ -129,7 +129,7 @@ const Dashboard = () => {
               </div>
               <Avatar 
                 className="cursor-pointer hover:ring-2 ring-primary transition-all"
-                onClick={() => setProfileSheetOpen(true)}
+                onClick={() => navigate('/profile')}
               >
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   {profile?.full_name ? getInitials(profile.full_name) : 'U'}
