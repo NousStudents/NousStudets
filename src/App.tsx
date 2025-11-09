@@ -8,6 +8,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
+import Timetable from "./pages/Timetable";
+import Assignments from "./pages/Assignments";
+import Exams from "./pages/Exams";
+import Attendance from "./pages/Attendance";
+import Fees from "./pages/Fees";
 import UserManagement from "./pages/admin/UserManagement";
 import TimetableManagement from "./pages/admin/TimetableManagement";
 import NotFound from "./pages/NotFound";
@@ -25,6 +31,54 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute roles={["admin", "teacher", "student", "parent"]}>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/timetable" 
+              element={
+                <ProtectedRoute roles={["admin", "teacher", "student", "parent"]}>
+                  <Timetable />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/assignments" 
+              element={
+                <ProtectedRoute roles={["admin", "teacher", "student"]}>
+                  <Assignments />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/exams" 
+              element={
+                <ProtectedRoute roles={["admin", "teacher", "student", "parent"]}>
+                  <Exams />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/attendance" 
+              element={
+                <ProtectedRoute roles={["admin", "teacher", "student", "parent"]}>
+                  <Attendance />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/fees" 
+              element={
+                <ProtectedRoute roles={["admin", "student", "parent"]}>
+                  <Fees />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="/admin/users" 
               element={
