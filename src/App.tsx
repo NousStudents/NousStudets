@@ -16,6 +16,9 @@ import Attendance from "./pages/Attendance";
 import Fees from "./pages/Fees";
 import UserManagement from "./pages/admin/UserManagement";
 import TimetableManagement from "./pages/admin/TimetableManagement";
+import SchoolManagement from "./pages/admin/SchoolManagement";
+import StudentManagement from "./pages/admin/StudentManagement";
+import ClassManagement from "./pages/admin/ClassManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,21 +82,45 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/admin/users" 
+            <Route
+              path="/admin/users"
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <UserManagement />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/admin/timetable" 
+            <Route
+              path="/admin/timetable"
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <TimetableManagement />
                 </ProtectedRoute>
-              } 
+              }
+            />
+            <Route
+              path="/admin/school"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <SchoolManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/students"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <StudentManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/classes"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <ClassManagement />
+                </ProtectedRoute>
+              }
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

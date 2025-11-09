@@ -16,7 +16,9 @@ import {
   TrendingUp,
   AlertCircle,
   Settings,
-  FileText
+  FileText,
+  Building2,
+  GraduationCap
 } from 'lucide-react';
 
 export default function AdminDashboard({ profile }: { profile: any }) {
@@ -134,7 +136,27 @@ export default function AdminDashboard({ profile }: { profile: any }) {
           <CardDescription>Common administrative tasks</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
+              onClick={() => isMobile ? undefined : navigate('/admin/school')}
+              disabled={isMobile}
+              title={isMobile ? "Desktop required for school management" : ""}
+            >
+              <Building2 className="h-6 w-6" />
+              <span className="text-sm">School</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
+              onClick={() => isMobile ? undefined : navigate('/admin/students')}
+              disabled={isMobile}
+              title={isMobile ? "Desktop required for student management" : ""}
+            >
+              <GraduationCap className="h-6 w-6" />
+              <span className="text-sm">Students</span>
+            </Button>
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
@@ -143,16 +165,17 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               title={isMobile ? "Desktop required for user management" : ""}
             >
               <UserPlus className="h-6 w-6" />
-              <span className="text-sm">Create User</span>
+              <span className="text-sm">Users</span>
             </Button>
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
+              onClick={() => isMobile ? undefined : navigate('/admin/classes')}
               disabled={isMobile}
               title={isMobile ? "Desktop required for class management" : ""}
             >
               <School className="h-6 w-6" />
-              <span className="text-sm">Manage Classes</span>
+              <span className="text-sm">Classes</span>
             </Button>
             <Button 
               variant="outline" 
@@ -167,11 +190,10 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              disabled={isMobile}
-              title={isMobile ? "Desktop required for reports" : ""}
+              onClick={() => navigate('/exams')}
             >
               <FileText className="h-6 w-6" />
-              <span className="text-sm">Reports</span>
+              <span className="text-sm">Exams</span>
             </Button>
           </div>
           {isMobile && (
