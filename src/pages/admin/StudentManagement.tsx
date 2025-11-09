@@ -74,7 +74,7 @@ export default function StudentManagement() {
         return;
       }
 
-      // Fetch students with their user and class information
+      // Fetch students with their user information only
       const { data: studentsData, error: studentsError } = await supabase
         .from("students")
         .select(`
@@ -91,9 +91,6 @@ export default function StudentManagement() {
             email,
             status,
             school_id
-          ),
-          classes (
-            class_name
           )
         `)
         .eq("users.school_id", userData.school_id);
@@ -105,7 +102,7 @@ export default function StudentManagement() {
         toast.error(`Failed to fetch students: ${studentsError.message}`);
       }
 
-      // Fetch classes
+      // Fetch classes separately
       const { data: classesData, error: classesError } = await supabase
         .from("classes")
         .select("class_id, class_name, section")
@@ -117,6 +114,14 @@ export default function StudentManagement() {
         console.error("Classes query error:", classesError);
       }
 
+      // Create a map of class_id to class_name for quick lookup
+      const classMap = new Map();
+      if (classesData) {
+        classesData.forEach((c: any) => {
+          classMap.set(c.class_id, c.class_name);
+        });
+      }
+
       if (studentsData) {
         const formattedStudents = studentsData.map((s: any) => ({
           student_id: s.student_id,
@@ -125,7 +130,7 @@ export default function StudentManagement() {
           email: s.users?.email || "N/A",
           roll_no: s.roll_no || "N/A",
           class_id: s.class_id,
-          class_name: s.classes?.class_name || "No Class",
+          class_name: classMap.get(s.class_id) || "No Class",
           section: s.section || "",
           gender: s.gender || "",
           dob: s.dob || "",
