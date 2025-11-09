@@ -219,14 +219,27 @@ serve(async (req) => {
 
     // Create role-specific records
     if (role === 'teacher') {
-      const { data: teacherData } = await supabaseClient
+      const { data: teacherData, error: teacherError } = await supabaseClient
         .from('teachers')
         .insert({
           user_id: newUser.user_id,
+          school_id: schoolId,
           qualification: qualification || null,
         })
         .select()
         .single();
+
+      if (teacherError) {
+        console.error('Error creating teacher record:', teacherError);
+        // Cleanup: delete user records if teacher creation fails
+        await supabaseClient.from('user_roles').delete().eq('user_id', newUser.user_id);
+        await supabaseClient.from('users').delete().eq('user_id', newUser.user_id);
+        await supabaseClient.auth.admin.deleteUser(newAuthUser.user!.id);
+        return new Response(
+          JSON.stringify({ error: `Failed to create teacher: ${teacherError.message}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       // Create subject entries if provided
       if (subjects && subjects.length > 0 && teacherData && classId && classId !== 'none') {

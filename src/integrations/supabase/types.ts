@@ -202,6 +202,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "classes_class_teacher_id_fkey"
+            columns: ["class_teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["teacher_id"]
+          },
+          {
             foreignKeyName: "classes_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false
@@ -915,6 +922,8 @@ export type Database = {
           created_at: string | null
           experience: number | null
           qualification: string | null
+          school_id: string
+          subject_specialization: string | null
           teacher_id: string
           user_id: string
         }
@@ -922,6 +931,8 @@ export type Database = {
           created_at?: string | null
           experience?: number | null
           qualification?: string | null
+          school_id: string
+          subject_specialization?: string | null
           teacher_id?: string
           user_id: string
         }
@@ -929,10 +940,19 @@ export type Database = {
           created_at?: string | null
           experience?: number | null
           qualification?: string | null
+          school_id?: string
+          subject_specialization?: string | null
           teacher_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "teachers_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
           {
             foreignKeyName: "teachers_user_id_fkey"
             columns: ["user_id"]
@@ -1121,6 +1141,7 @@ export type Database = {
     Functions: {
       current_school_id: { Args: never; Returns: string }
       current_user_id: { Args: never; Returns: string }
+      get_teacher_school_id: { Args: { _teacher_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

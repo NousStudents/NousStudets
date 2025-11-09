@@ -79,23 +79,24 @@ export default function TeacherManagement() {
         return;
       }
 
-      // Fetch teachers with their user information
+      // Fetch teachers with their user information - using school_id directly on teachers table
       const { data: teachersData, error: teachersError } = await supabase
         .from("teachers")
         .select(`
           teacher_id,
           user_id,
+          school_id,
           qualification,
           experience,
+          subject_specialization,
           users!inner (
             full_name,
             email,
             phone,
-            status,
-            school_id
+            status
           )
         `)
-        .eq("users.school_id", userData.school_id);
+        .eq("school_id", userData.school_id);
 
       if (teachersError) {
         console.error("Teachers query error:", teachersError);

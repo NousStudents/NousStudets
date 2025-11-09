@@ -160,7 +160,15 @@ export default function ClassManagement() {
         .eq("auth_user_id", user?.id)
         .single();
 
-      if (!userData?.school_id) return;
+      if (!userData?.school_id) {
+        toast.error("Unable to find your school information");
+        return;
+      }
+
+      if (!formData.class_name.trim()) {
+        toast.error("Class name is required");
+        return;
+      }
 
       const teacherId = formData.class_teacher_id === "none" ? null : formData.class_teacher_id;
 
@@ -168,33 +176,50 @@ export default function ClassManagement() {
         const { error } = await supabase
           .from("classes")
           .update({
-            class_name: formData.class_name,
-            section: formData.section,
+            class_name: formData.class_name.trim(),
+            section: formData.section.trim(),
             class_teacher_id: teacherId,
           })
-          .eq("class_id", editingClass.class_id);
+          .eq("class_id", editingClass.class_id)
+          .eq("school_id", userData.school_id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error updating class:", error);
+          if (error.message.includes("Teacher does not belong")) {
+            toast.error("Selected teacher does not belong to your school");
+          } else {
+            toast.error(`Failed to update class: ${error.message}`);
+          }
+          return;
+        }
         toast.success("Class updated successfully");
       } else {
         const { error } = await supabase
           .from("classes")
           .insert({
-            class_name: formData.class_name,
-            section: formData.section,
+            class_name: formData.class_name.trim(),
+            section: formData.section.trim(),
             class_teacher_id: teacherId,
             school_id: userData.school_id,
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error creating class:", error);
+          if (error.message.includes("Teacher does not belong")) {
+            toast.error("Selected teacher does not belong to your school");
+          } else {
+            toast.error(`Failed to create class: ${error.message}`);
+          }
+          return;
+        }
         toast.success("Class created successfully");
       }
 
       fetchData();
       handleDialogClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving class:", error);
-      toast.error("Failed to save class");
+      toast.error(error.message || "Failed to save class");
     }
   };
 
@@ -202,19 +227,36 @@ export default function ClassManagement() {
     if (!editingClass) return;
 
     try {
+      const { data: userData } = await supabase
+        .from("users")
+        .select("school_id")
+        .eq("auth_user_id", user?.id)
+        .single();
+
+      if (!userData?.school_id) {
+        toast.error("Unable to find your school information");
+        return;
+      }
+
       const { error } = await supabase
         .from("classes")
         .delete()
-        .eq("class_id", editingClass.class_id);
+        .eq("class_id", editingClass.class_id)
+        .eq("school_id", userData.school_id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error deleting class:", error);
+        toast.error(`Failed to delete class: ${error.message}`);
+        return;
+      }
+      
       toast.success("Class deleted successfully");
       fetchData();
       setDeleteDialogOpen(false);
       setEditingClass(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting class:", error);
-      toast.error("Failed to delete class");
+      toast.error(error.message || "Failed to delete class");
     }
   };
 
