@@ -58,56 +58,90 @@ export default function StudentManagement() {
 
   const fetchData = async () => {
     try {
-      const { data: userData } = await supabase
+      console.log("Fetching student data...");
+      const { data: userData, error: userError } = await supabase
         .from("users")
         .select("school_id")
         .eq("auth_user_id", user?.id)
         .single();
 
-      if (!userData?.school_id) return;
+      console.log("User data:", userData, "Error:", userError);
 
-      const [studentsRes, classesRes] = await Promise.all([
-        supabase
-          .from("students")
-          .select(`
-            student_id,
-            user_id,
-            roll_no,
-            section,
-            gender,
-            dob,
-            admission_date,
-            class_id,
-            users!inner(full_name, email, status, school_id),
-            classes!inner(class_name, school_id)
-          `)
-          .eq("users.school_id", userData.school_id),
-        supabase
-          .from("classes")
-          .select("class_id, class_name, section")
-          .eq("school_id", userData.school_id)
-      ]);
-
-      if (studentsRes.data) {
-        const formattedStudents = studentsRes.data.map((s: any) => ({
-          student_id: s.student_id,
-          user_id: s.user_id,
-          full_name: s.users.full_name,
-          email: s.users.email,
-          roll_no: s.roll_no,
-          class_id: s.class_id,
-          class_name: s.classes.class_name,
-          section: s.section,
-          gender: s.gender,
-          dob: s.dob,
-          admission_date: s.admission_date,
-          status: s.users.status,
-        }));
-        setStudents(formattedStudents);
+      if (!userData?.school_id) {
+        console.log("No school_id found for user");
+        toast.error("School information not found");
+        setLoading(false);
+        return;
       }
 
-      if (classesRes.data) {
-        setClasses(classesRes.data);
+      // Fetch students with their user and class information
+      const { data: studentsData, error: studentsError } = await supabase
+        .from("students")
+        .select(`
+          student_id,
+          user_id,
+          roll_no,
+          section,
+          gender,
+          dob,
+          admission_date,
+          class_id,
+          users!inner (
+            full_name,
+            email,
+            status,
+            school_id
+          ),
+          classes (
+            class_name
+          )
+        `)
+        .eq("users.school_id", userData.school_id);
+
+      console.log("Students query result:", studentsData, "Error:", studentsError);
+
+      if (studentsError) {
+        console.error("Students query error:", studentsError);
+        toast.error(`Failed to fetch students: ${studentsError.message}`);
+      }
+
+      // Fetch classes
+      const { data: classesData, error: classesError } = await supabase
+        .from("classes")
+        .select("class_id, class_name, section")
+        .eq("school_id", userData.school_id);
+
+      console.log("Classes query result:", classesData, "Error:", classesError);
+
+      if (classesError) {
+        console.error("Classes query error:", classesError);
+      }
+
+      if (studentsData) {
+        const formattedStudents = studentsData.map((s: any) => ({
+          student_id: s.student_id,
+          user_id: s.user_id,
+          full_name: s.users?.full_name || "N/A",
+          email: s.users?.email || "N/A",
+          roll_no: s.roll_no || "N/A",
+          class_id: s.class_id,
+          class_name: s.classes?.class_name || "No Class",
+          section: s.section || "",
+          gender: s.gender || "",
+          dob: s.dob || "",
+          admission_date: s.admission_date || "",
+          status: s.users?.status || "inactive",
+        }));
+        console.log("Formatted students:", formattedStudents);
+        setStudents(formattedStudents);
+      } else {
+        setStudents([]);
+      }
+
+      if (classesData) {
+        setClasses(classesData);
+      } else {
+        setClasses([]);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
