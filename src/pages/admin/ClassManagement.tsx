@@ -111,13 +111,15 @@ export default function ClassManagement() {
 
       if (!userData?.school_id) return;
 
+      const teacherId = formData.class_teacher_id === "none" ? null : formData.class_teacher_id;
+
       if (editingClass) {
         const { error } = await supabase
           .from("classes")
           .update({
             class_name: formData.class_name,
             section: formData.section,
-            class_teacher_id: formData.class_teacher_id || null,
+            class_teacher_id: teacherId,
           })
           .eq("class_id", editingClass.class_id);
 
@@ -129,7 +131,7 @@ export default function ClassManagement() {
           .insert({
             class_name: formData.class_name,
             section: formData.section,
-            class_teacher_id: formData.class_teacher_id || null,
+            class_teacher_id: teacherId,
             school_id: userData.school_id,
           });
 
@@ -170,7 +172,7 @@ export default function ClassManagement() {
     setFormData({
       class_name: classData.class_name,
       section: classData.section,
-      class_teacher_id: classData.class_teacher_id || "",
+      class_teacher_id: classData.class_teacher_id || "none",
     });
     setDialogOpen(true);
   };
@@ -178,7 +180,7 @@ export default function ClassManagement() {
   const handleDialogClose = () => {
     setDialogOpen(false);
     setEditingClass(null);
-    setFormData({ class_name: "", section: "", class_teacher_id: "" });
+    setFormData({ class_name: "", section: "", class_teacher_id: "none" });
   };
 
   if (loading) {
@@ -280,7 +282,7 @@ export default function ClassManagement() {
                   <SelectValue placeholder="Select Teacher" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {teachers.map((t) => (
                     <SelectItem key={t.teacher_id} value={t.teacher_id}>
                       {t.full_name}

@@ -44,10 +44,10 @@ export default function StudentManagement() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   
   const [filters, setFilters] = useState({
-    classId: "",
-    section: "",
-    gender: "",
-    status: "",
+    classId: "all",
+    section: "all",
+    gender: "all",
+    status: "all",
   });
 
   useEffect(() => {
@@ -155,10 +155,10 @@ export default function StudentManagement() {
   };
 
   const filteredStudents = students.filter((s) => {
-    if (filters.classId && s.class_id !== filters.classId) return false;
-    if (filters.section && s.section !== filters.section) return false;
-    if (filters.gender && s.gender !== filters.gender) return false;
-    if (filters.status && s.status !== filters.status) return false;
+    if (filters.classId && filters.classId !== "all" && s.class_id !== filters.classId) return false;
+    if (filters.section && filters.section !== "all" && s.section !== filters.section) return false;
+    if (filters.gender && filters.gender !== "all" && s.gender !== filters.gender) return false;
+    if (filters.status && filters.status !== "all" && s.status !== filters.status) return false;
     return true;
   });
 
@@ -199,7 +199,7 @@ export default function StudentManagement() {
                   <SelectValue placeholder="All Classes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Classes</SelectItem>
+                  <SelectItem value="all">All Classes</SelectItem>
                   {classes.map((c) => (
                     <SelectItem key={c.class_id} value={c.class_id}>
                       {c.class_name} {c.section}
@@ -215,7 +215,7 @@ export default function StudentManagement() {
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="Male">Male</SelectItem>
                   <SelectItem value="Female">Female</SelectItem>
                 </SelectContent>
@@ -228,14 +228,14 @@ export default function StudentManagement() {
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex items-end">
-              <Button variant="outline" onClick={() => setFilters({ classId: "", section: "", gender: "", status: "" })}>
+              <Button variant="outline" onClick={() => setFilters({ classId: "all", section: "all", gender: "all", status: "all" })}>
                 Clear Filters
               </Button>
             </div>
