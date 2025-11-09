@@ -48,48 +48,99 @@ export default function ClassManagement() {
 
   const fetchData = async () => {
     try {
-      const { data: userData } = await supabase
+      console.log("Fetching user data for:", user?.id);
+      
+      const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("school_id")
+        .select("school_id, user_id")
         .eq("auth_user_id", user?.id)
         .single();
 
-      if (!userData?.school_id) return;
+      console.log("User data:", userData);
+      console.log("User error:", userError);
 
-      const [classesRes, teachersRes] = await Promise.all([
-        supabase
-          .from("classes")
-          .select(`
-            class_id,
-            class_name,
-            section,
-            class_teacher_id,
-            teachers(teacher_id, users(full_name))
-          `)
-          .eq("school_id", userData.school_id),
-        supabase
-          .from("teachers")
-          .select("teacher_id, users!inner(full_name, school_id)")
-          .eq("users.school_id", userData.school_id)
-      ]);
-
-      if (classesRes.data) {
-        const formattedClasses = classesRes.data.map((c: any) => ({
-          class_id: c.class_id,
-          class_name: c.class_name,
-          section: c.section,
-          class_teacher_id: c.class_teacher_id,
-          teacher_name: c.teachers?.users?.full_name || "Not Assigned",
-        }));
-        setClasses(formattedClasses);
+      if (!userData?.school_id) {
+        console.error("No school_id found for user");
+        toast.error("Unable to find your school information");
+        setLoading(false);
+        return;
       }
 
-      if (teachersRes.data) {
-        const formattedTeachers = teachersRes.data.map((t: any) => ({
-          teacher_id: t.teacher_id,
-          full_name: t.users.full_name,
+      // Fetch classes without the problematic join first
+      console.log("Fetching classes for school_id:", userData.school_id);
+      const { data: classesData, error: classesError } = await supabase
+        .from("classes")
+        .select("class_id, class_name, section, class_teacher_id, school_id")
+        .eq("school_id", userData.school_id);
+
+      console.log("Classes data:", classesData);
+      console.log("Classes error:", classesError);
+
+      if (classesError) {
+        console.error("Error fetching classes:", classesError);
+        toast.error(`Failed to load classes: ${classesError.message}`);
+      }
+
+      // Fetch teachers separately
+      console.log("Fetching teachers for school_id:", userData.school_id);
+      
+      // Get all teachers for the school
+      const { data: allTeachersData, error: teachersError2 } = await supabase
+        .from("users")
+        .select(`
+          user_id,
+          full_name,
+          teachers!inner(teacher_id)
+        `)
+        .eq("school_id", userData.school_id)
+        .eq("role", "teacher");
+
+      console.log("Teachers data:", allTeachersData);
+      console.log("Teachers error:", teachersError2);
+
+      if (teachersError2) {
+        console.error("Error fetching teachers:", teachersError2);
+      }
+
+      // Create a map of teacher_id to teacher name
+      const teacherMap = new Map<string, string>();
+      if (allTeachersData) {
+        allTeachersData.forEach((user: any) => {
+          if (user.teachers) {
+            teacherMap.set(user.teachers.teacher_id, user.full_name);
+          }
+        });
+      }
+
+      console.log("Teacher map:", Object.fromEntries(teacherMap));
+
+      // Format classes with teacher names
+      if (classesData) {
+        const formattedClasses = classesData.map((c: any) => ({
+          class_id: c.class_id,
+          class_name: c.class_name,
+          section: c.section || "",
+          class_teacher_id: c.class_teacher_id,
+          teacher_name: c.class_teacher_id 
+            ? (teacherMap.get(c.class_teacher_id) || "Not Assigned")
+            : "Not Assigned",
         }));
+        console.log("Formatted classes:", formattedClasses);
+        setClasses(formattedClasses);
+      } else {
+        setClasses([]);
+      }
+
+      // Format teachers for dropdown
+      if (allTeachersData) {
+        const formattedTeachers = allTeachersData.map((user: any) => ({
+          teacher_id: user.teachers.teacher_id,
+          full_name: user.full_name,
+        }));
+        console.log("Formatted teachers:", formattedTeachers);
         setTeachers(formattedTeachers);
+      } else {
+        setTeachers([]);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -223,30 +274,38 @@ export default function ClassManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {classes.map((classData) => (
-                <TableRow key={classData.class_id}>
-                  <TableCell>{classData.class_name}</TableCell>
-                  <TableCell>{classData.section}</TableCell>
-                  <TableCell>{classData.teacher_name}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(classData)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          setEditingClass(classData);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+              {classes.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    No classes found. Click "Add Class" to create your first class.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                classes.map((classData) => (
+                  <TableRow key={classData.class_id}>
+                    <TableCell>{classData.class_name}</TableCell>
+                    <TableCell>{classData.section}</TableCell>
+                    <TableCell>{classData.teacher_name}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(classData)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            setEditingClass(classData);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -281,7 +340,7 @@ export default function ClassManagement() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select Teacher" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover z-50">
                   <SelectItem value="none">None</SelectItem>
                   {teachers.map((t) => (
                     <SelectItem key={t.teacher_id} value={t.teacher_id}>
