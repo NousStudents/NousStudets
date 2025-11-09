@@ -63,22 +63,54 @@ export default function Profile() {
       let profilePicture = "";
       
       if (userData.role === "student") {
+        // Fetch student data
         const { data: studentData } = await supabase
           .from("students")
-          .select(`
-            profile_picture,
-            roll_no,
-            class_id,
-            parent_id,
-            classes!inner(class_name, section, class_teacher_id)
-          `)
+          .select("profile_picture, roll_no, class_id, parent_id")
           .eq("user_id", userData.user_id)
           .single();
         
         profilePicture = studentData?.profile_picture || "";
 
-        // Type assertion for classes object
-        const classData = studentData?.classes as any;
+        // Fetch class details separately
+        let classDetails = {};
+        if (studentData?.class_id) {
+          const { data: classData } = await supabase
+            .from("classes")
+            .select("class_name, section, class_teacher_id")
+            .eq("class_id", studentData.class_id)
+            .single();
+
+          if (classData) {
+            classDetails = {
+              class_name: classData.class_name || "",
+              section: classData.section || "",
+            };
+
+            // Fetch class teacher details
+            if (classData.class_teacher_id) {
+              const { data: teacherData } = await supabase
+                .from("teachers")
+                .select("user_id")
+                .eq("teacher_id", classData.class_teacher_id)
+                .single();
+
+              if (teacherData) {
+                const { data: teacherUserData } = await supabase
+                  .from("users")
+                  .select("full_name, phone")
+                  .eq("user_id", teacherData.user_id)
+                  .single();
+
+                classDetails = {
+                  ...classDetails,
+                  class_teacher_name: teacherUserData?.full_name || "",
+                  class_teacher_phone: teacherUserData?.phone || "",
+                };
+              }
+            }
+          }
+        }
 
         // Fetch parent details
         let parentDetails = {};
@@ -104,35 +136,10 @@ export default function Profile() {
           }
         }
 
-        // Fetch class teacher details
-        let classTeacherDetails = {};
-        if (classData?.class_teacher_id) {
-          const { data: teacherData } = await supabase
-            .from("teachers")
-            .select("user_id")
-            .eq("teacher_id", classData.class_teacher_id)
-            .single();
-
-          if (teacherData) {
-            const { data: teacherUserData } = await supabase
-              .from("users")
-              .select("full_name, phone")
-              .eq("user_id", teacherData.user_id)
-              .single();
-
-            classTeacherDetails = {
-              class_teacher_name: teacherUserData?.full_name || "",
-              class_teacher_phone: teacherUserData?.phone || "",
-            };
-          }
-        }
-
         setStudentDetails({
           roll_no: studentData?.roll_no || "",
-          class_name: classData?.class_name || "",
-          section: classData?.section || "",
+          ...classDetails,
           ...parentDetails,
-          ...classTeacherDetails,
         });
       }
 
