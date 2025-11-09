@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Users, 
   UserPlus,
@@ -20,6 +21,7 @@ import {
 
 export default function AdminDashboard({ profile }: { profile: any }) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalTeachers: 0,
@@ -136,28 +138,47 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => navigate('/admin/users')}
+              onClick={() => isMobile ? undefined : navigate('/admin/users')}
+              disabled={isMobile}
+              title={isMobile ? "Desktop required for user management" : ""}
             >
               <UserPlus className="h-6 w-6" />
               <span className="text-sm">Create User</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4">
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
+              disabled={isMobile}
+              title={isMobile ? "Desktop required for class management" : ""}
+            >
               <School className="h-6 w-6" />
               <span className="text-sm">Manage Classes</span>
             </Button>
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => navigate('/admin/timetable')}
+              onClick={() => isMobile ? undefined : navigate('/admin/timetable')}
+              disabled={isMobile}
+              title={isMobile ? "Desktop required for timetable management" : ""}
             >
               <Calendar className="h-6 w-6" />
               <span className="text-sm">Timetable</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4">
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
+              disabled={isMobile}
+              title={isMobile ? "Desktop required for reports" : ""}
+            >
               <FileText className="h-6 w-6" />
               <span className="text-sm">Reports</span>
             </Button>
           </div>
+          {isMobile && (
+            <p className="text-sm text-muted-foreground mt-4 text-center">
+              ℹ️ Management actions require desktop
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -237,11 +258,18 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               <div className="space-y-4">
                 <Button 
                   className="w-full md:w-auto"
-                  onClick={() => navigate('/admin/users')}
+                  onClick={() => isMobile ? undefined : navigate('/admin/users')}
+                  disabled={isMobile}
+                  title={isMobile ? "Desktop required for user management" : ""}
                 >
                   <UserPlus className="h-4 w-4 mr-2" />
                   Create New User
                 </Button>
+                {isMobile && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    ℹ️ User creation requires desktop
+                  </p>
+                )}
                 <div className="text-center py-12 text-muted-foreground">
                   <Users className="h-16 w-16 mx-auto mb-4 opacity-50" />
                   <p className="text-lg">User listing and management coming soon</p>

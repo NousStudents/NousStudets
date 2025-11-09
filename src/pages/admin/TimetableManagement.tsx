@@ -10,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, Clock, Plus, Pencil, Trash2, School } from 'lucide-react';
+import { BackButton } from '@/components/BackButton';
+import { MobileAdminRestriction } from '@/components/MobileAdminRestriction';
 
 interface TimetableEntry {
   timetable_id: string;
@@ -219,24 +221,29 @@ export default function TimetableManagement() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <Calendar className="h-8 w-8 text-primary" />
-            Timetable Management
-          </h2>
-          <p className="text-muted-foreground mt-1">
-            Create and manage class schedules
-          </p>
+    <div className="space-y-6 p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <BackButton to="/dashboard" />
+          <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+              Timetable Management
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+              Create and manage class schedules
+            </p>
+          </div>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Schedule
-            </Button>
-          </DialogTrigger>
+        
+        <MobileAdminRestriction action="add or edit timetable entries">
+          <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
+            <DialogTrigger asChild>
+              <Button className="w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Schedule
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
@@ -364,31 +371,37 @@ export default function TimetableManagement() {
             </form>
           </DialogContent>
         </Dialog>
+        </MobileAdminRestriction>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <School className="h-5 w-5" />
-            All Timetable Entries
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <School className="h-4 w-4 sm:h-5 sm:w-5" />
+            Current Schedule
           </CardTitle>
-          <CardDescription>
-            View and manage all scheduled classes
+          <CardDescription className="text-sm">
+            View and manage all timetable entries
+            {typeof window !== 'undefined' && window.innerWidth < 768 && (
+              <span className="block mt-1 text-yellow-600">⚠️ Desktop required for editing</span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {timetableEntries.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Class</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Teacher</TableHead>
-                  <TableHead>Day</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[120px]">Class</TableHead>
+                      <TableHead className="min-w-[120px]">Subject</TableHead>
+                      <TableHead className="min-w-[120px]">Teacher</TableHead>
+                      <TableHead className="min-w-[100px]">Day</TableHead>
+                      <TableHead className="min-w-[150px]">Time</TableHead>
+                      <TableHead className="text-right min-w-[120px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
               <TableBody>
                 {timetableEntries.map((entry) => (
                   <TableRow key={entry.timetable_id}>
@@ -412,6 +425,8 @@ export default function TimetableManagement() {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleEdit(entry)}
+                          disabled={typeof window !== 'undefined' && window.innerWidth < 768}
+                          title={typeof window !== 'undefined' && window.innerWidth < 768 ? "Desktop required" : "Edit"}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -420,6 +435,8 @@ export default function TimetableManagement() {
                           variant="ghost"
                           className="text-destructive"
                           onClick={() => handleDelete(entry.timetable_id)}
+                          disabled={typeof window !== 'undefined' && window.innerWidth < 768}
+                          title={typeof window !== 'undefined' && window.innerWidth < 768 ? "Desktop required" : "Delete"}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -429,6 +446,8 @@ export default function TimetableManagement() {
                 ))}
               </TableBody>
             </Table>
+              </div>
+            </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               <Calendar className="h-16 w-16 mx-auto mb-4 opacity-50" />

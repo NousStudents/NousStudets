@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { GraduationCap, Bell } from 'lucide-react';
 import { ProfileSheet } from '@/components/ProfileSheet';
+import { BackButton } from '@/components/BackButton';
 import StudentDashboard from './dashboards/StudentDashboard';
 import TeacherDashboard from './dashboards/TeacherDashboard';
 import ParentDashboard from './dashboards/ParentDashboard';
@@ -107,13 +108,14 @@ const Dashboard = () => {
         <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <BackButton to="/" />
               <div className="p-2 bg-primary rounded-xl">
-                <GraduationCap className="h-6 w-6 text-primary-foreground" />
+                <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Nous</h1>
-                <p className="text-sm text-muted-foreground">School Management</p>
+                <h1 className="text-lg sm:text-xl font-bold text-foreground">Nous</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">School Management</p>
               </div>
             </div>
 

@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, UserPlus, Shield } from "lucide-react";
+import { BackButton } from "@/components/BackButton";
+import { MobileAdminRestriction } from "@/components/MobileAdminRestriction";
 
 interface Class {
   class_id: string;
@@ -250,26 +252,28 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-4 sm:p-6">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center gap-3">
-          <Shield className="h-8 w-8 text-primary" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <BackButton to="/dashboard" />
+          <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
           <div>
-            <h1 className="text-3xl font-bold text-foreground">User Management</h1>
-            <p className="text-muted-foreground">Create accounts for students, teachers, and parents</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">User Management</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Create accounts for students, teachers, and parents</p>
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5" />
-              Create New User
-            </CardTitle>
-            <CardDescription>
-              School ID is automatically filled from your admin profile. Users will receive their login credentials.
-            </CardDescription>
-          </CardHeader>
+        <MobileAdminRestriction action="create and manage users">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />
+                Create New User
+              </CardTitle>
+              <CardDescription className="text-sm">
+                School ID is automatically filled from your admin profile. Users will receive their login credentials.
+              </CardDescription>
+            </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Info */}
@@ -459,6 +463,7 @@ export default function UserManagement() {
             </ul>
           </CardContent>
         </Card>
+        </MobileAdminRestriction>
       </div>
     </div>
   );
