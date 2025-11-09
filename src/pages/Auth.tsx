@@ -11,19 +11,13 @@ import { BookOpen, GraduationCap, UserCircle } from 'lucide-react';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginRole, setLoginRole] = useState<string>('');
   const [loginLoading, setLoginLoading] = useState(false);
 
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [signupName, setSignupName] = useState('');
-  const [signupRole, setSignupRole] = useState<string>('student');
-  const [signupSchoolId, setSignupSchoolId] = useState('');
-  const [signupLoading, setSignupLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,24 +37,6 @@ const Auth = () => {
     }
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSignupLoading(true);
-    
-    const { error } = await signUp(
-      signupEmail,
-      signupPassword,
-      signupName,
-      signupRole,
-      signupSchoolId
-    );
-    
-    setSignupLoading(false);
-    
-    if (!error) {
-      navigate('/dashboard');
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">

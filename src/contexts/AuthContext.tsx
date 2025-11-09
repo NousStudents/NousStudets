@@ -8,7 +8,6 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string, selectedRole: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName: string, role: string, schoolId: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -107,71 +106,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signUp = async (
-    email: string,
-    password: string,
-    fullName: string,
-    role: string,
-    schoolId: string
-  ) => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: fullName,
-            role: role,
-            school_id: schoolId,
-          }
-        }
-      });
-
-      if (authError) {
-        toast({
-          variant: "destructive",
-          title: "Sign Up Failed",
-          description: authError.message,
-        });
-        return { error: authError };
-      }
-
-      // Create user profile in public.users table
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            auth_user_id: authData.user.id,
-            email: email,
-            full_name: fullName,
-            role: role,
-            school_id: schoolId,
-            status: 'active',
-          });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          toast({
-            variant: "destructive",
-            title: "Profile Creation Failed",
-            description: "Account created but profile setup failed. Please contact support.",
-          });
-        }
-      }
-
-      return { error: authError };
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Sign Up Failed",
-        description: error.message,
-      });
-      return { error };
-    }
-  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -180,7 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
