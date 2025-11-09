@@ -102,18 +102,30 @@ serve(async (req) => {
       );
     }
 
-    // Check if email already exists in users table
+    // Check if email already exists in users table (case-insensitive)
     const { data: existingUser } = await supabaseClient
       .from('users')
-      .select('email')
-      .eq('email', email)
+      .select('email, auth_user_id')
+      .ilike('email', email)
       .maybeSingle();
 
     if (existingUser) {
-      return new Response(
-        JSON.stringify({ error: 'A user with this email already exists' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      // Check if this is an orphaned record (no auth user)
+      const { data: authUser } = await supabaseClient.auth.admin.getUserById(existingUser.auth_user_id);
+      
+      if (!authUser.user) {
+        // Orphaned record - delete it
+        console.log('Found orphaned user record, cleaning up:', email);
+        await supabaseClient
+          .from('users')
+          .delete()
+          .eq('email', email);
+      } else {
+        return new Response(
+          JSON.stringify({ error: 'A user with this email already exists' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Create auth user
