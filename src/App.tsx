@@ -19,6 +19,7 @@ import TimetableManagement from "./pages/admin/TimetableManagement";
 import SchoolManagement from "./pages/admin/SchoolManagement";
 import StudentManagement from "./pages/admin/StudentManagement";
 import ClassManagement from "./pages/admin/ClassManagement";
+import TeacherManagement from "./pages/admin/TeacherManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -119,6 +120,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <ClassManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/teachers"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <TeacherManagement />
                 </ProtectedRoute>
               }
             />

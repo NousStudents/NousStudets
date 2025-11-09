@@ -18,7 +18,8 @@ import {
   Settings,
   FileText,
   Building2,
-  GraduationCap
+  GraduationCap,
+  UserCheck
 } from 'lucide-react';
 
 export default function AdminDashboard({ profile }: { profile: any }) {
@@ -158,6 +159,16 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               <span className="text-sm">Students</span>
             </Button>
             <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
+              onClick={() => isMobile ? undefined : navigate('/admin/teachers')}
+              disabled={isMobile}
+              title={isMobile ? "Desktop required for teacher management" : ""}
+            >
+              <UserCheck className="h-6 w-6" />
+              <span className="text-sm">Teachers</span>
+            </Button>
+            <Button
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
               onClick={() => isMobile ? undefined : navigate('/admin/users')}
