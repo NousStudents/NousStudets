@@ -58,17 +58,47 @@ export default function UserManagement() {
 
   const fetchAdminData = async () => {
     try {
-      const { data: userData } = await supabase
+      const { data: userData, error } = await supabase
         .from('users')
         .select('school_id')
         .eq('auth_user_id', user?.id)
-        .single();
+        .maybeSingle();
       
-      if (userData) {
+      if (error) {
+        console.error('Error fetching admin data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load admin profile. Please refresh the page.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!userData) {
+        toast({
+          title: "Profile Not Found",
+          description: "Your admin profile is not set up. Please contact support.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (userData.school_id) {
         setAdminSchoolId(userData.school_id);
+      } else {
+        toast({
+          title: "School Not Assigned",
+          description: "Your admin account is not linked to a school.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('Error fetching admin data:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -87,8 +117,14 @@ export default function UserManagement() {
   };
 
   const fetchStudents = async () => {
+    if (!adminSchoolId) {
+      console.log('No school ID available, skipping student fetch');
+      setStudents([]);
+      return;
+    }
+
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('students')
         .select(`
           student_id,
@@ -101,6 +137,16 @@ export default function UserManagement() {
         .eq('users.school_id', adminSchoolId)
         .order('roll_no');
       
+      if (error) {
+        console.error('Error fetching students:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load students list.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setStudents(data || []);
     } catch (error) {
       console.error('Error fetching students:', error);
@@ -304,29 +350,37 @@ export default function UserManagement() {
               {formData.role === 'parent' && (
                 <div className="space-y-3">
                   <Label>Linked Students *</Label>
-                  <div className="border rounded-lg p-4 max-h-60 overflow-y-auto space-y-2">
-                    {students.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No students available. Create student accounts first.</p>
-                    ) : (
-                      students.map(student => (
-                        <div key={student.student_id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={student.student_id}
-                            checked={formData.selectedStudents.includes(student.student_id)}
-                            onCheckedChange={() => handleStudentToggle(student.student_id)}
-                          />
-                          <label
-                            htmlFor={student.student_id}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            {student.users.full_name} {student.roll_no && `(Roll: ${student.roll_no})`}
-                          </label>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  {!adminSchoolId ? (
+                    <div className="border border-destructive rounded-lg p-4">
+                      <p className="text-sm text-destructive">Unable to load students. Please refresh the page.</p>
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg p-4 max-h-60 overflow-y-auto space-y-2">
+                      {students.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          No students available in your school. Create student accounts first.
+                        </p>
+                      ) : (
+                        students.map(student => (
+                          <div key={student.student_id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={student.student_id}
+                              checked={formData.selectedStudents.includes(student.student_id)}
+                              onCheckedChange={() => handleStudentToggle(student.student_id)}
+                            />
+                            <label
+                              htmlFor={student.student_id}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {student.users.full_name} {student.roll_no && `(Roll: ${student.roll_no})`}
+                            </label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
                   <p className="text-sm text-muted-foreground">
-                    Select one or more students to link to this parent account
+                    Select one or more students to link to this parent account. Only students from your school are shown.
                   </p>
                 </div>
               )}
