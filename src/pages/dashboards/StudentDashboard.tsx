@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import StudentTimetable from '@/components/StudentTimetable';
 import { 
   BookOpen, 
   Calendar, 
@@ -22,6 +23,7 @@ interface StudentData {
   pending_assignments: number;
   upcoming_exams: number;
   average_grade: string;
+  student_id?: string;
 }
 
 export default function StudentDashboard({ profile }: { profile: any }) {
@@ -40,6 +42,25 @@ export default function StudentDashboard({ profile }: { profile: any }) {
 
   const fetchStudentData = async () => {
     try {
+      // Get student_id
+      const { data: userData } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('auth_user_id', profile.auth_user_id)
+        .single();
+
+      if (userData) {
+        const { data: studentInfo } = await supabase
+          .from('students')
+          .select('student_id')
+          .eq('user_id', userData.user_id)
+          .single();
+
+        if (studentInfo) {
+          setStudentData(prev => ({ ...prev, student_id: studentInfo.student_id }));
+        }
+      }
+
       // Fetch assignments
       const { data: assignmentsData } = await supabase
         .from('assignments')
@@ -130,6 +151,7 @@ export default function StudentDashboard({ profile }: { profile: any }) {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="bg-card border border-border">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="timetable">My Timetable</TabsTrigger>
           <TabsTrigger value="assignments">Assignments</TabsTrigger>
           <TabsTrigger value="exams">Exams</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
@@ -225,6 +247,19 @@ export default function StudentDashboard({ profile }: { profile: any }) {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="timetable">
+          {studentData.student_id ? (
+            <StudentTimetable studentId={studentData.student_id} />
+          ) : (
+            <Card>
+              <CardContent className="text-center py-12 text-muted-foreground">
+                <Calendar className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg">Unable to load timetable</p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="assignments">

@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import UserManagement from "./pages/admin/UserManagement";
+import TimetableManagement from "./pages/admin/TimetableManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <UserManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/timetable" 
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <TimetableManagement />
                 </ProtectedRoute>
               } 
             />

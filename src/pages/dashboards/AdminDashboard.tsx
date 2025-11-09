@@ -145,7 +145,11 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               <School className="h-6 w-6" />
               <span className="text-sm">Manage Classes</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4">
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
+              onClick={() => navigate('/admin/timetable')}
+            >
               <Calendar className="h-6 w-6" />
               <span className="text-sm">Timetable</span>
             </Button>

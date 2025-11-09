@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import TeacherTimetable from '@/components/TeacherTimetable';
 import { 
   Users, 
   Calendar, 
@@ -18,6 +19,7 @@ import {
 
 export default function TeacherDashboard({ profile }: { profile: any }) {
   const [classes, setClasses] = useState<any[]>([]);
+  const [teacherId, setTeacherId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,6 +28,25 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
 
   const fetchTeacherData = async () => {
     try {
+      // Get teacher_id
+      const { data: userData } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('auth_user_id', profile.auth_user_id)
+        .single();
+
+      if (userData) {
+        const { data: teacherInfo } = await supabase
+          .from('teachers')
+          .select('teacher_id')
+          .eq('user_id', userData.user_id)
+          .single();
+
+        if (teacherInfo) {
+          setTeacherId(teacherInfo.teacher_id);
+        }
+      }
+
       const { data: classesData } = await supabase
         .from('classes')
         .select('*')
@@ -114,6 +135,7 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="bg-card border border-border">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="timetable">My Timetable</TabsTrigger>
           <TabsTrigger value="classes">My Classes</TabsTrigger>
           <TabsTrigger value="assignments">Assignments</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
@@ -205,6 +227,19 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="timetable">
+          {teacherId ? (
+            <TeacherTimetable teacherId={teacherId} />
+          ) : (
+            <Card>
+              <CardContent className="text-center py-12 text-muted-foreground">
+                <Calendar className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg">Unable to load timetable</p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="classes">
