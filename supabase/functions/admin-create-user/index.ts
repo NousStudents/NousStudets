@@ -102,6 +102,20 @@ serve(async (req) => {
       );
     }
 
+    // Check if email already exists in users table
+    const { data: existingUser } = await supabaseClient
+      .from('users')
+      .select('email')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existingUser) {
+      return new Response(
+        JSON.stringify({ error: 'A user with this email already exists' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Create auth user
     const { data: newAuthUser, error: createError } = await supabaseClient.auth.admin.createUser({
       email,
