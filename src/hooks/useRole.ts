@@ -51,3 +51,6 @@ export const useRole = () => {
 
   return { role, isAdmin, isTeacher, isStudent, isParent, loading };
 };
+
+// Export as default as well for compatibility
+export default useRole;
