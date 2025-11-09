@@ -132,8 +132,9 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="bg-card border border-border">
+      <Tabs defaultValue="overview" className="space-y-6 pb-20 md:pb-6">
+        {/* Desktop Navigation */}
+        <TabsList className="hidden md:flex bg-card border border-border">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="timetable">My Timetable</TabsTrigger>
           <TabsTrigger value="classes">My Classes</TabsTrigger>
@@ -141,6 +142,54 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="students">Students</TabsTrigger>
         </TabsList>
+
+        {/* Mobile Bottom Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-border">
+          <TabsList className="w-full h-auto grid grid-cols-6 gap-0 bg-transparent rounded-none p-0">
+            <TabsTrigger 
+              value="overview" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <BookOpen className="h-5 w-5" />
+              <span className="text-xs">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="timetable" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <Calendar className="h-5 w-5" />
+              <span className="text-xs">Timetable</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="classes" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <Users className="h-5 w-5" />
+              <span className="text-xs">Classes</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="assignments" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <BookOpen className="h-5 w-5" />
+              <span className="text-xs">Assignments</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="attendance" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <CheckSquare className="h-5 w-5" />
+              <span className="text-xs">Attendance</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="students" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <Users className="h-5 w-5" />
+              <span className="text-xs">Students</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid lg:grid-cols-2 gap-6">

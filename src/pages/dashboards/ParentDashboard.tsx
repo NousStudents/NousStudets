@@ -107,14 +107,56 @@ export default function ParentDashboard({ profile }: { profile: any }) {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="bg-card border border-border">
+      <Tabs defaultValue="overview" className="space-y-6 pb-20 md:pb-6">
+        {/* Desktop Navigation */}
+        <TabsList className="hidden md:flex bg-card border border-border">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="performance">Academic Performance</TabsTrigger>
           <TabsTrigger value="fees">Fees</TabsTrigger>
           <TabsTrigger value="communication">Communication</TabsTrigger>
         </TabsList>
+
+        {/* Mobile Bottom Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-border">
+          <TabsList className="w-full h-auto grid grid-cols-5 gap-0 bg-transparent rounded-none p-0">
+            <TabsTrigger 
+              value="overview" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <BookOpen className="h-5 w-5" />
+              <span className="text-xs">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="attendance" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <CheckCircle2 className="h-5 w-5" />
+              <span className="text-xs">Attendance</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="performance" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <TrendingUp className="h-5 w-5" />
+              <span className="text-xs">Performance</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="fees" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <DollarSign className="h-5 w-5" />
+              <span className="text-xs">Fees</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="communication" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <MessageSquare className="h-5 w-5" />
+              <span className="text-xs">Messages</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid lg:grid-cols-2 gap-6">

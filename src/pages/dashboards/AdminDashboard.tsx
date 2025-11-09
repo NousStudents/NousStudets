@@ -183,14 +183,56 @@ export default function AdminDashboard({ profile }: { profile: any }) {
       </Card>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="bg-card border border-border">
+      <Tabs defaultValue="overview" className="space-y-6 pb-20 md:pb-6">
+        {/* Desktop Navigation */}
+        <TabsList className="hidden md:flex bg-card border border-border">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="academics">Academics</TabsTrigger>
           <TabsTrigger value="finance">Finance</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
+
+        {/* Mobile Bottom Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-border">
+          <TabsList className="w-full h-auto grid grid-cols-5 gap-0 bg-transparent rounded-none p-0">
+            <TabsTrigger 
+              value="overview" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <Settings className="h-5 w-5" />
+              <span className="text-xs">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="users" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <Users className="h-5 w-5" />
+              <span className="text-xs">Users</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="academics" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <BookOpen className="h-5 w-5" />
+              <span className="text-xs">Academics</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="finance" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <DollarSign className="h-5 w-5" />
+              <span className="text-xs">Finance</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="reports" 
+              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+            >
+              <FileText className="h-5 w-5" />
+              <span className="text-xs">Reports</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid lg:grid-cols-2 gap-6">
