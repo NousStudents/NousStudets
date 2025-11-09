@@ -60,17 +60,16 @@ export default function Profile() {
 
       if (userError) throw userError;
 
-      let profilePicture = "";
+      // Get profile picture from users table
+      const profilePicture = userData.profile_image || "";
       
       if (userData.role === "student") {
         // Fetch student data
         const { data: studentData } = await supabase
           .from("students")
-          .select("profile_picture, roll_no, class_id, parent_id")
+          .select("roll_no, class_id, parent_id")
           .eq("user_id", userData.user_id)
           .single();
-        
-        profilePicture = studentData?.profile_picture || "";
 
         // Fetch class details separately
         let classDetails = {};
@@ -201,7 +200,13 @@ export default function Profile() {
         .from('profile-images')
         .getPublicUrl(fileName);
 
-      // Update profile picture in database
+      // Update profile picture in users table
+      await supabase
+        .from("users")
+        .update({ profile_image: publicUrl })
+        .eq("auth_user_id", user?.id);
+
+      // Also update students table if user is a student
       const { data: userData } = await supabase
         .from("users")
         .select("user_id, role")

@@ -1071,6 +1071,7 @@ export type Database = {
           email: string
           full_name: string
           phone: string | null
+          profile_image: string | null
           role: string
           school_id: string
           status: string | null
@@ -1083,6 +1084,7 @@ export type Database = {
           email: string
           full_name: string
           phone?: string | null
+          profile_image?: string | null
           role: string
           school_id: string
           status?: string | null
@@ -1095,6 +1097,7 @@ export type Database = {
           email?: string
           full_name?: string
           phone?: string | null
+          profile_image?: string | null
           role?: string
           school_id?: string
           status?: string | null

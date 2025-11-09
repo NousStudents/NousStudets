@@ -5,7 +5,7 @@ import { useRole } from '@/hooks/useRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { GraduationCap, Bell } from 'lucide-react';
 import { ProfileSheet } from '@/components/ProfileSheet';
 import { BackButton } from '@/components/BackButton';
@@ -20,6 +20,7 @@ interface UserProfile {
   email: string;
   role: string;
   school_id: string;
+  profile_image?: string;
 }
 
 const Dashboard = () => {
@@ -131,6 +132,7 @@ const Dashboard = () => {
                 className="cursor-pointer hover:ring-2 ring-primary transition-all"
                 onClick={() => navigate('/profile')}
               >
+                <AvatarImage src={profile?.profile_image} />
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   {profile?.full_name ? getInitials(profile.full_name) : 'U'}
                 </AvatarFallback>
