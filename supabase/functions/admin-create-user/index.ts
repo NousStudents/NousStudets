@@ -13,6 +13,10 @@ interface CreateUserRequest {
   schoolId: string;
   password: string;
   sendPasswordResetEmail?: boolean;
+  classId?: string | null;
+  linkedStudents?: string[];
+  qualification?: string | null;
+  subjects?: string[];
 }
 
 serve(async (req) => {
@@ -77,7 +81,18 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { fullName, email, role, schoolId, password, sendPasswordResetEmail }: CreateUserRequest = await req.json();
+    const { 
+      fullName, 
+      email, 
+      role, 
+      schoolId, 
+      password, 
+      sendPasswordResetEmail,
+      classId,
+      linkedStudents,
+      qualification,
+      subjects
+    }: CreateUserRequest = await req.json();
 
     // Validate input
     if (!fullName || !email || !role || !schoolId) {
@@ -145,17 +160,50 @@ serve(async (req) => {
 
     // Create role-specific records
     if (role === 'teacher') {
-      await supabaseClient.from('teachers').insert({
-        user_id: newUser.user_id
-      });
+      const { data: teacherData } = await supabaseClient
+        .from('teachers')
+        .insert({
+          user_id: newUser.user_id,
+          qualification: qualification || null,
+        })
+        .select()
+        .single();
+
+      // Create subject entries if provided
+      if (subjects && subjects.length > 0 && teacherData && classId && classId !== 'none') {
+        const subjectInserts = subjects.map(subjectName => ({
+          subject_name: subjectName,
+          class_id: classId,
+          teacher_id: teacherData.teacher_id,
+        }));
+        
+        await supabaseClient.from('subjects').insert(subjectInserts);
+      }
     } else if (role === 'student') {
       await supabaseClient.from('students').insert({
-        user_id: newUser.user_id
+        user_id: newUser.user_id,
+        class_id: classId || null,
       });
     } else if (role === 'parent') {
-      await supabaseClient.from('parents').insert({
-        user_id: newUser.user_id
-      });
+      const { data: parentData } = await supabaseClient
+        .from('parents')
+        .insert({
+          user_id: newUser.user_id,
+        })
+        .select()
+        .single();
+
+      // Link parent to students
+      if (linkedStudents && linkedStudents.length > 0 && parentData) {
+        const updates = linkedStudents.map(studentId =>
+          supabaseClient
+            .from('students')
+            .update({ parent_id: parentData.parent_id })
+            .eq('student_id', studentId)
+        );
+        
+        await Promise.all(updates);
+      }
     }
 
     // Log the user creation

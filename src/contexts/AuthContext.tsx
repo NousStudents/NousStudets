@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string, selectedRole: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string, role: string, schoolId: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -48,22 +48,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, selectedRole: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // First authenticate
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (error) {
+      if (authError) {
         toast({
           variant: "destructive",
           title: "Login Failed",
-          description: error.message,
+          description: authError.message,
         });
+        return { error: authError };
+      }
+
+      // Verify role matches
+      if (authData.user) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('auth_user_id', authData.user.id)
+          .single();
+
+        if (userError || !userData) {
+          await supabase.auth.signOut();
+          const error = new Error('Unable to verify user role. Please contact administration.');
+          toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: error.message,
+          });
+          return { error };
+        }
+
+        if (userData.role !== selectedRole) {
+          await supabase.auth.signOut();
+          const error = new Error(`Your account is registered as ${userData.role}, not ${selectedRole}.`);
+          toast({
+            variant: "destructive",
+            title: "Role Mismatch",
+            description: error.message,
+          });
+          return { error };
+        }
       }
       
-      return { error };
+      return { error: null };
     } catch (error: any) {
       toast({
         variant: "destructive",

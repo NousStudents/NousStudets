@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,28 +6,142 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, UserPlus, Shield } from "lucide-react";
 
+interface Class {
+  class_id: string;
+  class_name: string;
+  section?: string;
+}
+
+interface Student {
+  student_id: string;
+  roll_no?: string;
+  users: {
+    full_name: string;
+  };
+}
+
 export default function UserManagement() {
-  const { session } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [adminSchoolId, setAdminSchoolId] = useState("");
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     role: "",
     password: "",
-    schoolId: "",
+    classId: "",
+    selectedStudents: [] as string[],
+    qualification: "",
+    subjects: "",
   });
+
+  useEffect(() => {
+    if (user) {
+      fetchAdminData();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (adminSchoolId) {
+      fetchClasses();
+      fetchStudents();
+    }
+  }, [adminSchoolId]);
+
+  const fetchAdminData = async () => {
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('school_id')
+        .eq('auth_user_id', user?.id)
+        .single();
+      
+      if (userData) {
+        setAdminSchoolId(userData.school_id);
+      }
+    } catch (error) {
+      console.error('Error fetching admin data:', error);
+    }
+  };
+
+  const fetchClasses = async () => {
+    try {
+      const { data } = await supabase
+        .from('classes')
+        .select('class_id, class_name, section')
+        .eq('school_id', adminSchoolId)
+        .order('class_name');
+      
+      setClasses(data || []);
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const { data } = await supabase
+        .from('students')
+        .select(`
+          student_id,
+          roll_no,
+          users!inner (
+            full_name,
+            school_id
+          )
+        `)
+        .eq('users.school_id', adminSchoolId)
+        .order('roll_no');
+      
+      setStudents(data || []);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    }
+  };
+
+  const handleStudentToggle = (studentId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedStudents: prev.selectedStudents.includes(studentId)
+        ? prev.selectedStudents.filter(id => id !== studentId)
+        : [...prev.selectedStudents, studentId]
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.fullName || !formData.email || !formData.role || !formData.password || !formData.schoolId) {
+    if (!formData.fullName || !formData.email || !formData.role || !formData.password) {
       toast({
         title: "Validation Error",
-        description: "All fields are required",
+        description: "Name, email, role and password are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Role-specific validations
+    if (formData.role === 'student' && !formData.classId) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a class for the student",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.role === 'parent' && formData.selectedStudents.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please link at least one student to the parent",
         variant: "destructive",
       });
       return;
@@ -42,7 +156,11 @@ export default function UserManagement() {
           email: formData.email,
           role: formData.role,
           password: formData.password,
-          schoolId: formData.schoolId,
+          schoolId: adminSchoolId,
+          classId: formData.classId || null,
+          linkedStudents: formData.selectedStudents,
+          qualification: formData.qualification || null,
+          subjects: formData.subjects ? formData.subjects.split(',').map(s => s.trim()) : [],
           sendPasswordResetEmail: false,
         },
       });
@@ -60,7 +178,10 @@ export default function UserManagement() {
         email: "",
         role: "",
         password: "",
-        schoolId: "",
+        classId: "",
+        selectedStudents: [],
+        qualification: "",
+        subjects: "",
       });
     } catch (error: any) {
       console.error('Error creating user:', error);
@@ -92,14 +213,15 @@ export default function UserManagement() {
               Create New User
             </CardTitle>
             <CardDescription>
-              Only administrators can create new accounts. Users will receive their login credentials.
+              School ID is automatically filled from your admin profile. Users will receive their login credentials.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
+                  <Label htmlFor="fullName">Full Name *</Label>
                   <Input
                     id="fullName"
                     value={formData.fullName}
@@ -110,7 +232,7 @@ export default function UserManagement() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">Email Address *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -122,8 +244,8 @@ export default function UserManagement() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                  <Label htmlFor="role">Role *</Label>
+                  <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value, classId: "", selectedStudents: [] })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
@@ -137,18 +259,7 @@ export default function UserManagement() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="schoolId">School ID</Label>
-                  <Input
-                    id="schoolId"
-                    value={formData.schoolId}
-                    onChange={(e) => setFormData({ ...formData, schoolId: e.target.value })}
-                    placeholder="Enter school UUID"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="password">Initial Password</Label>
+                  <Label htmlFor="password">Initial Password *</Label>
                   <Input
                     id="password"
                     type="password"
@@ -157,11 +268,104 @@ export default function UserManagement() {
                     placeholder="Enter secure password"
                     required
                   />
-                  <p className="text-sm text-muted-foreground">
-                    User should change this password on first login
-                  </p>
                 </div>
               </div>
+
+              {/* Role-specific fields */}
+              {formData.role === 'student' && (
+                <div className="space-y-2">
+                  <Label htmlFor="classId">Class *</Label>
+                  <Select value={formData.classId} onValueChange={(value) => setFormData({ ...formData, classId: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classes.map(cls => (
+                        <SelectItem key={cls.class_id} value={cls.class_id}>
+                          {cls.class_name} {cls.section && `- ${cls.section}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Select the class this student belongs to
+                  </p>
+                </div>
+              )}
+
+              {formData.role === 'parent' && (
+                <div className="space-y-3">
+                  <Label>Linked Students *</Label>
+                  <div className="border rounded-lg p-4 max-h-60 overflow-y-auto space-y-2">
+                    {students.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No students available. Create student accounts first.</p>
+                    ) : (
+                      students.map(student => (
+                        <div key={student.student_id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={student.student_id}
+                            checked={formData.selectedStudents.includes(student.student_id)}
+                            onCheckedChange={() => handleStudentToggle(student.student_id)}
+                          />
+                          <label
+                            htmlFor={student.student_id}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {student.users.full_name} {student.roll_no && `(Roll: ${student.roll_no})`}
+                          </label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Select one or more students to link to this parent account
+                  </p>
+                </div>
+              )}
+
+              {formData.role === 'teacher' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="classId">Assigned Class (Optional)</Label>
+                    <Select value={formData.classId} onValueChange={(value) => setFormData({ ...formData, classId: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select class (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No specific class</SelectItem>
+                        {classes.map(cls => (
+                          <SelectItem key={cls.class_id} value={cls.class_id}>
+                            {cls.class_name} {cls.section && `- ${cls.section}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="qualification">Qualification</Label>
+                    <Input
+                      id="qualification"
+                      value={formData.qualification}
+                      onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
+                      placeholder="e.g., M.Ed, B.Sc in Mathematics"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="subjects">Subjects (comma-separated)</Label>
+                    <Input
+                      id="subjects"
+                      value={formData.subjects}
+                      onChange={(e) => setFormData({ ...formData, subjects: e.target.value })}
+                      placeholder="e.g., Mathematics, Physics, Chemistry"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Enter subject names separated by commas
+                    </p>
+                  </div>
+                </>
+              )}
 
               <Button type="submit" disabled={loading} className="w-full">
                 {loading ? (
@@ -186,8 +390,8 @@ export default function UserManagement() {
           </CardHeader>
           <CardContent>
             <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• School ID is automatically assigned from your admin account</li>
               <li>• All account creation actions are logged with admin details and timestamp</li>
-              <li>• Non-admin users cannot access this interface</li>
               <li>• Users must change their password on first login</li>
               <li>• Public signup is completely disabled for security</li>
             </ul>

@@ -15,6 +15,7 @@ const Auth = () => {
   
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [loginRole, setLoginRole] = useState<string>('');
   const [loginLoading, setLoginLoading] = useState(false);
 
   const [signupEmail, setSignupEmail] = useState('');
@@ -26,9 +27,14 @@ const Auth = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!loginRole) {
+      return;
+    }
+    
     setLoginLoading(true);
     
-    const { error } = await signIn(loginEmail, loginPassword);
+    const { error } = await signIn(loginEmail, loginPassword, loginRole);
     
     setLoginLoading(false);
     
@@ -117,6 +123,26 @@ const Auth = () => {
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4 mt-4">
                   <div className="space-y-2">
+                    <Label htmlFor="login-role">User Type *</Label>
+                    <Select 
+                      value={loginRole} 
+                      onValueChange={setLoginRole}
+                      disabled={loginLoading}
+                      required
+                    >
+                      <SelectTrigger id="login-role">
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="student">Student</SelectItem>
+                        <SelectItem value="teacher">Teacher</SelectItem>
+                        <SelectItem value="parent">Parent</SelectItem>
+                        <SelectItem value="admin">Administrator</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="login-email">Email</Label>
                     <Input
                       id="login-email"
@@ -145,7 +171,7 @@ const Auth = () => {
                   <Button 
                     type="submit" 
                     className="w-full"
-                    disabled={loginLoading}
+                    disabled={loginLoading || !loginRole}
                   >
                     {loginLoading ? 'Signing in...' : 'Sign In'}
                   </Button>

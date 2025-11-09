@@ -5,7 +5,9 @@ import { useRole } from '@/hooks/useRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { GraduationCap, LogOut, Bell } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { GraduationCap, Bell } from 'lucide-react';
+import { ProfileSheet } from '@/components/ProfileSheet';
 import StudentDashboard from './dashboards/StudentDashboard';
 import TeacherDashboard from './dashboards/TeacherDashboard';
 import ParentDashboard from './dashboards/ParentDashboard';
@@ -20,11 +22,12 @@ interface UserProfile {
 }
 
 const Dashboard = () => {
-  const { user, signOut, loading } = useAuth();
+  const { user, loading } = useAuth();
   const { role, loading: roleLoading } = useRole();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loadingData, setLoadingData] = useState(true);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -55,9 +58,13 @@ const Dashboard = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth');
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   if (loading || roleLoading || loadingData) {
@@ -92,9 +99,12 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      {/* Header */}
-      <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
+    <>
+      <ProfileSheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen} />
+      
+      <div className="min-h-screen bg-gradient-hero">
+        {/* Header */}
+        <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -115,19 +125,24 @@ const Dashboard = () => {
                 <p className="text-sm font-medium text-foreground">{profile?.full_name}</p>
                 <Badge variant="secondary" className="text-xs capitalize">{role}</Badge>
               </div>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
+              <Avatar 
+                className="cursor-pointer hover:ring-2 ring-primary transition-all"
+                onClick={() => setProfileSheetOpen(true)}
+              >
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {profile?.full_name ? getInitials(profile.full_name) : 'U'}
+                </AvatarFallback>
+              </Avatar>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        {renderDashboard()}
-      </main>
-    </div>
+        <main className="container mx-auto px-4 py-8">
+          {renderDashboard()}
+        </main>
+      </div>
+    </>
   );
 };
 
