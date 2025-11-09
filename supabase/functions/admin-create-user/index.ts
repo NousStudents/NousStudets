@@ -105,27 +105,60 @@ serve(async (req) => {
     // Check if email already exists in users table (case-insensitive)
     const { data: existingUser } = await supabaseClient
       .from('users')
-      .select('email, auth_user_id')
+      .select('email, auth_user_id, user_id')
       .ilike('email', email)
       .maybeSingle();
 
     if (existingUser) {
       // Check if this is an orphaned record (no auth user)
-      const { data: authUser } = await supabaseClient.auth.admin.getUserById(existingUser.auth_user_id);
-      
-      if (!authUser.user) {
-        // Orphaned record - delete it
-        console.log('Found orphaned user record, cleaning up:', email);
-        await supabaseClient
-          .from('users')
-          .delete()
-          .eq('email', email);
+      if (existingUser.auth_user_id) {
+        const { data: authUser } = await supabaseClient.auth.admin.getUserById(existingUser.auth_user_id);
+        
+        if (!authUser.user) {
+          // Orphaned record - delete role and user records
+          console.log('Found orphaned user record, cleaning up:', email);
+          await supabaseClient.from('user_roles').delete().eq('user_id', existingUser.user_id);
+          await supabaseClient.from('users').delete().eq('user_id', existingUser.user_id);
+        } else {
+          return new Response(
+            JSON.stringify({ error: 'A user with this email already exists' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       } else {
-        return new Response(
-          JSON.stringify({ error: 'A user with this email already exists' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        // No auth_user_id at all - orphaned record
+        console.log('Found orphaned user record without auth_user_id, cleaning up:', email);
+        await supabaseClient.from('user_roles').delete().eq('user_id', existingUser.user_id);
+        await supabaseClient.from('users').delete().eq('user_id', existingUser.user_id);
       }
+    }
+
+    // Also check if email exists in auth.users
+    try {
+      const { data: { users: authUsers } } = await supabaseClient.auth.admin.listUsers();
+      const existingAuthUser = authUsers.find(u => u.email?.toLowerCase() === email.toLowerCase());
+      
+      if (existingAuthUser) {
+        // Check if this auth user has a corresponding users record
+        const { data: userRecord } = await supabaseClient
+          .from('users')
+          .select('user_id')
+          .eq('auth_user_id', existingAuthUser.id)
+          .maybeSingle();
+        
+        if (!userRecord) {
+          // Auth user exists but no users record - delete the auth user
+          console.log('Found orphaned auth user, cleaning up:', email);
+          await supabaseClient.auth.admin.deleteUser(existingAuthUser.id);
+        } else {
+          return new Response(
+            JSON.stringify({ error: 'A user with this email already exists in the authentication system' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    } catch (authCheckError) {
+      console.error('Error checking auth users:', authCheckError);
     }
 
     // Create auth user
