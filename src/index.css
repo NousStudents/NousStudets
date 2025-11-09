@@ -19,9 +19,9 @@ All colors MUST be HSL.
     --popover-foreground: 240 10% 20%;
 
     /* Primary: Soft purple - main brand color from designs */
-    --primary: 260 30% 60%;  /* Soft medium purple #8B7DB8 */
+    --primary: 260 32% 52%;  /* Darker purple for 4.5:1 contrast with white */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 260 35% 55%;
+    --primary-hover: 260 35% 48%;
 
     /* Secondary: Lighter purple for cards/secondary actions */
     --secondary: 260 40% 80%;  /* Light lavender */
@@ -36,9 +36,9 @@ All colors MUST be HSL.
     --warning-foreground: 0 0% 100%;
 
     --muted: 40 40% 92%;  /* Light beige-gray */
-    --muted-foreground: 240 5% 50%;  /* Medium gray */
+    --muted-foreground: 240 6% 46%;  /* Darker gray for 4.5:1 contrast */
 
-    --accent: 260 30% 60%;  /* Match primary purple */
+    --accent: 260 32% 52%;  /* Match primary purple for consistent contrast */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 65% 70%;  /* Soft red */
@@ -46,12 +46,12 @@ All colors MUST be HSL.
 
     --border: 260 20% 85%;  /* Soft purple-gray border */
     --input: 35 50% 95%;  /* Light cream input background */
-    --ring: 260 30% 60%;  /* Purple focus ring */
+    --ring: 260 32% 52%;  /* Purple focus ring matching primary */
 
     --radius: 1.25rem;  /* Larger radius for softer look */
 
     /* Gradients with pastel purple tones */
-    --gradient-primary: linear-gradient(135deg, hsl(260 30% 60%) 0%, hsl(280 35% 70%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(260 32% 52%) 0%, hsl(280 35% 65%) 100%);
     --gradient-hero: linear-gradient(180deg, hsl(40 50% 96%) 0%, hsl(260 40% 95%) 100%);
     --gradient-card: linear-gradient(135deg, hsl(260 30% 98%) 0%, hsl(35 60% 97%) 100%);
 
