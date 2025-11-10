@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { BackButton } from "@/components/BackButton";
-import { Users, Edit, Trash2, Plus, Filter } from "lucide-react";
+import { Users, Edit, Trash2, Filter } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 
 interface Student {
   student_id: string;
@@ -39,7 +39,7 @@ export default function StudentManagement() {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   
@@ -160,19 +160,19 @@ export default function StudentManagement() {
     if (!selectedStudent) return;
 
     try {
+      // Delete user (will cascade to students table)
       const { error } = await supabase
-        .from("students")
+        .from("users")
         .delete()
-        .eq("student_id", selectedStudent.student_id);
+        .eq("user_id", selectedStudent.user_id);
 
       if (error) throw error;
       toast.success("Student deleted successfully");
       fetchData();
       setDeleteDialogOpen(false);
       setSelectedStudent(null);
-    } catch (error) {
-      console.error("Error deleting student:", error);
-      toast.error("Failed to delete student");
+    } catch (error: any) {
+      toast.error(`Failed to delete student: ${error.message}`);
     }
   };
 
@@ -317,16 +317,28 @@ export default function StudentManagement() {
                     </Button>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        setSelectedStudent(student);
-                        setDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedStudent(student);
+                          setEditDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          setSelectedStudent(student);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -335,6 +347,16 @@ export default function StudentManagement() {
         </CardContent>
       </Card>
 
+      {/* Edit Dialog */}
+      <EditStudentDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        student={selectedStudent}
+        onSuccess={fetchData}
+        classes={classes}
+      />
+
+      {/* Delete Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

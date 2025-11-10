@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { BackButton } from "@/components/BackButton";
 import { UserCheck, Edit, Trash2, Filter, Calendar, BookOpen } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { EditTeacherDialog } from "@/components/admin/EditTeacherDialog";
 
 interface Teacher {
   teacher_id: string;
@@ -47,6 +48,7 @@ export default function TeacherManagement() {
   const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [subjectsDialogOpen, setSubjectsDialogOpen] = useState(false);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
@@ -266,19 +268,19 @@ export default function TeacherManagement() {
     if (!selectedTeacher) return;
 
     try {
+      // Delete user (will cascade to teachers table)
       const { error } = await supabase
-        .from("teachers")
+        .from("users")
         .delete()
-        .eq("teacher_id", selectedTeacher.teacher_id);
+        .eq("user_id", selectedTeacher.user_id);
 
       if (error) throw error;
       toast.success("Teacher deleted successfully");
       fetchData();
       setDeleteDialogOpen(false);
       setSelectedTeacher(null);
-    } catch (error) {
-      console.error("Error deleting teacher:", error);
-      toast.error("Failed to delete teacher");
+    } catch (error: any) {
+      toast.error(`Failed to delete teacher: ${error.message}`);
     }
   };
 
@@ -440,6 +442,17 @@ export default function TeacherManagement() {
                       <Button
                         size="sm"
                         variant="outline"
+                        onClick={() => {
+                          setSelectedTeacher(teacher);
+                          setEditDialogOpen(true);
+                        }}
+                        title="Edit Teacher"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() => handleManageSubjects(teacher)}
                         title="Assign Subjects"
                       >
@@ -471,6 +484,14 @@ export default function TeacherManagement() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <EditTeacherDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        teacher={selectedTeacher}
+        onSuccess={fetchData}
+      />
 
       {/* Assign Subjects Dialog */}
       <Dialog open={subjectsDialogOpen} onOpenChange={setSubjectsDialogOpen}>

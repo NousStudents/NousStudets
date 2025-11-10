@@ -168,6 +168,16 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               <UserCheck className="h-6 w-6" />
               <span className="text-sm">Teachers</span>
             </Button>
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
+              onClick={() => isMobile ? undefined : navigate('/admin/parents')}
+              disabled={isMobile}
+              title={isMobile ? "Desktop required for parent management" : ""}
+            >
+              <Users className="h-6 w-6" />
+              <span className="text-sm">Parents</span>
+            </Button>
             <Button
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"

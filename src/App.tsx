@@ -20,6 +20,7 @@ import SchoolManagement from "./pages/admin/SchoolManagement";
 import StudentManagement from "./pages/admin/StudentManagement";
 import ClassManagement from "./pages/admin/ClassManagement";
 import TeacherManagement from "./pages/admin/TeacherManagement";
+import ParentManagement from "./pages/admin/ParentManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -128,6 +129,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <TeacherManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/parents"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <ParentManagement />
                 </ProtectedRoute>
               }
             />
