@@ -47,25 +47,16 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase clients
+    // Extract JWT token from Authorization header
+    const token = authHeader.replace('Bearer ', '');
+
+    // Initialize Supabase client with service role
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    
-    // Create client with anon key and pass through auth header for user validation
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: authHeader
-        }
-      },
-      auth: {
-        persistSession: false,
-      }
-    });
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify the requesting user is authenticated
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    // Verify the JWT token using service role client
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
     if (userError || !user) {
       console.error('Auth verification failed:', userError);
@@ -76,9 +67,6 @@ serve(async (req) => {
     }
 
     console.log('User authenticated:', user.id, user.email);
-
-    // Service role client for admin operations
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check if user is admin
     const { data: userData } = await supabaseClient
