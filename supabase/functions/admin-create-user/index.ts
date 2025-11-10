@@ -9,14 +9,26 @@ const corsHeaders = {
 interface CreateUserRequest {
   fullName: string;
   email: string;
+  phone?: string;
   role: 'admin' | 'teacher' | 'student' | 'parent';
   schoolId: string;
   password: string;
   sendPasswordResetEmail?: boolean;
+  // Student fields
   classId?: string | null;
-  linkedStudents?: string[];
+  section?: string;
+  rollNo?: string;
+  dob?: string;
+  gender?: string;
+  admissionDate?: string;
+  // Teacher fields
   qualification?: string | null;
-  subjects?: string[];
+  experience?: number;
+  subjectSpecialization?: string;
+  // Parent fields
+  linkedStudents?: string[];
+  relation?: string;
+  occupation?: string;
 }
 
 serve(async (req) => {
@@ -83,15 +95,24 @@ serve(async (req) => {
     // Parse request body
     const { 
       fullName, 
-      email, 
+      email,
+      phone,
       role, 
       schoolId, 
       password, 
       sendPasswordResetEmail,
       classId,
-      linkedStudents,
+      section,
+      rollNo,
+      dob,
+      gender,
+      admissionDate,
       qualification,
-      subjects
+      experience,
+      subjectSpecialization,
+      linkedStudents,
+      relation,
+      occupation
     }: CreateUserRequest = await req.json();
 
     // Validate input
@@ -187,6 +208,7 @@ serve(async (req) => {
         auth_user_id: newAuthUser.user!.id,
         full_name: fullName,
         email: email,
+        phone: phone || null,
         role: role,
         school_id: schoolId,
         status: 'active'
@@ -219,15 +241,15 @@ serve(async (req) => {
 
     // Create role-specific records
     if (role === 'teacher') {
-      const { data: teacherData, error: teacherError } = await supabaseClient
+      const { error: teacherError } = await supabaseClient
         .from('teachers')
         .insert({
           user_id: newUser.user_id,
           school_id: schoolId,
           qualification: qualification || null,
-        })
-        .select()
-        .single();
+          experience: experience || null,
+          subject_specialization: subjectSpecialization || null,
+        });
 
       if (teacherError) {
         console.error('Error creating teacher record:', teacherError);
@@ -240,30 +262,52 @@ serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-
-      // Create subject entries if provided
-      if (subjects && subjects.length > 0 && teacherData && classId && classId !== 'none') {
-        const subjectInserts = subjects.map(subjectName => ({
-          subject_name: subjectName,
-          class_id: classId,
-          teacher_id: teacherData.teacher_id,
-        }));
-        
-        await supabaseClient.from('subjects').insert(subjectInserts);
-      }
     } else if (role === 'student') {
-      await supabaseClient.from('students').insert({
-        user_id: newUser.user_id,
-        class_id: classId || null,
-      });
+      const { error: studentError } = await supabaseClient
+        .from('students')
+        .insert({
+          user_id: newUser.user_id,
+          class_id: classId || null,
+          section: section || null,
+          roll_no: rollNo || null,
+          dob: dob || null,
+          gender: gender || null,
+          admission_date: admissionDate || null,
+        });
+
+      if (studentError) {
+        console.error('Error creating student record:', studentError);
+        // Cleanup
+        await supabaseClient.from('user_roles').delete().eq('user_id', newUser.user_id);
+        await supabaseClient.from('users').delete().eq('user_id', newUser.user_id);
+        await supabaseClient.auth.admin.deleteUser(newAuthUser.user!.id);
+        return new Response(
+          JSON.stringify({ error: `Failed to create student: ${studentError.message}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     } else if (role === 'parent') {
-      const { data: parentData } = await supabaseClient
+      const { data: parentData, error: parentError } = await supabaseClient
         .from('parents')
         .insert({
           user_id: newUser.user_id,
+          relation: relation || null,
+          occupation: occupation || null,
         })
         .select()
         .single();
+
+      if (parentError) {
+        console.error('Error creating parent record:', parentError);
+        // Cleanup
+        await supabaseClient.from('user_roles').delete().eq('user_id', newUser.user_id);
+        await supabaseClient.from('users').delete().eq('user_id', newUser.user_id);
+        await supabaseClient.auth.admin.deleteUser(newAuthUser.user!.id);
+        return new Response(
+          JSON.stringify({ error: `Failed to create parent: ${parentError.message}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       // Link parent to students
       if (linkedStudents && linkedStudents.length > 0 && parentData) {
