@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 interface CreateUserRequest {
@@ -240,13 +241,15 @@ serve(async (req) => {
       );
     }
 
-    // Assign role in user_roles table
+    // Assign role in user_roles table using upsert to prevent duplicates
     const { error: roleInsertError } = await supabaseClient
       .from('user_roles')
-      .insert({
+      .upsert({
         user_id: newUser.user_id,
         role: role,
         granted_by: userData.user_id
+      }, {
+        onConflict: 'user_id,role'
       });
 
     if (roleInsertError) {
@@ -323,16 +326,41 @@ serve(async (req) => {
         );
       }
 
-      // Link parent to students
+      // Link parent to students - ensure students belong to same school
       if (linkedStudents && linkedStudents.length > 0 && parentData) {
-        const updates = linkedStudents.map(studentId =>
-          supabaseClient
-            .from('students')
-            .update({ parent_id: parentData.parent_id })
-            .eq('student_id', studentId)
-        );
+        // First verify all students belong to the same school
+        const { data: studentsToLink } = await supabaseClient
+          .from('students')
+          .select('student_id, user_id')
+          .in('student_id', linkedStudents);
         
-        await Promise.all(updates);
+        if (studentsToLink && studentsToLink.length > 0) {
+          // Verify students belong to the same school by checking users table
+          const { data: studentUsers } = await supabaseClient
+            .from('users')
+            .select('user_id')
+            .in('user_id', studentsToLink.map(s => s.user_id))
+            .eq('school_id', schoolId);
+          
+          if (studentUsers && studentUsers.length > 0) {
+            // Only link students that belong to the same school
+            const validStudentIds = studentsToLink
+              .filter(s => studentUsers.some(u => u.user_id === s.user_id))
+              .map(s => s.student_id);
+            
+            if (validStudentIds.length > 0) {
+              const updates = validStudentIds.map(studentId =>
+                supabaseClient
+                  .from('students')
+                  .update({ parent_id: parentData.parent_id })
+                  .eq('student_id', studentId)
+              );
+              
+              await Promise.all(updates);
+              console.log(`Linked ${validStudentIds.length} students to parent`);
+            }
+          }
+        }
       }
     }
 
