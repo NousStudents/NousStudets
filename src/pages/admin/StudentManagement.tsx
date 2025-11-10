@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { BackButton } from "@/components/BackButton";
-import { Users, Edit, Trash2, Filter } from "lucide-react";
+import { Users, Edit, Trash2, Filter, CheckSquare, Download, TrendingUp } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 
@@ -42,6 +44,10 @@ export default function StudentManagement() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [bulkAssignClassOpen, setBulkAssignClassOpen] = useState(false);
+  const [bulkPromoteOpen, setBulkPromoteOpen] = useState(false);
+  const [bulkTargetClassId, setBulkTargetClassId] = useState<string>("");
   
   const [filters, setFilters] = useState({
     classId: "all",
@@ -193,6 +199,148 @@ export default function StudentManagement() {
     }
   };
 
+  const handleBulkActivate = async () => {
+    if (selectedStudentIds.length === 0) {
+      toast.error("No students selected");
+      return;
+    }
+
+    try {
+      const selectedStudents = students.filter(s => selectedStudentIds.includes(s.student_id));
+      const userIds = selectedStudents.map(s => s.user_id);
+
+      const { error } = await supabase
+        .from("users")
+        .update({ status: "active" })
+        .in("user_id", userIds);
+
+      if (error) throw error;
+      toast.success(`${selectedStudentIds.length} student(s) activated`);
+      setSelectedStudentIds([]);
+      fetchData();
+    } catch (error: any) {
+      toast.error(`Failed to activate students: ${error.message}`);
+    }
+  };
+
+  const handleBulkDeactivate = async () => {
+    if (selectedStudentIds.length === 0) {
+      toast.error("No students selected");
+      return;
+    }
+
+    try {
+      const selectedStudents = students.filter(s => selectedStudentIds.includes(s.student_id));
+      const userIds = selectedStudents.map(s => s.user_id);
+
+      const { error } = await supabase
+        .from("users")
+        .update({ status: "inactive" })
+        .in("user_id", userIds);
+
+      if (error) throw error;
+      toast.success(`${selectedStudentIds.length} student(s) deactivated`);
+      setSelectedStudentIds([]);
+      fetchData();
+    } catch (error: any) {
+      toast.error(`Failed to deactivate students: ${error.message}`);
+    }
+  };
+
+  const handleBulkAssignClass = async () => {
+    if (selectedStudentIds.length === 0 || !bulkTargetClassId) {
+      toast.error("Please select students and a target class");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("students")
+        .update({ class_id: bulkTargetClassId })
+        .in("student_id", selectedStudentIds);
+
+      if (error) throw error;
+      toast.success(`${selectedStudentIds.length} student(s) assigned to class`);
+      setSelectedStudentIds([]);
+      setBulkAssignClassOpen(false);
+      setBulkTargetClassId("");
+      fetchData();
+    } catch (error: any) {
+      toast.error(`Failed to assign class: ${error.message}`);
+    }
+  };
+
+  const handleBulkPromote = async () => {
+    if (selectedStudentIds.length === 0 || !bulkTargetClassId) {
+      toast.error("Please select students and a target grade");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("students")
+        .update({ class_id: bulkTargetClassId })
+        .in("student_id", selectedStudentIds);
+
+      if (error) throw error;
+      toast.success(`${selectedStudentIds.length} student(s) promoted to next grade`);
+      setSelectedStudentIds([]);
+      setBulkPromoteOpen(false);
+      setBulkTargetClassId("");
+      fetchData();
+    } catch (error: any) {
+      toast.error(`Failed to promote students: ${error.message}`);
+    }
+  };
+
+  const handleExportCSV = () => {
+    const csvData = filteredStudents.map(s => ({
+      "Roll No": s.roll_no,
+      "Name": s.full_name,
+      "Email": s.email,
+      "Class": s.class_name,
+      "Section": s.section,
+      "Gender": s.gender,
+      "DOB": s.dob,
+      "Admission Date": s.admission_date,
+      "Status": s.status
+    }));
+
+    const headers = Object.keys(csvData[0] || {});
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map(row => headers.map(header => `"${row[header as keyof typeof row] || ""}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `students_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success("Student list exported successfully");
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedStudentIds.length === filteredStudents.length) {
+      setSelectedStudentIds([]);
+    } else {
+      setSelectedStudentIds(filteredStudents.map(s => s.student_id));
+    }
+  };
+
+  const toggleSelectStudent = (studentId: string) => {
+    setSelectedStudentIds(prev =>
+      prev.includes(studentId)
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    );
+  };
+
   const filteredStudents = students.filter((s) => {
     if (filters.classId && filters.classId !== "all" && s.class_id !== filters.classId) return false;
     if (filters.section && filters.section !== "all" && s.section !== filters.section) return false;
@@ -283,13 +431,80 @@ export default function StudentManagement() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Students ({filteredStudents.length})</CardTitle>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              disabled={filteredStudents.length === 0}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
+          {selectedStudentIds.length > 0 && (
+            <div className="mb-4 p-4 border rounded-lg bg-muted/50">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-sm font-medium">
+                  {selectedStudentIds.length} student(s) selected
+                </span>
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleBulkActivate}
+                  >
+                    <CheckSquare className="w-4 h-4 mr-2" />
+                    Activate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleBulkDeactivate}
+                  >
+                    <CheckSquare className="w-4 h-4 mr-2" />
+                    Deactivate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setBulkAssignClassOpen(true)}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Assign Class
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setBulkPromoteOpen(true)}
+                  >
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Promote
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedStudentIds([])}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedStudentIds.length === filteredStudents.length && filteredStudents.length > 0}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>Roll No</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
@@ -302,6 +517,12 @@ export default function StudentManagement() {
             <TableBody>
               {filteredStudents.map((student) => (
                 <TableRow key={student.student_id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedStudentIds.includes(student.student_id)}
+                      onCheckedChange={() => toggleSelectStudent(student.student_id)}
+                    />
+                  </TableCell>
                   <TableCell>{student.roll_no}</TableCell>
                   <TableCell>{student.full_name}</TableCell>
                   <TableCell>{student.email}</TableCell>
@@ -371,6 +592,79 @@ export default function StudentManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Assign Class Dialog */}
+      <Dialog open={bulkAssignClassOpen} onOpenChange={setBulkAssignClassOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bulk Assign Class</DialogTitle>
+            <DialogDescription>
+              Assign {selectedStudentIds.length} selected student(s) to a class
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Target Class</Label>
+              <Select value={bulkTargetClassId} onValueChange={setBulkTargetClassId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a class" />
+                </SelectTrigger>
+                <SelectContent>
+                  {classes.map((c) => (
+                    <SelectItem key={c.class_id} value={c.class_id}>
+                      {c.class_name} {c.section}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkAssignClassOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleBulkAssignClass}>Assign Class</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Promote Dialog */}
+      <Dialog open={bulkPromoteOpen} onOpenChange={setBulkPromoteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bulk Promote to Next Grade</DialogTitle>
+            <DialogDescription>
+              Promote {selectedStudentIds.length} selected student(s) to the next grade
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Target Grade/Class</Label>
+              <Select value={bulkTargetClassId} onValueChange={setBulkTargetClassId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select target grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {classes.map((c) => (
+                    <SelectItem key={c.class_id} value={c.class_id}>
+                      {c.class_name} {c.section}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Note: This will move all selected students to the chosen grade/class. Make sure to select the appropriate next level class.
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkPromoteOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleBulkPromote}>Promote Students</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
