@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -574,9 +575,8 @@ export default function Profile() {
 
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
-                <Input
+                <PasswordInput
                   id="newPassword"
-                  type="password"
                   value={passwords.newPassword}
                   onChange={(e) =>
                     setPasswords({ ...passwords, newPassword: e.target.value })
@@ -588,9 +588,8 @@ export default function Profile() {
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <Input
+                <PasswordInput
                   id="confirmPassword"
-                  type="password"
                   value={passwords.confirmPassword}
                   onChange={(e) =>
                     setPasswords({
