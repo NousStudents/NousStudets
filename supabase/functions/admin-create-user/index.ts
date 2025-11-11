@@ -139,21 +139,29 @@ serve(async (req) => {
     }
 
     // Check if email already exists in users table (case-insensitive)
-    let existingUser = await supabaseClient
+    console.log('Checking for existing email:', email);
+    const { data: existingUserData, error: existingUserError } = await supabaseClient
       .from('users')
       .select('email, auth_user_id, user_id')
       .ilike('email', email)
       .maybeSingle();
+    
+    console.log('Email check result:', { 
+      email, 
+      found: !!existingUserData, 
+      error: existingUserError,
+      data: existingUserData 
+    });
 
-    if (existingUser.data) {
+    if (existingUserData) {
       console.log('Found existing user record for email:', email);
       
       // Try to clean up orphaned records
       let isOrphaned = false;
       
-      if (existingUser.data.auth_user_id) {
+      if (existingUserData.auth_user_id) {
         // Check if auth user still exists
-        const { data: authUser, error: authError } = await supabaseClient.auth.admin.getUserById(existingUser.data.auth_user_id);
+        const { data: authUser, error: authError } = await supabaseClient.auth.admin.getUserById(existingUserData.auth_user_id);
         
         if (authError || !authUser.user) {
           console.log('Auth user not found, cleaning up orphaned user record:', email);
@@ -166,14 +174,16 @@ serve(async (req) => {
       }
       
       if (isOrphaned) {
+        console.log('Starting cleanup of orphaned records for user_id:', existingUserData.user_id);
+        
         // Delete role-specific records first
-        await supabaseClient.from('teachers').delete().eq('user_id', existingUser.data.user_id);
-        await supabaseClient.from('students').delete().eq('user_id', existingUser.data.user_id);
-        await supabaseClient.from('parents').delete().eq('user_id', existingUser.data.user_id);
+        await supabaseClient.from('teachers').delete().eq('user_id', existingUserData.user_id);
+        await supabaseClient.from('students').delete().eq('user_id', existingUserData.user_id);
+        await supabaseClient.from('parents').delete().eq('user_id', existingUserData.user_id);
         
         // Delete user role and user record
-        await supabaseClient.from('user_roles').delete().eq('user_id', existingUser.data.user_id);
-        const { error: deleteError } = await supabaseClient.from('users').delete().eq('user_id', existingUser.data.user_id);
+        await supabaseClient.from('user_roles').delete().eq('user_id', existingUserData.user_id);
+        const { error: deleteError } = await supabaseClient.from('users').delete().eq('user_id', existingUserData.user_id);
         
         if (deleteError) {
           console.error('Failed to delete orphaned user record:', deleteError);
@@ -274,6 +284,7 @@ serve(async (req) => {
     }
 
     // Create user in public.users table
+    console.log('Creating user record in users table for:', email);
     const { data: newUser, error: userInsertError } = await supabaseClient
       .from('users')
       .insert({
@@ -290,13 +301,47 @@ serve(async (req) => {
 
     if (userInsertError) {
       console.error('Error creating user record:', userInsertError);
+      console.error('Full error details:', JSON.stringify(userInsertError, null, 2));
+      
       // Cleanup: delete auth user if public user creation fails
+      console.log('Cleaning up auth user due to failed user record creation');
       await supabaseClient.auth.admin.deleteUser(newAuthUser.user!.id);
+      
+      // Check if this is a duplicate key error
+      if (userInsertError.code === '23505') {
+        // Try one more time to clean up and retry
+        console.log('Duplicate key error detected, attempting final cleanup');
+        const { data: duplicateUser } = await supabaseClient
+          .from('users')
+          .select('user_id, auth_user_id')
+          .ilike('email', email)
+          .maybeSingle();
+        
+        if (duplicateUser) {
+          console.log('Found duplicate user, deleting:', duplicateUser);
+          await supabaseClient.from('teachers').delete().eq('user_id', duplicateUser.user_id);
+          await supabaseClient.from('students').delete().eq('user_id', duplicateUser.user_id);
+          await supabaseClient.from('parents').delete().eq('user_id', duplicateUser.user_id);
+          await supabaseClient.from('user_roles').delete().eq('user_id', duplicateUser.user_id);
+          await supabaseClient.from('users').delete().eq('user_id', duplicateUser.user_id);
+          
+          // Also clean up auth user if it exists
+          if (duplicateUser.auth_user_id) {
+            await supabaseClient.auth.admin.deleteUser(duplicateUser.auth_user_id);
+          }
+        }
+      }
+      
       return new Response(
-        JSON.stringify({ error: userInsertError.message }),
+        JSON.stringify({ 
+          error: userInsertError.message,
+          details: 'Failed to create user record. The email may already exist. Please try again or contact support if the issue persists.'
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    console.log('User record created successfully:', newUser.user_id);
 
     // Assign role in user_roles table using upsert to prevent duplicates
     const { error: roleInsertError } = await supabaseClient
