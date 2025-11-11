@@ -1,292 +1,324 @@
+// deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createClient, type User as GoTrueUser } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+} as const;
+
+type OrphanedUserRow = {
+  user_id: string;
+  email: string | null;
+  full_name: string | null;
+  auth_user_id: string | null;
+  created_at: string;
+  role?: string | null; // if present in your schema
 };
 
+type OrphanRecord =
+  | (OrphanedUserRow & {
+      type: "user_without_auth" | "user_without_auth_id";
+      reason: string;
+    })
+  | {
+      auth_user_id: string;
+      email: string | null;
+      created_at: string;
+      type: "auth_without_user";
+      reason: string;
+    };
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+async function fetchAllAuthUsers(supabase: ReturnType<typeof createClient>): Promise<GoTrueUser[]> {
+  // Paginate to avoid timeouts and N+1 calls
+  const perPage = 1000;
+  let page = 1;
+  const all: GoTrueUser[] = [];
+  // @ts-ignore listUsers accepts page/perPage in v2
+  // deno types may not include options; runtime supports them.
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+    if (error) throw error;
+    const batch = (data?.users ?? []) as GoTrueUser[];
+    all.push(...batch);
+    if (batch.length < perPage) break;
+    page += 1;
+  }
+  return all;
+}
+
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "Missing or invalid authorization header" }, 401);
+    }
+    const token = authHeader.slice("Bearer ".length);
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return json({ error: "Server misconfiguration" }, 500);
+    }
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify the caller
+    const {
+      data: { user: authUser },
+      error: authErr,
+    } = await supabase.auth.getUser(token);
+    if (authErr || !authUser) {
+      return json({ error: "Unauthorized" }, 401);
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Verify admin user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const { data: userData } = await supabaseClient
-      .from('users')
-      .select('user_id')
-      .eq('auth_user_id', user.id)
+    // Map auth user -> app user (and require admin)
+    const { data: userRow, error: userMapErr } = await supabase
+      .from("users")
+      .select("user_id")
+      .eq("auth_user_id", authUser.id)
       .single();
 
-    if (!userData) {
-      return new Response(
-        JSON.stringify({ error: 'User not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (userMapErr || !userRow) {
+      return json({ error: "User not found" }, 404);
     }
 
-    const { data: roleData } = await supabaseClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userData.user_id)
-      .eq('role', 'admin')
-      .single();
+    const { data: roleRow } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userRow.user_id)
+      .eq("role", "admin")
+      .maybeSingle();
 
-    if (!roleData) {
-      return new Response(
-        JSON.stringify({ error: 'Access Denied: Admin privileges required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!roleRow) {
+      return json({ error: "Access Denied: Admin privileges required" }, 403);
     }
 
     const url = new URL(req.url);
-    const action = url.searchParams.get('action') || 'list';
+    const action = url.searchParams.get("action") ?? "list";
 
-    if (action === 'list') {
-      // Find orphaned users (users without valid auth_user_id)
-      const { data: allUsers } = await supabaseClient
-        .from('users')
-        .select('user_id, email, full_name, auth_user_id, created_at, role');
-
-      const orphanedUsers = [];
-      if (allUsers) {
-        for (const user of allUsers) {
-          if (user.auth_user_id) {
-            const { data: authUser } = await supabaseClient.auth.admin.getUserById(user.auth_user_id);
-            if (!authUser.user) {
-              orphanedUsers.push({
-                ...user,
-                type: 'user_without_auth',
-                reason: 'User record exists but auth user was deleted'
-              });
-            }
-          } else {
-            orphanedUsers.push({
-              ...user,
-              type: 'user_without_auth_id',
-              reason: 'User record has no auth_user_id'
-            });
-          }
-        }
+    // Helpers for auditing
+    const audit = async (actionName: string, details: Record<string, unknown>) => {
+      try {
+        await supabase.from("audit_logs").insert({
+          action: actionName,
+          performed_by: userRow.user_id,
+          details,
+        });
+      } catch {
+        // non-fatal
       }
+    };
 
-      // Find orphaned auth users (auth users without users record)
-      const { data: { users: authUsers } } = await supabaseClient.auth.admin.listUsers();
-      const orphanedAuthUsers = [];
-      
-      for (const authUser of authUsers) {
-        const { data: userRecord } = await supabaseClient
-          .from('users')
-          .select('user_id')
-          .eq('auth_user_id', authUser.id)
-          .maybeSingle();
-        
-        if (!userRecord) {
-          orphanedAuthUsers.push({
-            auth_user_id: authUser.id,
-            email: authUser.email,
-            created_at: authUser.created_at,
-            type: 'auth_without_user',
-            reason: 'Auth user exists but no user record in database'
+    if (action === "list") {
+      // Load app users once
+      const { data: appUsers, error: appUsersErr } = await supabase
+        .from("users")
+        .select("user_id, email, full_name, auth_user_id, created_at, role");
+      if (appUsersErr) return json({ error: appUsersErr.message }, 400);
+
+      // Build sets to compare
+      const appAuthIds = new Set((appUsers ?? []).map((u) => u.auth_user_id).filter((v): v is string => !!v));
+
+      // Fetch all auth users once
+      const allAuthUsers = await fetchAllAuthUsers(supabase);
+      const authIdToUser = new Map(allAuthUsers.map((u) => [u.id, u]));
+      const authIds = new Set(allAuthUsers.map((u) => u.id));
+
+      const orphanedUsers: OrphanRecord[] = [];
+      for (const u of appUsers ?? []) {
+        if (!u.auth_user_id) {
+          orphanedUsers.push({
+            ...u,
+            type: "user_without_auth_id",
+            reason: "User record has no auth_user_id",
+          });
+        } else if (!authIds.has(u.auth_user_id)) {
+          orphanedUsers.push({
+            ...u,
+            type: "user_without_auth",
+            reason: "User record exists but auth user was deleted",
           });
         }
       }
 
-      return new Response(
-        JSON.stringify({
-          orphanedUsers,
-          orphanedAuthUsers,
-          summary: {
-            totalOrphanedUsers: orphanedUsers.length,
-            totalOrphanedAuthUsers: orphanedAuthUsers.length,
-            total: orphanedUsers.length + orphanedAuthUsers.length
-          }
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else if (action === 'cleanup') {
-      const body = await req.json();
-      const { userId, type } = body;
-
-      if (!userId || !type) {
-        return new Response(
-          JSON.stringify({ error: 'Missing userId or type' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      let deletedCount = 0;
-
-      if (type === 'user_without_auth' || type === 'user_without_auth_id') {
-        // Delete role-specific records
-        await supabaseClient.from('teachers').delete().eq('user_id', userId);
-        await supabaseClient.from('students').delete().eq('user_id', userId);
-        await supabaseClient.from('parents').delete().eq('user_id', userId);
-        
-        // Delete user roles
-        await supabaseClient.from('user_roles').delete().eq('user_id', userId);
-        
-        // Delete user record
-        const { error: deleteError } = await supabaseClient
-          .from('users')
-          .delete()
-          .eq('user_id', userId);
-
-        if (deleteError) {
-          return new Response(
-            JSON.stringify({ error: `Failed to delete user: ${deleteError.message}` }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        deletedCount = 1;
-      } else if (type === 'auth_without_user') {
-        // Delete orphaned auth user
-        const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(userId);
-        
-        if (deleteError) {
-          return new Response(
-            JSON.stringify({ error: `Failed to delete auth user: ${deleteError.message}` }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        deletedCount = 1;
-      }
-
-      // Log the cleanup action
-      await supabaseClient
-        .from('audit_logs')
-        .insert({
-          action: 'ORPHAN_CLEANUP',
-          performed_by: userData.user_id,
-          details: {
-            deletedUserId: userId,
-            type,
-            deletedCount
-          }
-        });
-
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          message: 'Orphaned record deleted successfully',
-          deletedCount
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else if (action === 'cleanup-all') {
-      const body = await req.json();
-      const { type } = body;
-
-      if (!type) {
-        return new Response(
-          JSON.stringify({ error: 'Missing type parameter' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      let deletedCount = 0;
-
-      if (type === 'users') {
-        // Get all orphaned user records
-        const { data: allUsers } = await supabaseClient
-          .from('users')
-          .select('user_id, auth_user_id');
-
-        if (allUsers) {
-          for (const user of allUsers) {
-            let isOrphaned = false;
-            
-            if (user.auth_user_id) {
-              const { data: authUser } = await supabaseClient.auth.admin.getUserById(user.auth_user_id);
-              if (!authUser.user) {
-                isOrphaned = true;
-              }
-            } else {
-              isOrphaned = true;
-            }
-
-            if (isOrphaned) {
-              await supabaseClient.from('teachers').delete().eq('user_id', user.user_id);
-              await supabaseClient.from('students').delete().eq('user_id', user.user_id);
-              await supabaseClient.from('parents').delete().eq('user_id', user.user_id);
-              await supabaseClient.from('user_roles').delete().eq('user_id', user.user_id);
-              await supabaseClient.from('users').delete().eq('user_id', user.user_id);
-              deletedCount++;
-            }
-          }
-        }
-      } else if (type === 'auth') {
-        const { data: { users: authUsers } } = await supabaseClient.auth.admin.listUsers();
-        
-        for (const authUser of authUsers) {
-          const { data: userRecord } = await supabaseClient
-            .from('users')
-            .select('user_id')
-            .eq('auth_user_id', authUser.id)
-            .maybeSingle();
-          
-          if (!userRecord) {
-            await supabaseClient.auth.admin.deleteUser(authUser.id);
-            deletedCount++;
-          }
+      const orphanedAuthUsers: OrphanRecord[] = [];
+      for (const au of allAuthUsers) {
+        if (!appAuthIds.has(au.id)) {
+          orphanedAuthUsers.push({
+            auth_user_id: au.id,
+            email: au.email ?? null,
+            created_at: au.created_at,
+            type: "auth_without_user",
+            reason: "Auth user exists but no user record in database",
+          });
         }
       }
 
-      // Log the bulk cleanup
-      await supabaseClient
-        .from('audit_logs')
-        .insert({
-          action: 'BULK_ORPHAN_CLEANUP',
-          performed_by: userData.user_id,
-          details: {
-            type,
-            deletedCount
-          }
-        });
-
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          message: `Cleaned up ${deletedCount} orphaned records`,
-          deletedCount
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({
+        orphanedUsers,
+        orphanedAuthUsers,
+        summary: {
+          totalOrphanedUsers: orphanedUsers.length,
+          totalOrphanedAuthUsers: orphanedAuthUsers.length,
+          total: orphanedUsers.length + orphanedAuthUsers.length,
+        },
+      });
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Invalid action' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    if (action === "cleanup") {
+      const body = (await req.json().catch(() => ({}))) as {
+        userId?: string; // user_id (for users table) OR auth_user_id (for auth)
+        type?: "user_without_auth" | "user_without_auth_id" | "auth_without_user";
+        dryRun?: boolean;
+      };
 
-  } catch (error: any) {
-    console.error('Error in admin-cleanup-orphans:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      const { userId, type, dryRun = false } = body;
+      if (!userId || !type) {
+        return json({ error: "Missing userId or type" }, 400);
+      }
+
+      if (dryRun) {
+        return json({
+          success: true,
+          dryRun: true,
+          message:
+            type === "auth_without_user"
+              ? `Would delete auth user ${userId}`
+              : `Would delete app user ${userId} (+ roles & role-specific records)`,
+        });
+      }
+
+      let deletedCount = 0;
+
+      if (type === "auth_without_user") {
+        const { error: delErr } = await supabase.auth.admin.deleteUser(userId);
+        if (delErr) return json({ error: `Failed to delete auth user: ${delErr.message}` }, 400);
+        deletedCount = 1;
+      } else {
+        // Defensive cascade for app user rows
+        const uid = userId;
+        const deletions = [
+          supabase.from("teachers").delete().eq("user_id", uid),
+          supabase.from("students").delete().eq("user_id", uid),
+          supabase.from("parents").delete().eq("user_id", uid),
+          supabase.from("user_roles").delete().eq("user_id", uid),
+        ];
+        await Promise.allSettled(deletions);
+
+        const { error: delErr } = await supabase.from("users").delete().eq("user_id", uid);
+        if (delErr) return json({ error: `Failed to delete user: ${delErr.message}` }, 400);
+        deletedCount = 1;
+      }
+
+      await audit("ORPHAN_CLEANUP", { type, deletedUserId: userId, deletedCount });
+
+      return json({
+        success: true,
+        message: "Orphaned record deleted successfully",
+        deletedCount,
+      });
+    }
+
+    if (action === "cleanup-all") {
+      const body = (await req.json().catch(() => ({}))) as {
+        type?: "users" | "auth";
+        dryRun?: boolean;
+      };
+      const { type, dryRun = false } = body;
+      if (!type) return json({ error: "Missing type parameter" }, 400);
+
+      let deletedCount = 0;
+      const deletedIds: string[] = [];
+
+      if (type === "users") {
+        const { data: appUsers, error: appErr } = await supabase.from("users").select("user_id, auth_user_id");
+        if (appErr) return json({ error: appErr.message }, 400);
+
+        const allAuthUsers = await fetchAllAuthUsers(supabase);
+        const authIds = new Set(allAuthUsers.map((u) => u.id));
+
+        const orphanUserIds = (appUsers ?? [])
+          .filter((u) => !u.auth_user_id || !authIds.has(u.auth_user_id))
+          .map((u) => u.user_id);
+
+        if (dryRun) {
+          return json({
+            success: true,
+            dryRun: true,
+            type,
+            wouldDelete: orphanUserIds,
+            count: orphanUserIds.length,
+          });
+        }
+
+        if (orphanUserIds.length > 0) {
+          // Batch deletes (best-effort)
+          await Promise.allSettled([
+            supabase.from("teachers").delete().in("user_id", orphanUserIds),
+            supabase.from("students").delete().in("user_id", orphanUserIds),
+            supabase.from("parents").delete().in("user_id", orphanUserIds),
+            supabase.from("user_roles").delete().in("user_id", orphanUserIds),
+          ]);
+          await supabase.from("users").delete().in("user_id", orphanUserIds);
+          deletedCount = orphanUserIds.length;
+          deletedIds.push(...orphanUserIds);
+        }
+      } else if (type === "auth") {
+        const { data: appUsers, error: appErr } = await supabase.from("users").select("auth_user_id");
+        if (appErr) return json({ error: appErr.message }, 400);
+        const appAuthIds = new Set((appUsers ?? []).map((u) => u.auth_user_id).filter((v): v is string => !!v));
+
+        const allAuthUsers = await fetchAllAuthUsers(supabase);
+        const orphanAuthIds = allAuthUsers.filter((u) => !appAuthIds.has(u.id)).map((u) => u.id);
+
+        if (dryRun) {
+          return json({
+            success: true,
+            dryRun: true,
+            type,
+            wouldDelete: orphanAuthIds,
+            count: orphanAuthIds.length,
+          });
+        }
+
+        // Delete sequentially to avoid hitting rate limits
+        for (const id of orphanAuthIds) {
+          // eslint-disable-next-line no-await-in-loop
+          const { error: delErr } = await supabase.auth.admin.deleteUser(id);
+          if (!delErr) {
+            deletedCount += 1;
+            deletedIds.push(id);
+          }
+        }
+      }
+
+      await audit("BULK_ORPHAN_CLEANUP", { type, deletedCount, deletedIds });
+
+      return json({
+        success: true,
+        message: `Cleaned up ${deletedCount} orphaned records`,
+        deletedCount,
+        deletedIds,
+      });
+    }
+
+    return json({ error: "Invalid action" }, 400);
+  } catch (err: any) {
+    console.error("Error in admin-cleanup-orphans:", err);
+    return json({ error: err?.message ?? "Internal Server Error" }, 500);
   }
 });
