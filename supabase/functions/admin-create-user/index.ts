@@ -350,21 +350,60 @@ serve(async (req) => {
       );
     }
 
-    // Create user in public.users table
-    console.log('Creating user record in users table for:', email);
-    const { data: newUser, error: userInsertError } = await supabaseClient
+    // Create or update user in public.users table (using upsert to handle trigger race condition)
+    // Note: The handle_new_auth_user trigger may have already created a basic user record
+    console.log('Creating/updating user record in users table for:', email);
+    
+    // First, check if trigger already created the user
+    await new Promise(resolve => setTimeout(resolve, 100)); // Brief wait for trigger to complete
+    
+    const { data: triggerCreatedUser } = await supabaseClient
       .from('users')
-      .insert({
-        auth_user_id: newAuthUser.user!.id,
-        full_name: fullName,
-        email: email,
-        phone: phone || null,
-        role: role,
-        school_id: schoolId,
-        status: 'active'
-      })
-      .select()
-      .single();
+      .select('user_id')
+      .eq('auth_user_id', newAuthUser.user!.id)
+      .maybeSingle();
+    
+    let newUser;
+    let userInsertError;
+    
+    if (triggerCreatedUser) {
+      // Trigger already created the user, update it with full details
+      console.log('User record already created by trigger, updating...');
+      const { data, error } = await supabaseClient
+        .from('users')
+        .update({
+          full_name: fullName,
+          phone: phone || null,
+          role: role,
+          school_id: schoolId,
+          status: 'active'
+        })
+        .eq('user_id', triggerCreatedUser.user_id)
+        .select()
+        .single();
+      
+      newUser = data;
+      userInsertError = error;
+    } else {
+      // Trigger hasn't created it yet, insert manually
+      console.log('Creating new user record...');
+      const { data, error } = await supabaseClient
+        .from('users')
+        .insert({
+          auth_user_id: newAuthUser.user!.id,
+          full_name: fullName,
+          email: email,
+          phone: phone || null,
+          role: role,
+          school_id: schoolId,
+          status: 'active'
+        })
+        .select()
+        .single();
+      
+      newUser = data;
+      userInsertError = error;
+    }
 
     if (userInsertError) {
       console.error('Error creating user record:', userInsertError);
