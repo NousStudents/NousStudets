@@ -211,6 +211,16 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
+              onClick={() => isMobile ? undefined : navigate('/admin/cleanup')}
+              disabled={isMobile}
+              title={isMobile ? "Desktop required for database cleanup" : ""}
+            >
+              <AlertCircle className="h-6 w-6" />
+              <span className="text-sm">Cleanup</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
               onClick={() => navigate('/exams')}
             >
               <FileText className="h-6 w-6" />

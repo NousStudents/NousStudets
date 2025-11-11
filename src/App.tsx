@@ -21,6 +21,7 @@ import StudentManagement from "./pages/admin/StudentManagement";
 import ClassManagement from "./pages/admin/ClassManagement";
 import TeacherManagement from "./pages/admin/TeacherManagement";
 import ParentManagement from "./pages/admin/ParentManagement";
+import CleanupUtility from "./pages/admin/CleanupUtility";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -137,6 +138,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <ParentManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/cleanup"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <CleanupUtility />
                 </ProtectedRoute>
               }
             />
