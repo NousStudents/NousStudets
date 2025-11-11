@@ -43,12 +43,8 @@ async function fetchAllAuthUsers(supabase: any): Promise<GoTrueUser[]> {
   let page = 1;
   const all: GoTrueUser[] = [];
   // @ts-ignore listUsers accepts page/perPage in v2
-  // deno types may not include options; runtime supports them.
   while (true) {
-    const { data, error } = await supabase.auth.admin.listUsers({
-      page,
-      perPage,
-    });
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
     if (error) throw error;
     const batch = (data?.users ?? []) as GoTrueUser[];
     all.push(...batch);
@@ -89,7 +85,7 @@ serve(async (req) => {
     // Map auth user -> app user (and require admin)
     const { data: userRow, error: userMapErr } = await supabase
       .from("users")
-      .select("user_id")
+      .select("user_id, email")
       .eq("auth_user_id", authUser.id)
       .single();
 
@@ -136,7 +132,6 @@ serve(async (req) => {
 
       // Fetch all auth users once
       const allAuthUsers = await fetchAllAuthUsers(supabase);
-      const authIdToUser = new Map(allAuthUsers.map((u) => [u.id, u]));
       const authIds = new Set(allAuthUsers.map((u) => u.id));
 
       const orphanedUsers: OrphanRecord[] = [];
@@ -206,6 +201,10 @@ serve(async (req) => {
       let deletedCount = 0;
 
       if (type === "auth_without_user") {
+        // Avoid deleting yourself accidentally
+        if (userId === authUser.id) {
+          return json({ error: "Refusing to delete the currently authenticated admin user" }, 400);
+        }
         const { error: delErr } = await supabase.auth.admin.deleteUser(userId);
         if (delErr) return json({ error: `Failed to delete auth user: ${delErr.message}` }, 400);
         deletedCount = 1;
@@ -298,6 +297,7 @@ serve(async (req) => {
 
         // Delete sequentially to avoid hitting rate limits
         for (const id of orphanAuthIds) {
+          if (id === authUser.id) continue; // never delete yourself
           // eslint-disable-next-line no-await-in-loop
           const { error: delErr } = await supabase.auth.admin.deleteUser(id);
           if (!delErr) {
@@ -315,6 +315,119 @@ serve(async (req) => {
         deletedCount,
         deletedIds,
       });
+    }
+
+    // NEW: reconcile links between Auth and App by email (prevents duplicate email errors elsewhere)
+    if (action === "reconcile") {
+      const body = (await req.json().catch(() => ({}))) as { dryRun?: boolean };
+      const { dryRun = false } = body;
+
+      // Pull all app users (need email + auth_user_id)
+      const { data: appUsers, error: appErr } = await supabase
+        .from("users")
+        .select("user_id, email, full_name, auth_user_id");
+      if (appErr) return json({ error: appErr.message }, 400);
+
+      // Pull all auth users once
+      const allAuthUsers = await fetchAllAuthUsers(supabase);
+
+      // Build lookups
+      const authById = new Map(allAuthUsers.map((u) => [u.id, u]));
+      const authByEmail = new Map(allAuthUsers.filter((u) => !!u.email).map((u) => [u.email!.toLowerCase(), u]));
+      const appByAuthId = new Map((appUsers ?? []).filter((u) => !!u.auth_user_id).map((u) => [u.auth_user_id!, u]));
+      const appByEmail = new Map((appUsers ?? []).filter((u) => !!u.email).map((u) => [u.email!.toLowerCase(), u]));
+
+      // Plan changes
+      const backfilledAuthIds: Array<{ user_id: string; email: string | null; auth_user_id: string }> = [];
+      const relinkedAuthIds: Array<{
+        user_id: string;
+        email: string | null;
+        old_auth_user_id: string | null;
+        new_auth_user_id: string;
+      }> = [];
+      const createdAppRows: Array<{ email: string; auth_user_id: string; user_id?: string }> = [];
+
+      // 1) Backfill users.auth_user_id when null but email matches an existing Auth user
+      for (const u of appUsers ?? []) {
+        if (!u.email) continue;
+        if (!u.auth_user_id) {
+          const match = authByEmail.get(u.email.toLowerCase());
+          if (match) {
+            backfilledAuthIds.push({ user_id: u.user_id, email: u.email, auth_user_id: match.id });
+          }
+        }
+      }
+
+      // 2) Relink users.auth_user_id if it points to a missing/deleted Auth user but email matches a valid Auth user
+      for (const u of appUsers ?? []) {
+        if (!u.email) continue;
+        if (u.auth_user_id && !authById.has(u.auth_user_id)) {
+          const match = authByEmail.get(u.email.toLowerCase());
+          if (match) {
+            relinkedAuthIds.push({
+              user_id: u.user_id,
+              email: u.email,
+              old_auth_user_id: u.auth_user_id,
+              new_auth_user_id: match.id,
+            });
+          }
+        }
+      }
+
+      // 3) For Auth users with no users row, upsert a users row by email (prevents future duplicate email errors)
+      for (const au of allAuthUsers) {
+        const emailKey = (au.email ?? "").toLowerCase();
+        if (!emailKey) continue;
+        const existing = appByEmail.get(emailKey);
+        if (!existing) {
+          createdAppRows.push({ email: au.email!, auth_user_id: au.id });
+        }
+      }
+
+      if (dryRun) {
+        return json({
+          success: true,
+          dryRun: true,
+          summary: {
+            willBackfill: backfilledAuthIds.length,
+            willRelink: relinkedAuthIds.length,
+            willCreateAppRows: createdAppRows.length,
+          },
+          details: { backfilledAuthIds, relinkedAuthIds, createdAppRows },
+        });
+      }
+
+      // Execute changes
+      // 1) Backfill
+      for (const b of backfilledAuthIds) {
+        // eslint-disable-next-line no-await-in-loop
+        await supabase.from("users").update({ auth_user_id: b.auth_user_id }).eq("user_id", b.user_id);
+      }
+
+      // 2) Relink
+      for (const r of relinkedAuthIds) {
+        // eslint-disable-next-line no-await-in-loop
+        await supabase.from("users").update({ auth_user_id: r.new_auth_user_id }).eq("user_id", r.user_id);
+      }
+
+      // 3) Create users rows by email via upsert (idempotent, avoids users_email_key violation)
+      for (const c of createdAppRows) {
+        // eslint-disable-next-line no-await-in-loop
+        await supabase
+          .from("users")
+          .upsert([{ email: c.email, auth_user_id: c.auth_user_id }], { onConflict: "email" });
+      }
+
+      const summary = {
+        backfilled: backfilledAuthIds.length,
+        relinked: relinkedAuthIds.length,
+        created: createdAppRows.length,
+        totalChanges: backfilledAuthIds.length + relinkedAuthIds.length + createdAppRows.length,
+      };
+
+      await audit("RECONCILE_LINKS", { summary });
+
+      return json({ success: true, message: "Reconciliation completed", summary });
     }
 
     return json({ error: "Invalid action" }, 400);
