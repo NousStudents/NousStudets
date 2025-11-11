@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,9 +10,19 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UserPlus, Shield } from "lucide-react";
+import { Loader2, UserPlus, Shield, AlertCircle } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { MobileAdminRestriction } from "@/components/MobileAdminRestriction";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Class {
   class_id: string;
@@ -30,10 +41,24 @@ interface Student {
 export default function UserManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [adminSchoolId, setAdminSchoolId] = useState("");
   const [classes, setClasses] = useState<Class[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [errorDialog, setErrorDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    details?: string;
+    showCleanupButton: boolean;
+  }>({
+    open: false,
+    title: "",
+    description: "",
+    details: "",
+    showCleanupButton: false,
+  });
   
   const [formData, setFormData] = useState({
     fullName: "",
@@ -292,10 +317,20 @@ export default function UserManagement() {
       });
     } catch (error: any) {
       console.error('Error creating user:', error);
-      toast({
-        title: "Error Creating User",
-        description: error.message || "Failed to create user",
-        variant: "destructive",
+      
+      // Check if it's a duplicate email error
+      const isDuplicateError = error.message?.includes("already exists") || 
+                               error.message?.includes("duplicate key") ||
+                               error.message?.includes("users_email_key");
+      
+      setErrorDialog({
+        open: true,
+        title: isDuplicateError ? "Duplicate Email Detected" : "Error Creating User",
+        description: isDuplicateError 
+          ? `A user with the email "${formData.email}" already exists in the database.`
+          : "An error occurred while creating the user.",
+        details: error.message || "Failed to create user",
+        showCleanupButton: isDuplicateError,
       });
     } finally {
       setLoading(false);
@@ -303,8 +338,41 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <>
+      <AlertDialog open={errorDialog.open} onOpenChange={(open) => setErrorDialog(prev => ({ ...prev, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              {errorDialog.title}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>{errorDialog.description}</p>
+              {errorDialog.details && (
+                <div className="bg-muted p-3 rounded-md">
+                  <p className="text-sm font-mono text-muted-foreground">{errorDialog.details}</p>
+                </div>
+              )}
+              {errorDialog.showCleanupButton && (
+                <p className="text-sm font-medium">
+                  This may be due to orphaned records in the database. Use the Database Cleanup Utility to resolve this issue.
+                </p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+            {errorDialog.showCleanupButton && (
+              <AlertDialogAction onClick={() => navigate("/admin/cleanup")}>
+                Open Cleanup Utility
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <div className="min-h-screen bg-background p-4 sm:p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center gap-2 sm:gap-3">
           <BackButton to="/dashboard" />
           <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
@@ -602,5 +670,6 @@ export default function UserManagement() {
         </MobileAdminRestriction>
       </div>
     </div>
+    </>
   );
 }
