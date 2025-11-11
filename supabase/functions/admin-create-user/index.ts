@@ -350,28 +350,6 @@ serve(async (req) => {
       );
     }
 
-    // Final verification: Check one more time before creating user record
-    console.log('Final verification before creating user record');
-    const { data: finalCheck } = await supabaseClient
-      .from('users')
-      .select('user_id, email')
-      .ilike('email', email)
-      .maybeSingle();
-    
-    if (finalCheck) {
-      console.error('User still exists after cleanup, aborting creation');
-      // Cleanup the auth user we just created
-      await supabaseClient.auth.admin.deleteUser(newAuthUser.user!.id);
-      return new Response(
-        JSON.stringify({ 
-          error: 'A user with this email already exists and could not be removed automatically.',
-          details: 'Please manually remove the existing user first or contact support.',
-          existingUserId: finalCheck.user_id
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Create user in public.users table
     console.log('Creating user record in users table for:', email);
     const { data: newUser, error: userInsertError } = await supabaseClient
