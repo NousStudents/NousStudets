@@ -52,11 +52,14 @@ export default function CleanupUtility() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('admin-cleanup-orphans', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      // Get fresh session to ensure token is valid
+      const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !freshSession) {
+        throw new Error('Your session has expired. Please log in again.');
+      }
+
+      const { data, error } = await supabase.functions.invoke('admin-cleanup-orphans', {});
 
       if (error) throw error;
 
@@ -82,29 +85,19 @@ export default function CleanupUtility() {
 
     setDeleting(userId);
     try {
+      // Get fresh session to ensure token is valid
+      const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !freshSession) {
+        throw new Error('Your session has expired. Please log in again.');
+      }
+
       const { data, error } = await supabase.functions.invoke('admin-cleanup-orphans', {
         body: { userId, type },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        method: 'POST',
       });
 
-      const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-cleanup-orphans`);
-      url.searchParams.set('action', 'cleanup');
-
-      const response = await fetch(url.toString(), {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId, type }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) throw new Error(result.error);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Success",
@@ -130,25 +123,23 @@ export default function CleanupUtility() {
 
     setLoading(true);
     try {
-      const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-cleanup-orphans`);
-      url.searchParams.set('action', 'cleanup-all');
+      // Get fresh session to ensure token is valid
+      const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !freshSession) {
+        throw new Error('Your session has expired. Please log in again.');
+      }
 
-      const response = await fetch(url.toString(), {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ type }),
+      const { data, error } = await supabase.functions.invoke('admin-cleanup-orphans', {
+        body: { type, action: 'cleanup-all' },
       });
 
-      const result = await response.json();
-
-      if (!response.ok) throw new Error(result.error);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Success",
-        description: result.message,
+        description: data?.message || "Cleanup completed successfully",
       });
 
       // Refresh the list

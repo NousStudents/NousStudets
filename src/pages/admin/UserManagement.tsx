@@ -221,6 +221,13 @@ export default function UserManagement() {
     setLoading(true);
 
     try {
+      // Get the current session to ensure we have a valid token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        throw new Error('Your session has expired. Please log in again.');
+      }
+
       const { data, error } = await supabase.functions.invoke('admin-create-user', {
         body: {
           fullName: formData.fullName,
