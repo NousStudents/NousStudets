@@ -144,18 +144,51 @@ serve(async (req) => {
       
       // Delete all related records in proper order (children first, then parent)
       try {
-        // 1. Delete parent-student links
-        await supabaseClient.from('parent_students').delete().eq('parent_id', userId);
+        // 1. First get role-specific IDs to clean up foreign key references
+        const { data: teacherData } = await supabaseClient
+          .from('teachers')
+          .select('teacher_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+          
+        const { data: studentData } = await supabaseClient
+          .from('students')
+          .select('student_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+          
+        const { data: parentData } = await supabaseClient
+          .from('parents')
+          .select('parent_id')
+          .eq('user_id', userId)
+          .maybeSingle();
         
-        // 2. Delete role-specific records
+        // 2. Clean up references in other tables
+        if (parentData) {
+          // Remove parent references from students
+          await supabaseClient
+            .from('students')
+            .update({ parent_id: null })
+            .eq('parent_id', parentData.parent_id);
+        }
+        
+        if (teacherData) {
+          // Remove teacher references from classes
+          await supabaseClient
+            .from('classes')
+            .update({ class_teacher_id: null })
+            .eq('class_teacher_id', teacherData.teacher_id);
+        }
+        
+        // 3. Delete role-specific records
         await supabaseClient.from('teachers').delete().eq('user_id', userId);
         await supabaseClient.from('students').delete().eq('user_id', userId);
         await supabaseClient.from('parents').delete().eq('user_id', userId);
         
-        // 3. Delete user roles
+        // 4. Delete user roles
         await supabaseClient.from('user_roles').delete().eq('user_id', userId);
         
-        // 4. Delete user record
+        // 5. Delete user record
         const { error: userDeleteError } = await supabaseClient
           .from('users')
           .delete()
@@ -166,7 +199,7 @@ serve(async (req) => {
           return { success: false, error: userDeleteError.message };
         }
         
-        // 5. Delete auth user if provided
+        // 6. Delete auth user if provided
         if (authUserId) {
           const { error: authDeleteError } = await supabaseClient.auth.admin.deleteUser(authUserId);
           if (authDeleteError) {
@@ -175,6 +208,7 @@ serve(async (req) => {
           }
         }
         
+        console.log('Successfully cleaned up all records for user:', userId);
         return { success: true };
       } catch (cleanupError) {
         console.error('Cleanup error:', cleanupError);

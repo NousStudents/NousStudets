@@ -36,7 +36,8 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-async function fetchAllAuthUsers(supabase: ReturnType<typeof createClient>): Promise<GoTrueUser[]> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchAllAuthUsers(supabase: any): Promise<GoTrueUser[]> {
   // Paginate to avoid timeouts and N+1 calls
   const perPage = 1000;
   let page = 1;
