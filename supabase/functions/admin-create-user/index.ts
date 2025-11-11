@@ -138,62 +138,132 @@ serve(async (req) => {
       );
     }
 
-    // Check if email already exists in users table (case-insensitive)
+    // Comprehensive cleanup function for orphaned records
+    const cleanupOrphanedRecords = async (userId: string, authUserId?: string) => {
+      console.log('Starting comprehensive cleanup for user_id:', userId);
+      
+      // Delete all related records in proper order (children first, then parent)
+      try {
+        // 1. Delete parent-student links
+        await supabaseClient.from('parent_students').delete().eq('parent_id', userId);
+        
+        // 2. Delete role-specific records
+        await supabaseClient.from('teachers').delete().eq('user_id', userId);
+        await supabaseClient.from('students').delete().eq('user_id', userId);
+        await supabaseClient.from('parents').delete().eq('user_id', userId);
+        
+        // 3. Delete user roles
+        await supabaseClient.from('user_roles').delete().eq('user_id', userId);
+        
+        // 4. Delete user record
+        const { error: userDeleteError } = await supabaseClient
+          .from('users')
+          .delete()
+          .eq('user_id', userId);
+        
+        if (userDeleteError) {
+          console.error('Failed to delete user record:', userDeleteError);
+          return { success: false, error: userDeleteError.message };
+        }
+        
+        // 5. Delete auth user if provided
+        if (authUserId) {
+          const { error: authDeleteError } = await supabaseClient.auth.admin.deleteUser(authUserId);
+          if (authDeleteError) {
+            console.error('Failed to delete auth user:', authDeleteError);
+            // Don't return error here, user record is already deleted
+          }
+        }
+        
+        return { success: true };
+      } catch (cleanupError) {
+        console.error('Cleanup error:', cleanupError);
+        return { success: false, error: String(cleanupError) };
+      }
+    };
+
+    // Check for existing users in both tables
     console.log('Checking for existing email:', email);
-    const { data: existingUserData, error: existingUserError } = await supabaseClient
+    const { data: existingUserData } = await supabaseClient
       .from('users')
       .select('email, auth_user_id, user_id')
       .ilike('email', email)
       .maybeSingle();
     
+    const { data: { users: authUsers } } = await supabaseClient.auth.admin.listUsers();
+    const existingAuthUser = authUsers.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    
     console.log('Email check result:', { 
       email, 
-      found: !!existingUserData, 
-      error: existingUserError,
-      data: existingUserData 
+      userTableFound: !!existingUserData,
+      authTableFound: !!existingAuthUser
     });
 
-    if (existingUserData) {
-      console.log('Found existing user record for email:', email);
+    // Handle orphaned records
+    if (existingUserData || existingAuthUser) {
+      let shouldCleanup = false;
+      let cleanupUserId: string | null = null;
+      let cleanupAuthId: string | null = null;
       
-      // Try to clean up orphaned records
-      let isOrphaned = false;
-      
-      if (existingUserData.auth_user_id) {
-        // Check if auth user still exists
-        const { data: authUser, error: authError } = await supabaseClient.auth.admin.getUserById(existingUserData.auth_user_id);
-        
-        if (authError || !authUser.user) {
-          console.log('Auth user not found, cleaning up orphaned user record:', email);
-          isOrphaned = true;
+      // Case 1: User record exists
+      if (existingUserData) {
+        if (existingUserData.auth_user_id) {
+          // Check if auth user still exists
+          const authExists = authUsers.some(u => u.id === existingUserData.auth_user_id);
+          if (!authExists) {
+            console.log('User record exists but auth user is missing - orphaned');
+            shouldCleanup = true;
+            cleanupUserId = existingUserData.user_id;
+          } else if (!existingAuthUser) {
+            // This shouldn't happen but handle it
+            console.log('User record has auth_user_id but auth user not found - orphaned');
+            shouldCleanup = true;
+            cleanupUserId = existingUserData.user_id;
+            cleanupAuthId = existingUserData.auth_user_id;
+          } else {
+            // Both exist - legitimate user
+            return new Response(
+              JSON.stringify({ error: 'A user with this email already exists' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        } else {
+          // No auth_user_id - orphaned
+          console.log('User record has no auth_user_id - orphaned');
+          shouldCleanup = true;
+          cleanupUserId = existingUserData.user_id;
         }
-      } else {
-        // No auth_user_id means orphaned record
-        console.log('User record has no auth_user_id, cleaning up:', email);
-        isOrphaned = true;
       }
       
-      if (isOrphaned) {
-        console.log('Starting cleanup of orphaned records for user_id:', existingUserData.user_id);
-        
-        // Delete role-specific records first
-        await supabaseClient.from('teachers').delete().eq('user_id', existingUserData.user_id);
-        await supabaseClient.from('students').delete().eq('user_id', existingUserData.user_id);
-        await supabaseClient.from('parents').delete().eq('user_id', existingUserData.user_id);
-        
-        // Delete user role and user record
-        await supabaseClient.from('user_roles').delete().eq('user_id', existingUserData.user_id);
-        const { error: deleteError } = await supabaseClient.from('users').delete().eq('user_id', existingUserData.user_id);
-        
-        if (deleteError) {
-          console.error('Failed to delete orphaned user record:', deleteError);
-          return new Response(
-            JSON.stringify({ error: `Cannot create user: email exists and cleanup failed - ${deleteError.message}` }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+      // Case 2: Auth user exists but no user record
+      if (existingAuthUser && !existingUserData) {
+        console.log('Auth user exists but no user record - orphaned');
+        shouldCleanup = true;
+        cleanupAuthId = existingAuthUser.id;
+      }
+      
+      // Perform cleanup if needed
+      if (shouldCleanup) {
+        if (cleanupUserId) {
+          const cleanupResult = await cleanupOrphanedRecords(cleanupUserId, cleanupAuthId || undefined);
+          if (!cleanupResult.success) {
+            return new Response(
+              JSON.stringify({ error: `Cannot create user: cleanup failed - ${cleanupResult.error}` }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        } else if (cleanupAuthId) {
+          // Only auth user to clean
+          const { error: authDeleteError } = await supabaseClient.auth.admin.deleteUser(cleanupAuthId);
+          if (authDeleteError) {
+            return new Response(
+              JSON.stringify({ error: `Cannot create user: auth cleanup failed - ${authDeleteError.message}` }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
         }
         
-        // Verify deletion succeeded
+        // Verify cleanup succeeded
         const { data: stillExists } = await supabaseClient
           .from('users')
           .select('user_id')
@@ -201,67 +271,15 @@ serve(async (req) => {
           .maybeSingle();
           
         if (stillExists) {
-          console.error('User record still exists after deletion attempt');
+          console.error('User record still exists after cleanup');
           return new Response(
-            JSON.stringify({ error: 'Cannot create user: email exists and could not be cleaned up' }),
+            JSON.stringify({ error: 'Cannot create user: email exists and could not be cleaned up. Please use the Database Cleanup Utility.' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
         
-        console.log('Successfully cleaned up orphaned user record');
-      } else {
-        // Not orphaned - user legitimately exists
-        return new Response(
-          JSON.stringify({ error: 'A user with this email already exists' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        console.log('Successfully cleaned up orphaned records for:', email);
       }
-    }
-
-    // Check if email exists in auth.users
-    try {
-      const { data: { users: authUsers } } = await supabaseClient.auth.admin.listUsers();
-      const existingAuthUser = authUsers.find(u => u.email?.toLowerCase() === email.toLowerCase());
-      
-      if (existingAuthUser) {
-        console.log('Found existing auth user for email:', email);
-        
-        // Check if this auth user has a corresponding users record
-        const { data: userRecord } = await supabaseClient
-          .from('users')
-          .select('user_id')
-          .eq('auth_user_id', existingAuthUser.id)
-          .maybeSingle();
-        
-        if (!userRecord) {
-          // Auth user exists but no users record - delete the orphaned auth user
-          console.log('Cleaning up orphaned auth user:', email);
-          const { error: deleteAuthError } = await supabaseClient.auth.admin.deleteUser(existingAuthUser.id);
-          
-          if (deleteAuthError) {
-            console.error('Failed to delete orphaned auth user:', deleteAuthError);
-            return new Response(
-              JSON.stringify({ error: `Cannot create user: auth user exists and cleanup failed - ${deleteAuthError.message}` }),
-              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          }
-          
-          console.log('Successfully cleaned up orphaned auth user');
-        } else {
-          // Both auth user and users record exist
-          return new Response(
-            JSON.stringify({ error: 'A user with this email already exists in the system' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      }
-    } catch (authCheckError) {
-      console.error('Error checking auth users:', authCheckError);
-      const errorMessage = authCheckError instanceof Error ? authCheckError.message : 'Unknown error occurred';
-      return new Response(
-        JSON.stringify({ error: `Failed to verify email availability: ${errorMessage}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
     // Create auth user
@@ -307,35 +325,16 @@ serve(async (req) => {
       console.log('Cleaning up auth user due to failed user record creation');
       await supabaseClient.auth.admin.deleteUser(newAuthUser.user!.id);
       
-      // Check if this is a duplicate key error
+      // Provide helpful error message
+      let errorMessage = 'Failed to create user record.';
       if (userInsertError.code === '23505') {
-        // Try one more time to clean up and retry
-        console.log('Duplicate key error detected, attempting final cleanup');
-        const { data: duplicateUser } = await supabaseClient
-          .from('users')
-          .select('user_id, auth_user_id')
-          .ilike('email', email)
-          .maybeSingle();
-        
-        if (duplicateUser) {
-          console.log('Found duplicate user, deleting:', duplicateUser);
-          await supabaseClient.from('teachers').delete().eq('user_id', duplicateUser.user_id);
-          await supabaseClient.from('students').delete().eq('user_id', duplicateUser.user_id);
-          await supabaseClient.from('parents').delete().eq('user_id', duplicateUser.user_id);
-          await supabaseClient.from('user_roles').delete().eq('user_id', duplicateUser.user_id);
-          await supabaseClient.from('users').delete().eq('user_id', duplicateUser.user_id);
-          
-          // Also clean up auth user if it exists
-          if (duplicateUser.auth_user_id) {
-            await supabaseClient.auth.admin.deleteUser(duplicateUser.auth_user_id);
-          }
-        }
+        errorMessage = 'A user with this email already exists. Please use the Database Cleanup Utility to remove orphaned records if this error persists.';
       }
       
       return new Response(
         JSON.stringify({ 
-          error: userInsertError.message,
-          details: 'Failed to create user record. The email may already exist. Please try again or contact support if the issue persists.'
+          error: errorMessage,
+          details: userInsertError.message
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
