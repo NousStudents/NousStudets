@@ -45,14 +45,57 @@ const Dashboard = () => {
 
   const fetchUserProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('auth_user_id', user?.id)
-        .single();
+      if (!user || !role) return;
 
-      if (error) throw error;
-      setProfile(data);
+      let data: any = null;
+      let school_id: string = '';
+
+      // Fetch from role-specific table
+      if (role === 'admin') {
+        const { data: adminData, error } = await supabase
+          .from('admins')
+          .select('admin_id, full_name, email, school_id, profile_image')
+          .eq('auth_user_id', user.id)
+          .single();
+        if (error) throw error;
+        data = { ...adminData, user_id: adminData?.admin_id };
+        school_id = adminData?.school_id;
+      } else if (role === 'teacher') {
+        const { data: teacherData, error } = await supabase
+          .from('teachers')
+          .select('teacher_id, full_name, email, school_id, profile_image')
+          .eq('auth_user_id', user.id)
+          .single();
+        if (error) throw error;
+        data = { ...teacherData, user_id: teacherData?.teacher_id };
+        school_id = teacherData?.school_id;
+      } else if (role === 'student') {
+        const { data: studentData, error } = await supabase
+          .from('students')
+          .select('student_id, full_name, email, class_id, profile_picture, classes(school_id)')
+          .eq('auth_user_id', user.id)
+          .single();
+        if (error) throw error;
+        data = { 
+          ...studentData, 
+          user_id: studentData?.student_id,
+          profile_image: studentData?.profile_picture 
+        };
+        school_id = (studentData?.classes as any)?.school_id;
+      } else if (role === 'parent') {
+        const { data: parentData, error } = await supabase
+          .from('parents')
+          .select('parent_id, full_name, email, school_id, profile_image')
+          .eq('auth_user_id', user.id)
+          .single();
+        if (error) throw error;
+        data = { ...parentData, user_id: parentData?.parent_id };
+        school_id = parentData?.school_id;
+      }
+
+      if (data) {
+        setProfile({ ...data, role, school_id });
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {

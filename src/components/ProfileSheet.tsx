@@ -64,78 +64,111 @@ export const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
     try {
       setLoading(true);
 
-      // Fetch user profile
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('user_id, full_name, email, role, phone')
-        .eq('auth_user_id', user?.id)
-        .single();
+      if (!user || !role) return;
 
-      if (userError) throw userError;
-      setProfile(userData);
-
-      // Fetch role-specific details
-      if (userData.role === 'student') {
+      // Fetch from role-specific table
+      if (role === 'student') {
         const { data: studentData } = await supabase
           .from('students')
           .select(`
             student_id,
+            full_name,
+            email,
+            phone,
             roll_no,
             class_id,
             classes (class_name, section)
           `)
-          .eq('user_id', userData.user_id)
+          .eq('auth_user_id', user.id)
           .single();
 
         if (studentData) {
+          setProfile({
+            user_id: studentData.student_id,
+            full_name: studentData.full_name,
+            email: studentData.email,
+            role: 'student',
+            phone: studentData.phone,
+          });
           setRoleDetails({
             student_id: studentData.student_id,
             roll_no: studentData.roll_no,
             class: studentData.classes as any,
           });
         }
-      } else if (userData.role === 'teacher') {
+      } else if (role === 'teacher') {
         const { data: teacherData } = await supabase
           .from('teachers')
           .select(`
             teacher_id,
+            full_name,
+            email,
+            phone,
             qualification,
             subjects (subject_name)
           `)
-          .eq('user_id', userData.user_id)
+          .eq('auth_user_id', user.id)
           .single();
 
         if (teacherData) {
+          setProfile({
+            user_id: teacherData.teacher_id,
+            full_name: teacherData.full_name,
+            email: teacherData.email,
+            role: 'teacher',
+            phone: teacherData.phone,
+          });
           setRoleDetails({
             teacher_id: teacherData.teacher_id,
             qualification: teacherData.qualification,
             subjects: teacherData.subjects as any,
           });
         }
-      } else if (userData.role === 'parent') {
+      } else if (role === 'parent') {
         const { data: parentData } = await supabase
           .from('parents')
-          .select('parent_id, relation')
-          .eq('user_id', userData.user_id)
+          .select('parent_id, full_name, email, phone, relation')
+          .eq('auth_user_id', user.id)
           .single();
 
         if (parentData) {
+          setProfile({
+            user_id: parentData.parent_id,
+            full_name: parentData.full_name,
+            email: parentData.email,
+            role: 'parent',
+            phone: parentData.phone,
+          });
+
           // Fetch linked students separately
           const { data: studentsData } = await supabase
             .from('students')
-            .select(`
-              roll_no,
-              users!inner (full_name)
-            `)
+            .select('full_name, roll_no')
             .eq('parent_id', parentData.parent_id);
 
           setRoleDetails({
             parent_id: parentData.parent_id,
             relation: parentData.relation,
             students: studentsData?.map((s: any) => ({
-              full_name: s.users?.full_name,
+              full_name: s.full_name,
               roll_no: s.roll_no,
             })) || [],
+          });
+        }
+      } else if (role === 'admin') {
+        const { data: adminData } = await supabase
+          .from('admins')
+          .select('admin_id, full_name, email, phone')
+          .eq('auth_user_id', user.id)
+          .single();
+
+        if (adminData) {
+          setProfile({
+            user_id: adminData.admin_id,
+            full_name: adminData.full_name,
+            email: adminData.email,
+            role: 'admin',
+            phone: adminData.phone,
           });
         }
       }

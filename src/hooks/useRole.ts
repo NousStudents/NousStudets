@@ -16,23 +16,57 @@ export const useRole = () => {
       }
 
       try {
-        // Get user_id from users table
-        const { data: userData } = await supabase
-          .from('users')
-          .select('user_id')
+        // Check each role-specific table to determine user's role
+        const { data: adminData } = await supabase
+          .from('admins')
+          .select('admin_id')
           .eq('auth_user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        if (userData) {
-          // Fetch role from user_roles table (secure approach)
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', userData.user_id)
-            .single();
-
-          setRole(roleData?.role || null);
+        if (adminData) {
+          setRole('admin');
+          setLoading(false);
+          return;
         }
+
+        const { data: teacherData } = await supabase
+          .from('teachers')
+          .select('teacher_id')
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+
+        if (teacherData) {
+          setRole('teacher');
+          setLoading(false);
+          return;
+        }
+
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('student_id')
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+
+        if (studentData) {
+          setRole('student');
+          setLoading(false);
+          return;
+        }
+
+        const { data: parentData } = await supabase
+          .from('parents')
+          .select('parent_id')
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+
+        if (parentData) {
+          setRole('parent');
+          setLoading(false);
+          return;
+        }
+
+        // No role found
+        setRole(null);
       } catch (error) {
         console.error('Error fetching role:', error);
         setRole(null);

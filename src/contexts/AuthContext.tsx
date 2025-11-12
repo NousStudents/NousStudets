@@ -65,15 +65,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { error: authError };
       }
 
-      // Verify role matches
+      // Verify role matches by checking role-specific tables
       if (authData.user) {
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('role')
+        let actualRole: string | null = null;
+        
+        // Check each role table
+        const { data: adminData } = await supabase
+          .from('admins')
+          .select('admin_id')
           .eq('auth_user_id', authData.user.id)
-          .single();
+          .maybeSingle();
+        
+        if (adminData) actualRole = 'admin';
+        
+        if (!actualRole) {
+          const { data: teacherData } = await supabase
+            .from('teachers')
+            .select('teacher_id')
+            .eq('auth_user_id', authData.user.id)
+            .maybeSingle();
+          
+          if (teacherData) actualRole = 'teacher';
+        }
+        
+        if (!actualRole) {
+          const { data: studentData } = await supabase
+            .from('students')
+            .select('student_id')
+            .eq('auth_user_id', authData.user.id)
+            .maybeSingle();
+          
+          if (studentData) actualRole = 'student';
+        }
+        
+        if (!actualRole) {
+          const { data: parentData } = await supabase
+            .from('parents')
+            .select('parent_id')
+            .eq('auth_user_id', authData.user.id)
+            .maybeSingle();
+          
+          if (parentData) actualRole = 'parent';
+        }
 
-        if (userError || !userData) {
+        if (!actualRole) {
           await supabase.auth.signOut();
           const error = new Error('Unable to verify user role. Please contact administration.');
           toast({
@@ -84,9 +119,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return { error };
         }
 
-        if (userData.role !== selectedRole) {
+        if (actualRole !== selectedRole) {
           await supabase.auth.signOut();
-          const error = new Error(`Your account is registered as ${userData.role}, not ${selectedRole}.`);
+          const error = new Error(`Your account is registered as ${actualRole}, not ${selectedRole}.`);
           toast({
             variant: "destructive",
             title: "Role Mismatch",
