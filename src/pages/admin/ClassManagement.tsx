@@ -50,16 +50,16 @@ export default function ClassManagement() {
     try {
       console.log("Fetching user data for:", user?.id);
       
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("school_id, user_id")
+      const { data: adminData, error: adminError } = await supabase
+        .from("admins")
+        .select("school_id, admin_id")
         .eq("auth_user_id", user?.id)
         .single();
 
-      console.log("User data:", userData);
-      console.log("User error:", userError);
+      console.log("Admin data:", adminData);
+      console.log("Admin error:", adminError);
 
-      if (!userData?.school_id) {
+      if (!adminData?.school_id) {
         console.error("No school_id found for user");
         toast.error("Unable to find your school information");
         setLoading(false);
@@ -67,11 +67,11 @@ export default function ClassManagement() {
       }
 
       // Fetch classes without the problematic join first
-      console.log("Fetching classes for school_id:", userData.school_id);
+      console.log("Fetching classes for school_id:", adminData.school_id);
       const { data: classesData, error: classesError } = await supabase
         .from("classes")
         .select("class_id, class_name, section, class_teacher_id, school_id")
-        .eq("school_id", userData.school_id);
+        .eq("school_id", adminData.school_id);
 
       console.log("Classes data:", classesData);
       console.log("Classes error:", classesError);
@@ -82,18 +82,13 @@ export default function ClassManagement() {
       }
 
       // Fetch teachers separately
-      console.log("Fetching teachers for school_id:", userData.school_id);
+      console.log("Fetching teachers for school_id:", adminData.school_id);
       
       // Get all teachers for the school
       const { data: allTeachersData, error: teachersError2 } = await supabase
-        .from("users")
-        .select(`
-          user_id,
-          full_name,
-          teachers!inner(teacher_id)
-        `)
-        .eq("school_id", userData.school_id)
-        .eq("role", "teacher");
+        .from("teachers")
+        .select("teacher_id, full_name, auth_user_id")
+        .eq("school_id", adminData.school_id);
 
       console.log("Teachers data:", allTeachersData);
       console.log("Teachers error:", teachersError2);
@@ -105,10 +100,8 @@ export default function ClassManagement() {
       // Create a map of teacher_id to teacher name
       const teacherMap = new Map<string, string>();
       if (allTeachersData) {
-        allTeachersData.forEach((user: any) => {
-          if (user.teachers) {
-            teacherMap.set(user.teachers.teacher_id, user.full_name);
-          }
+        allTeachersData.forEach((teacher: any) => {
+          teacherMap.set(teacher.teacher_id, teacher.full_name);
         });
       }
 
@@ -133,9 +126,9 @@ export default function ClassManagement() {
 
       // Format teachers for dropdown
       if (allTeachersData) {
-        const formattedTeachers = allTeachersData.map((user: any) => ({
-          teacher_id: user.teachers.teacher_id,
-          full_name: user.full_name,
+        const formattedTeachers = allTeachersData.map((teacher: any) => ({
+          teacher_id: teacher.teacher_id,
+          full_name: teacher.full_name,
         }));
         console.log("Formatted teachers:", formattedTeachers);
         setTeachers(formattedTeachers);
@@ -154,13 +147,13 @@ export default function ClassManagement() {
     e.preventDefault();
 
     try {
-      const { data: userData } = await supabase
-        .from("users")
+      const { data: adminData } = await supabase
+        .from("admins")
         .select("school_id")
         .eq("auth_user_id", user?.id)
         .single();
 
-      if (!userData?.school_id) {
+      if (!adminData?.school_id) {
         toast.error("Unable to find your school information");
         return;
       }
@@ -181,7 +174,7 @@ export default function ClassManagement() {
             class_teacher_id: teacherId,
           })
           .eq("class_id", editingClass.class_id)
-          .eq("school_id", userData.school_id);
+          .eq("school_id", adminData.school_id);
 
         if (error) {
           console.error("Error updating class:", error);
@@ -200,7 +193,7 @@ export default function ClassManagement() {
             class_name: formData.class_name.trim(),
             section: formData.section.trim(),
             class_teacher_id: teacherId,
-            school_id: userData.school_id,
+            school_id: adminData.school_id,
           });
 
         if (error) {
@@ -227,13 +220,13 @@ export default function ClassManagement() {
     if (!editingClass) return;
 
     try {
-      const { data: userData } = await supabase
-        .from("users")
+      const { data: adminData } = await supabase
+        .from("admins")
         .select("school_id")
         .eq("auth_user_id", user?.id)
         .single();
 
-      if (!userData?.school_id) {
+      if (!adminData?.school_id) {
         toast.error("Unable to find your school information");
         return;
       }
@@ -242,7 +235,7 @@ export default function ClassManagement() {
         .from("classes")
         .delete()
         .eq("class_id", editingClass.class_id)
-        .eq("school_id", userData.school_id);
+        .eq("school_id", adminData.school_id);
 
       if (error) {
         console.error("Error deleting class:", error);
