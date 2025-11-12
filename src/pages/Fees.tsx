@@ -40,14 +40,6 @@ export default function Fees() {
 
   const fetchFees = async () => {
     try {
-      const { data: userData } = await supabase
-        .from("users")
-        .select("user_id")
-        .eq("auth_user_id", user?.id)
-        .single();
-
-      if (!userData) return;
-
       if (role === "student" || role === "parent") {
         let studentId = null;
 
@@ -55,14 +47,14 @@ export default function Fees() {
           const { data: studentData } = await supabase
             .from("students")
             .select("student_id")
-            .eq("user_id", userData.user_id)
+            .eq("auth_user_id", user?.id)
             .single();
           studentId = studentData?.student_id;
         } else if (role === "parent") {
           const { data: parentData } = await supabase
             .from("parents")
             .select("parent_id")
-            .eq("user_id", userData.user_id)
+            .eq("auth_user_id", user?.id)
             .single();
 
           if (parentData) {

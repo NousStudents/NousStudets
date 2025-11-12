@@ -40,19 +40,11 @@ export default function Attendance() {
 
   const fetchAttendance = async () => {
     try {
-      const { data: userData } = await supabase
-        .from("users")
-        .select("user_id")
-        .eq("auth_user_id", user?.id)
-        .single();
-
-      if (!userData) return;
-
       if (role === "student") {
         const { data: studentData } = await supabase
           .from("students")
           .select("student_id")
-          .eq("user_id", userData.user_id)
+          .eq("auth_user_id", user?.id)
           .single();
 
         if (!studentData) return;

@@ -98,8 +98,8 @@ export default function UserManagement() {
 
   const fetchAdminData = async () => {
     try {
-      const { data: userData, error } = await supabase
-        .from('users')
+      const { data: adminData, error } = await supabase
+        .from('admins')
         .select('school_id')
         .eq('auth_user_id', user?.id)
         .maybeSingle();
@@ -114,7 +114,7 @@ export default function UserManagement() {
         return;
       }
 
-      if (!userData) {
+      if (!adminData) {
         toast({
           title: "Profile Not Found",
           description: "Your admin profile is not set up. Please contact support.",
@@ -123,8 +123,8 @@ export default function UserManagement() {
         return;
       }
       
-      if (userData.school_id) {
-        setAdminSchoolId(userData.school_id);
+      if (adminData.school_id) {
+        setAdminSchoolId(adminData.school_id);
       } else {
         toast({
           title: "School Not Assigned",

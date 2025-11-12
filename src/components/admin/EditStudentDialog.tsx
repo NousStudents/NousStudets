@@ -76,21 +76,20 @@ export function EditStudentDialog({ open, onOpenChange, student, onSuccess, clas
 
   const fetchParents = async () => {
     try {
+      const schoolId = await getCurrentSchoolId();
       const { data, error } = await supabase
         .from("parents")
         .select(`
           parent_id,
-          users!inner (
-            full_name,
-            school_id
-          )
+          full_name,
+          school_id
         `)
-        .eq("users.school_id", await getCurrentSchoolId());
+        .eq("school_id", schoolId);
 
       if (error) throw error;
       setParents(data?.map((p: any) => ({
         parent_id: p.parent_id,
-        full_name: p.users.full_name
+        full_name: p.full_name
       })) || []);
     } catch (error) {
       console.error("Error fetching parents:", error);
@@ -101,13 +100,13 @@ export function EditStudentDialog({ open, onOpenChange, student, onSuccess, clas
     const { data } = await supabase.auth.getUser();
     if (!data.user) return null;
     
-    const { data: userData } = await supabase
-      .from("users")
+    const { data: adminData } = await supabase
+      .from("admins")
       .select("school_id")
       .eq("auth_user_id", data.user.id)
       .single();
     
-    return userData?.school_id;
+    return adminData?.school_id;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,28 +115,19 @@ export function EditStudentDialog({ open, onOpenChange, student, onSuccess, clas
 
     setLoading(true);
     try {
-      // Update users table
-      const { error: userError } = await supabase
-        .from("users")
+      // Update students table with all fields
+      const { error: studentError } = await supabase
+        .from("students")
         .update({
           full_name: formData.full_name,
           email: formData.email,
           phone: formData.phone || null,
-        })
-        .eq("user_id", student.user_id);
-
-      if (userError) throw userError;
-
-      // Update students table
-      const { error: studentError } = await supabase
-        .from("students")
-        .update({
           roll_no: formData.roll_no,
           class_id: formData.class_id,
           section: formData.section,
           gender: formData.gender,
-          dob: formData.dob,
-          admission_date: formData.admission_date,
+          dob: formData.dob || null,
+          admission_date: formData.admission_date || null,
           parent_id: formData.parent_id || null,
         })
         .eq("student_id", student.student_id);

@@ -65,41 +65,37 @@ export default function StudentManagement() {
   const fetchData = async () => {
     try {
       console.log("Fetching student data...");
-      const { data: userData, error: userError } = await supabase
-        .from("users")
+      const { data: adminData, error: adminError } = await supabase
+        .from("admins")
         .select("school_id")
         .eq("auth_user_id", user?.id)
         .single();
 
-      console.log("User data:", userData, "Error:", userError);
+      console.log("Admin data:", adminData, "Error:", adminError);
 
-      if (!userData?.school_id) {
+      if (!adminData?.school_id) {
         console.log("No school_id found for user");
         toast.error("School information not found");
         setLoading(false);
         return;
       }
 
-      // Fetch students with their user information only
-      const { data: studentsData, error: studentsError } = await supabase
+      // Fetch students with their information  
+      const { data: studentsData, error: studentsError} = await supabase
         .from("students")
         .select(`
           student_id,
-          user_id,
           roll_no,
           section,
           gender,
           dob,
           admission_date,
           class_id,
-          users!inner (
-            full_name,
-            email,
-            status,
-            school_id
-          )
+          full_name,
+          email,
+          status
         `)
-        .eq("users.school_id", userData.school_id);
+        .eq("school_id", adminData.school_id);
 
       console.log("Students query result:", studentsData, "Error:", studentsError);
 
@@ -112,7 +108,7 @@ export default function StudentManagement() {
       const { data: classesData, error: classesError } = await supabase
         .from("classes")
         .select("class_id, class_name, section")
-        .eq("school_id", userData.school_id);
+        .eq("school_id", adminData.school_id);
 
       console.log("Classes query result:", classesData, "Error:", classesError);
 
@@ -131,9 +127,9 @@ export default function StudentManagement() {
       if (studentsData) {
         const formattedStudents = studentsData.map((s: any) => ({
           student_id: s.student_id,
-          user_id: s.user_id,
-          full_name: s.users?.full_name || "N/A",
-          email: s.users?.email || "N/A",
+          user_id: s.student_id, // Keep for compatibility
+          full_name: s.full_name || "N/A",
+          email: s.email || "N/A",
           roll_no: s.roll_no || "N/A",
           class_id: s.class_id,
           class_name: classMap.get(s.class_id) || "No Class",
@@ -141,7 +137,7 @@ export default function StudentManagement() {
           gender: s.gender || "",
           dob: s.dob || "",
           admission_date: s.admission_date || "",
-          status: s.users?.status || "inactive",
+          status: s.status || "inactive",
         }));
         console.log("Formatted students:", formattedStudents);
         setStudents(formattedStudents);

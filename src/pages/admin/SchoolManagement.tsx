@@ -38,17 +38,17 @@ export default function SchoolManagement() {
 
   const fetchSchoolData = async () => {
     try {
-      const { data: userData } = await supabase
-        .from("users")
+      const { data: adminData } = await supabase
+        .from("admins")
         .select("school_id")
         .eq("auth_user_id", user?.id)
         .single();
 
-      if (userData?.school_id) {
+      if (adminData?.school_id) {
         const { data: schoolData, error } = await supabase
           .from("schools")
           .select("*")
-          .eq("school_id", userData.school_id)
+          .eq("school_id", adminData.school_id)
           .single();
 
         if (error) throw error;

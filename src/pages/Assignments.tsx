@@ -36,14 +36,6 @@ export default function Assignments() {
 
   const fetchAssignments = async () => {
     try {
-      const { data: userData } = await supabase
-        .from("users")
-        .select("user_id, role")
-        .eq("auth_user_id", user?.id)
-        .single();
-
-      if (!userData) return;
-
       let query = supabase
         .from("assignments")
         .select(`
@@ -61,7 +53,7 @@ export default function Assignments() {
         const { data: studentData } = await supabase
           .from("students")
           .select("class_id")
-          .eq("user_id", userData.user_id)
+          .eq("auth_user_id", user?.id)
           .single();
 
         if (studentData?.class_id) {
@@ -71,7 +63,7 @@ export default function Assignments() {
         const { data: teacherData } = await supabase
           .from("teachers")
           .select("teacher_id")
-          .eq("user_id", userData.user_id)
+          .eq("auth_user_id", user?.id)
           .single();
 
         if (teacherData?.teacher_id) {

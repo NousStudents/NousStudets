@@ -39,14 +39,6 @@ export default function Exams() {
 
   const fetchExams = async () => {
     try {
-      const { data: userData } = await supabase
-        .from("users")
-        .select("user_id, role")
-        .eq("auth_user_id", user?.id)
-        .single();
-
-      if (!userData) return;
-
       let query = supabase
         .from("exam_timetable")
         .select(`
@@ -68,7 +60,7 @@ export default function Exams() {
         const { data: studentData } = await supabase
           .from("students")
           .select("class_id")
-          .eq("user_id", userData.user_id)
+          .eq("auth_user_id", user?.id)
           .single();
 
         if (studentData?.class_id) {

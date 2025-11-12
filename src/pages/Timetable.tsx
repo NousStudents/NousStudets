@@ -24,26 +24,18 @@ export default function Timetable() {
 
   const fetchRoleIds = async () => {
     try {
-      const { data: userData } = await supabase
-        .from("users")
-        .select("user_id")
-        .eq("auth_user_id", user?.id)
-        .single();
-
-      if (!userData) return;
-
       if (role === "student") {
         const { data: studentData } = await supabase
           .from("students")
           .select("student_id")
-          .eq("user_id", userData.user_id)
+          .eq("auth_user_id", user?.id)
           .single();
         if (studentData) setStudentId(studentData.student_id);
       } else if (role === "teacher") {
         const { data: teacherData } = await supabase
           .from("teachers")
           .select("teacher_id")
-          .eq("user_id", userData.user_id)
+          .eq("auth_user_id", user?.id)
           .single();
         if (teacherData) setTeacherId(teacherData.teacher_id);
       }

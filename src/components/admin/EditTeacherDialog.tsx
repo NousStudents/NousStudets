@@ -54,22 +54,13 @@ export function EditTeacherDialog({ open, onOpenChange, teacher, onSuccess }: Ed
 
     setLoading(true);
     try {
-      // Update users table
-      const { error: userError } = await supabase
-        .from("users")
+      // Update teachers table with all fields
+      const { error: teacherError} = await supabase
+        .from("teachers")
         .update({
           full_name: formData.full_name,
           email: formData.email,
           phone: formData.phone || null,
-        })
-        .eq("user_id", teacher.user_id);
-
-      if (userError) throw userError;
-
-      // Update teachers table
-      const { error: teacherError } = await supabase
-        .from("teachers")
-        .update({
           qualification: formData.qualification,
           experience: formData.experience,
           subject_specialization: formData.subject_specialization || null,

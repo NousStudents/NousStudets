@@ -51,22 +51,13 @@ export function EditParentDialog({ open, onOpenChange, parent, onSuccess }: Edit
 
     setLoading(true);
     try {
-      // Update users table
-      const { error: userError } = await supabase
-        .from("users")
+      // Update parents table with all fields
+      const { error: parentError } = await supabase
+        .from("parents")
         .update({
           full_name: formData.full_name,
           email: formData.email,
           phone: formData.phone || null,
-        })
-        .eq("user_id", parent.user_id);
-
-      if (userError) throw userError;
-
-      // Update parents table
-      const { error: parentError } = await supabase
-        .from("parents")
-        .update({
           relation: formData.relation,
           occupation: formData.occupation || null,
         })

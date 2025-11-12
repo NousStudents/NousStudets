@@ -55,20 +55,11 @@ export default function StudentTimetable({ studentId }: { studentId: string }) {
           timetableData.map(async (entry) => {
             const { data: teacherData } = await supabase
               .from('teachers')
-              .select('user_id')
+              .select('full_name')
               .eq('teacher_id', entry.teacher_id)
               .single();
 
-            if (teacherData) {
-              const { data: userData } = await supabase
-                .from('users')
-                .select('full_name')
-                .eq('user_id', teacherData.user_id)
-                .single();
-
-              return { ...entry, teacher_name: userData?.full_name };
-            }
-            return entry;
+            return { ...entry, teacher_name: teacherData?.full_name };
           })
         );
         setTimetable(enrichedData);
