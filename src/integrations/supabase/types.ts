@@ -18,28 +18,56 @@ export type Database = {
         Row: {
           admin_id: string
           admin_level: string | null
+          auth_user_id: string
           created_at: string | null
           department: string | null
+          email: string
+          full_name: string
           permissions: Json | null
+          phone: string | null
+          profile_image: string | null
+          school_id: string
+          status: string | null
           user_id: string
         }
         Insert: {
           admin_id?: string
           admin_level?: string | null
+          auth_user_id: string
           created_at?: string | null
           department?: string | null
+          email: string
+          full_name: string
           permissions?: Json | null
+          phone?: string | null
+          profile_image?: string | null
+          school_id: string
+          status?: string | null
           user_id: string
         }
         Update: {
           admin_id?: string
           admin_level?: string | null
+          auth_user_id?: string
           created_at?: string | null
           department?: string | null
+          email?: string
+          full_name?: string
           permissions?: Json | null
+          phone?: string | null
+          profile_image?: string | null
+          school_id?: string
+          status?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "admins_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
           {
             foreignKeyName: "admins_user_id_fkey"
             columns: ["user_id"]
@@ -709,27 +737,55 @@ export type Database = {
       }
       parents: {
         Row: {
+          auth_user_id: string
           created_at: string | null
+          email: string
+          full_name: string
           occupation: string | null
           parent_id: string
+          phone: string | null
+          profile_image: string | null
           relation: string | null
+          school_id: string
+          status: string | null
           user_id: string
         }
         Insert: {
+          auth_user_id: string
           created_at?: string | null
+          email: string
+          full_name: string
           occupation?: string | null
           parent_id?: string
+          phone?: string | null
+          profile_image?: string | null
           relation?: string | null
+          school_id: string
+          status?: string | null
           user_id: string
         }
         Update: {
+          auth_user_id?: string
           created_at?: string | null
+          email?: string
+          full_name?: string
           occupation?: string | null
           parent_id?: string
+          phone?: string | null
+          profile_image?: string | null
           relation?: string | null
+          school_id?: string
+          status?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "parents_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
           {
             foreignKeyName: "parents_user_id_fkey"
             columns: ["user_id"]
@@ -822,40 +878,55 @@ export type Database = {
       students: {
         Row: {
           admission_date: string | null
+          auth_user_id: string
           class_id: string | null
           created_at: string | null
           dob: string | null
+          email: string
+          full_name: string
           gender: string | null
           parent_id: string | null
+          phone: string | null
           profile_picture: string | null
           roll_no: string | null
           section: string | null
+          status: string | null
           student_id: string
           user_id: string
         }
         Insert: {
           admission_date?: string | null
+          auth_user_id: string
           class_id?: string | null
           created_at?: string | null
           dob?: string | null
+          email: string
+          full_name: string
           gender?: string | null
           parent_id?: string | null
+          phone?: string | null
           profile_picture?: string | null
           roll_no?: string | null
           section?: string | null
+          status?: string | null
           student_id?: string
           user_id: string
         }
         Update: {
           admission_date?: string | null
+          auth_user_id?: string
           class_id?: string | null
           created_at?: string | null
           dob?: string | null
+          email?: string
+          full_name?: string
           gender?: string | null
           parent_id?: string | null
+          phone?: string | null
           profile_picture?: string | null
           roll_no?: string | null
           section?: string | null
+          status?: string | null
           student_id?: string
           user_id?: string
         }
@@ -954,28 +1025,46 @@ export type Database = {
       }
       teachers: {
         Row: {
+          auth_user_id: string
           created_at: string | null
+          email: string
           experience: number | null
+          full_name: string
+          phone: string | null
+          profile_image: string | null
           qualification: string | null
           school_id: string
+          status: string | null
           subject_specialization: string | null
           teacher_id: string
           user_id: string
         }
         Insert: {
+          auth_user_id: string
           created_at?: string | null
+          email: string
           experience?: number | null
+          full_name: string
+          phone?: string | null
+          profile_image?: string | null
           qualification?: string | null
           school_id: string
+          status?: string | null
           subject_specialization?: string | null
           teacher_id?: string
           user_id: string
         }
         Update: {
+          auth_user_id?: string
           created_at?: string | null
+          email?: string
           experience?: number | null
+          full_name?: string
+          phone?: string | null
+          profile_image?: string | null
           qualification?: string | null
           school_id?: string
+          status?: string | null
           subject_specialization?: string | null
           teacher_id?: string
           user_id?: string
