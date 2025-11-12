@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      admins: {
+        Row: {
+          admin_id: string
+          admin_level: string | null
+          created_at: string | null
+          department: string | null
+          permissions: Json | null
+          user_id: string
+        }
+        Insert: {
+          admin_id?: string
+          admin_level?: string | null
+          created_at?: string | null
+          department?: string | null
+          permissions?: Json | null
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          admin_level?: string | null
+          created_at?: string | null
+          department?: string | null
+          permissions?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       ai_tools: {
         Row: {
           ai_id: string
