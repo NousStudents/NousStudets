@@ -42,14 +42,22 @@ export default function StudentDashboard({ profile }: { profile: any }) {
 
   const fetchStudentData = async () => {
     try {
-      const { data: studentInfo } = await supabase
-        .from('students')
-        .select('student_id')
+      const { data: userData } = await supabase
+        .from('users')
+        .select('user_id')
         .eq('auth_user_id', profile.auth_user_id)
         .single();
 
-      if (studentInfo) {
-        setStudentData(prev => ({ ...prev, student_id: studentInfo.student_id }));
+      if (userData) {
+        const { data: studentInfo } = await supabase
+          .from('students')
+          .select('student_id')
+          .eq('user_id', userData.user_id)
+          .single();
+
+        if (studentInfo) {
+          setStudentData(prev => ({ ...prev, student_id: studentInfo.student_id }));
+        }
       }
 
       const { data: assignmentsData } = await supabase

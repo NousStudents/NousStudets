@@ -61,23 +61,35 @@ export default function ParentManagement() {
 
   const fetchData = async () => {
     try {
-      const { data: adminData } = await supabase
-        .from("admins")
+      const { data: userData } = await supabase
+        .from("users")
         .select("school_id")
         .eq("auth_user_id", user?.id)
         .single();
 
-      if (!adminData?.school_id) {
+      if (!userData?.school_id) {
         toast.error("School information not found");
         setLoading(false);
         return;
       }
 
-      // Fetch parents with information
+      // Fetch parents with user information
       const { data: parentsData, error: parentsError } = await supabase
         .from("parents")
-        .select("parent_id, full_name, email, phone, relation, occupation, status, school_id, auth_user_id")
-        .eq("school_id", adminData.school_id);
+        .select(`
+          parent_id,
+          user_id,
+          relation,
+          occupation,
+          users!inner (
+            full_name,
+            email,
+            phone,
+            status,
+            school_id
+          )
+        `)
+        .eq("users.school_id", userData.school_id);
 
       if (parentsError) {
         console.error("Parents query error:", parentsError);
@@ -90,13 +102,16 @@ export default function ParentManagement() {
         .select(`
           student_id,
           parent_id,
-          full_name,
+          users!inner (
+            full_name,
+            school_id
+          ),
           roll_no,
           classes (
-            class_name,
-            school_id
+            class_name
           )
-        `);
+        `)
+        .eq("users.school_id", userData.school_id);
 
       if (studentsError) {
         console.error("Students query error:", studentsError);
@@ -108,22 +123,19 @@ export default function ParentManagement() {
 
       if (studentsData) {
         studentsData.forEach((s: any) => {
-          // Only include students from the same school
-          if (s.classes?.school_id === adminData.school_id) {
-            const student = {
-              student_id: s.student_id,
-              full_name: s.full_name || "N/A",
-              roll_no: s.roll_no || "N/A",
-              class_name: s.classes?.class_name || "N/A",
-              current_parent_id: s.parent_id,
-            };
-            allStudents.push(student);
+          const student = {
+            student_id: s.student_id,
+            full_name: s.users?.full_name || "N/A",
+            roll_no: s.roll_no || "N/A",
+            class_name: s.classes?.class_name || "N/A",
+            current_parent_id: s.parent_id,
+          };
+          allStudents.push(student);
 
-            if (s.parent_id) {
-              const existing = studentsByParent.get(s.parent_id) || [];
-              existing.push(student);
-              studentsByParent.set(s.parent_id, existing);
-            }
+          if (s.parent_id) {
+            const existing = studentsByParent.get(s.parent_id) || [];
+            existing.push(student);
+            studentsByParent.set(s.parent_id, existing);
           }
         });
       }
@@ -133,13 +145,13 @@ export default function ParentManagement() {
       if (parentsData) {
         const formattedParents = parentsData.map((p: any) => ({
           parent_id: p.parent_id,
-          user_id: p.auth_user_id,
-          full_name: p.full_name || "N/A",
-          email: p.email || "N/A",
-          phone: p.phone || "N/A",
+          user_id: p.user_id,
+          full_name: p.users?.full_name || "N/A",
+          email: p.users?.email || "N/A",
+          phone: p.users?.phone || "N/A",
           relation: p.relation || "N/A",
           occupation: p.occupation || "N/A",
-          status: p.status || "inactive",
+          status: p.users?.status || "inactive",
           children: studentsByParent.get(p.parent_id) || [],
         }));
         setParents(formattedParents);
@@ -166,11 +178,11 @@ export default function ParentManagement() {
 
       if (unlinkError) throw unlinkError;
 
-      // Then delete the parent and auth user
+      // Then delete the user (will cascade to parents table)
       const { error } = await supabase
-        .from("parents")
+        .from("users")
         .delete()
-        .eq("parent_id", selectedParent.parent_id);
+        .eq("user_id", selectedParent.user_id);
 
       if (error) throw error;
       toast.success("Parent deleted successfully");
@@ -186,9 +198,9 @@ export default function ParentManagement() {
     try {
       const newStatus = parent.status === "active" ? "inactive" : "active";
       const { error } = await supabase
-        .from("parents")
+        .from("users")
         .update({ status: newStatus })
-        .eq("parent_id", parent.parent_id);
+        .eq("user_id", parent.user_id);
 
       if (error) throw error;
       toast.success(`Parent ${newStatus === "active" ? "activated" : "deactivated"}`);

@@ -83,8 +83,19 @@ export default function StudentManagement() {
       // Fetch students with their information  
       const { data: studentsData, error: studentsError} = await supabase
         .from("students")
-        .select("student_id, roll_no, section, gender, dob, admission_date, class_id, full_name, email, status")
-        .in("class_id", (await supabase.from("classes").select("class_id").eq("school_id", adminData.school_id)).data?.map(c => c.class_id) || []);
+        .select(`
+          student_id,
+          roll_no,
+          section,
+          gender,
+          dob,
+          admission_date,
+          class_id,
+          full_name,
+          email,
+          status
+        `)
+        .eq("school_id", adminData.school_id);
 
       console.log("Students query result:", studentsData, "Error:", studentsError);
 
@@ -151,11 +162,11 @@ export default function StudentManagement() {
     if (!selectedStudent) return;
 
     try {
-      // Delete student and auth user
+      // Delete user (will cascade to students table)
       const { error } = await supabase
-        .from("students")
+        .from("users")
         .delete()
-        .eq("student_id", selectedStudent.student_id);
+        .eq("user_id", selectedStudent.user_id);
 
       if (error) throw error;
       toast.success("Student deleted successfully");
@@ -171,9 +182,9 @@ export default function StudentManagement() {
     try {
       const newStatus = student.status === "active" ? "inactive" : "active";
       const { error } = await supabase
-        .from("students")
+        .from("users")
         .update({ status: newStatus })
-        .eq("student_id", student.student_id);
+        .eq("user_id", student.user_id);
 
       if (error) throw error;
       toast.success(`Student ${newStatus === "active" ? "activated" : "deactivated"}`);
@@ -191,10 +202,13 @@ export default function StudentManagement() {
     }
 
     try {
+      const selectedStudents = students.filter(s => selectedStudentIds.includes(s.student_id));
+      const userIds = selectedStudents.map(s => s.user_id);
+
       const { error } = await supabase
-        .from("students")
+        .from("users")
         .update({ status: "active" })
-        .in("student_id", selectedStudentIds);
+        .in("user_id", userIds);
 
       if (error) throw error;
       toast.success(`${selectedStudentIds.length} student(s) activated`);
@@ -212,10 +226,13 @@ export default function StudentManagement() {
     }
 
     try {
+      const selectedStudents = students.filter(s => selectedStudentIds.includes(s.student_id));
+      const userIds = selectedStudents.map(s => s.user_id);
+
       const { error } = await supabase
-        .from("students")
+        .from("users")
         .update({ status: "inactive" })
-        .in("student_id", selectedStudentIds);
+        .in("user_id", userIds);
 
       if (error) throw error;
       toast.success(`${selectedStudentIds.length} student(s) deactivated`);

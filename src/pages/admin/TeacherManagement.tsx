@@ -69,23 +69,36 @@ export default function TeacherManagement() {
 
   const fetchData = async () => {
     try {
-      const { data: adminData } = await supabase
-        .from("admins")
+      const { data: userData } = await supabase
+        .from("users")
         .select("school_id")
         .eq("auth_user_id", user?.id)
         .single();
 
-      if (!adminData?.school_id) {
+      if (!userData?.school_id) {
         toast.error("School information not found");
         setLoading(false);
         return;
       }
 
-      // Fetch teachers with their information
+      // Fetch teachers with their user information - using school_id directly on teachers table
       const { data: teachersData, error: teachersError } = await supabase
         .from("teachers")
-        .select("teacher_id, full_name, email, phone, school_id, qualification, experience, subject_specialization, status, auth_user_id")
-        .eq("school_id", adminData.school_id);
+        .select(`
+          teacher_id,
+          user_id,
+          school_id,
+          qualification,
+          experience,
+          subject_specialization,
+          users!inner (
+            full_name,
+            email,
+            phone,
+            status
+          )
+        `)
+        .eq("school_id", userData.school_id);
 
       if (teachersError) {
         console.error("Teachers query error:", teachersError);
@@ -100,10 +113,10 @@ export default function TeacherManagement() {
           subject_name,
           teacher_id,
           classes (
-            class_name,
-            school_id
+            class_name
           )
-        `);
+        `)
+        .eq("classes.school_id", userData.school_id);
 
       if (subjectsError) {
         console.error("Subjects query error:", subjectsError);
@@ -115,19 +128,16 @@ export default function TeacherManagement() {
 
       if (subjectsData) {
         subjectsData.forEach((s: any) => {
-          // Only include subjects from the same school
-          if (s.classes?.school_id === adminData.school_id) {
-            if (s.teacher_id) {
-              const subjects = teacherSubjectsMap.get(s.teacher_id) || [];
-              subjects.push(s.subject_name);
-              teacherSubjectsMap.set(s.teacher_id, subjects);
-            }
-            formattedSubjects.push({
-              subject_id: s.subject_id,
-              subject_name: s.subject_name,
-              class_name: s.classes?.class_name || "N/A",
-            });
+          if (s.teacher_id) {
+            const subjects = teacherSubjectsMap.get(s.teacher_id) || [];
+            subjects.push(s.subject_name);
+            teacherSubjectsMap.set(s.teacher_id, subjects);
           }
+          formattedSubjects.push({
+            subject_id: s.subject_id,
+            subject_name: s.subject_name,
+            class_name: s.classes?.class_name || "N/A",
+          });
         });
       }
 
@@ -136,13 +146,13 @@ export default function TeacherManagement() {
       if (teachersData) {
         const formattedTeachers = teachersData.map((t: any) => ({
           teacher_id: t.teacher_id,
-          user_id: t.auth_user_id,
-          full_name: t.full_name || "N/A",
-          email: t.email || "N/A",
-          phone: t.phone || "N/A",
+          user_id: t.user_id,
+          full_name: t.users?.full_name || "N/A",
+          email: t.users?.email || "N/A",
+          phone: t.users?.phone || "N/A",
           qualification: t.qualification || "N/A",
           experience: t.experience || 0,
-          status: t.status || "inactive",
+          status: t.users?.status || "inactive",
           subjects: teacherSubjectsMap.get(t.teacher_id) || [],
         }));
         setTeachers(formattedTeachers);
@@ -258,11 +268,11 @@ export default function TeacherManagement() {
     if (!selectedTeacher) return;
 
     try {
-      // Delete teacher and auth user
+      // Delete user (will cascade to teachers table)
       const { error } = await supabase
-        .from("teachers")
+        .from("users")
         .delete()
-        .eq("teacher_id", selectedTeacher.teacher_id);
+        .eq("user_id", selectedTeacher.user_id);
 
       if (error) throw error;
       toast.success("Teacher deleted successfully");
@@ -278,9 +288,9 @@ export default function TeacherManagement() {
     try {
       const newStatus = teacher.status === "active" ? "inactive" : "active";
       const { error } = await supabase
-        .from("teachers")
+        .from("users")
         .update({ status: newStatus })
-        .eq("teacher_id", teacher.teacher_id);
+        .eq("user_id", teacher.user_id);
 
       if (error) throw error;
       toast.success(`Teacher ${newStatus === "active" ? "activated" : "deactivated"}`);
