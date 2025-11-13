@@ -33,9 +33,7 @@ interface Class {
 interface Student {
   student_id: string;
   roll_no?: string;
-  users: {
-    full_name: string;
-  };
+  full_name: string;
 }
 
 export default function UserManagement() {
@@ -166,15 +164,8 @@ export default function UserManagement() {
     try {
       const { data, error } = await supabase
         .from('students')
-        .select(`
-          student_id,
-          roll_no,
-          users!inner (
-            full_name,
-            school_id
-          )
-        `)
-        .eq('users.school_id', adminSchoolId)
+        .select('student_id, roll_no, full_name')
+        .eq('classes.school_id', adminSchoolId)
         .order('roll_no');
       
       if (error) {
@@ -586,7 +577,7 @@ export default function UserManagement() {
                                 htmlFor={student.student_id}
                                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                               >
-                                {student.users.full_name} {student.roll_no && `(Roll: ${student.roll_no})`}
+                                {student.full_name} {student.roll_no && `(Roll: ${student.roll_no})`}
                               </label>
                             </div>
                           ))
