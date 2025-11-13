@@ -43,7 +43,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
         supabase.from('students').select('student_id', { count: 'exact', head: true }),
         supabase.from('teachers').select('teacher_id', { count: 'exact', head: true }),
         supabase.from('classes').select('class_id', { count: 'exact', head: true }),
-        supabase.from('admins').select('admin_id', { count: 'exact', head: true })
+        supabase.from('users').select('user_id', { count: 'exact', head: true })
       ]);
 
       setStats({

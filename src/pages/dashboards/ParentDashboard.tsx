@@ -30,7 +30,7 @@ export default function ParentDashboard({ profile }: { profile: any }) {
       const { data: parentData } = await supabase
         .from('parents')
         .select('parent_id')
-        .eq('auth_user_id', profile.auth_user_id)
+        .eq('user_id', profile.user_id)
         .single();
 
       if (parentData) {

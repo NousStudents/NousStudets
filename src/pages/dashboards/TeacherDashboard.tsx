@@ -29,14 +29,22 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
   const fetchTeacherData = async () => {
     try {
       // Get teacher_id
-      const { data: teacherInfo } = await supabase
-        .from('teachers')
-        .select('teacher_id')
+      const { data: userData } = await supabase
+        .from('users')
+        .select('user_id')
         .eq('auth_user_id', profile.auth_user_id)
         .single();
 
-      if (teacherInfo) {
-        setTeacherId(teacherInfo.teacher_id);
+      if (userData) {
+        const { data: teacherInfo } = await supabase
+          .from('teachers')
+          .select('teacher_id')
+          .eq('user_id', userData.user_id)
+          .single();
+
+        if (teacherInfo) {
+          setTeacherId(teacherInfo.teacher_id);
+        }
       }
 
       const { data: classesData } = await supabase
