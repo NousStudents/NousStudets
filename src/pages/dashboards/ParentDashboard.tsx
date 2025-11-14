@@ -26,17 +26,17 @@ export default function ParentDashboard({ profile }: { profile: any }) {
 
   const fetchParentData = async () => {
     try {
-      // Fetch children data
+      // Get parent_id directly
       const { data: parentData } = await supabase
         .from('parents')
         .select('parent_id')
-        .eq('user_id', profile.user_id)
+        .eq('auth_user_id', profile.auth_user_id)
         .single();
 
       if (parentData) {
         const { data: studentsData } = await supabase
           .from('students')
-          .select('*, users!inner(*)')
+          .select('*')
           .eq('parent_id', parentData.parent_id);
         
         setChildren(studentsData || []);

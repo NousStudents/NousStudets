@@ -39,18 +39,26 @@ export default function AdminDashboard({ profile }: { profile: any }) {
 
   const fetchAdminStats = async () => {
     try {
-      const [studentsRes, teachersRes, classesRes, usersRes] = await Promise.all([
+      const [studentsRes, teachersRes, classesRes] = await Promise.all([
         supabase.from('students').select('student_id', { count: 'exact', head: true }),
         supabase.from('teachers').select('teacher_id', { count: 'exact', head: true }),
-        supabase.from('classes').select('class_id', { count: 'exact', head: true }),
-        supabase.from('users').select('user_id', { count: 'exact', head: true })
+        supabase.from('classes').select('class_id', { count: 'exact', head: true })
       ]);
+
+      // Calculate total active users from all role tables
+      const [adminsRes, parentsRes] = await Promise.all([
+        supabase.from('admins').select('admin_id', { count: 'exact', head: true }),
+        supabase.from('parents').select('parent_id', { count: 'exact', head: true })
+      ]);
+
+      const totalUsers = (studentsRes.count || 0) + (teachersRes.count || 0) + 
+                        (adminsRes.count || 0) + (parentsRes.count || 0);
 
       setStats({
         totalStudents: studentsRes.count || 0,
         totalTeachers: teachersRes.count || 0,
         totalClasses: classesRes.count || 0,
-        activeUsers: usersRes.count || 0
+        activeUsers: totalUsers
       });
     } catch (error) {
       console.error('Error fetching admin stats:', error);

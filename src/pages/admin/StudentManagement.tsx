@@ -17,7 +17,7 @@ import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 
 interface Student {
   student_id: string;
-  user_id: string;
+  auth_user_id: string;
   full_name: string;
   email: string;
   roll_no: string;
@@ -205,13 +205,10 @@ export default function StudentManagement() {
     }
 
     try {
-      const selectedStudents = students.filter(s => selectedStudentIds.includes(s.student_id));
-      const userIds = selectedStudents.map(s => s.user_id);
-
       const { error } = await supabase
-        .from("users")
+        .from("students")
         .update({ status: "active" })
-        .in("user_id", userIds);
+        .in("student_id", selectedStudentIds);
 
       if (error) throw error;
       toast.success(`${selectedStudentIds.length} student(s) activated`);
@@ -229,13 +226,10 @@ export default function StudentManagement() {
     }
 
     try {
-      const selectedStudents = students.filter(s => selectedStudentIds.includes(s.student_id));
-      const userIds = selectedStudents.map(s => s.user_id);
-
       const { error } = await supabase
-        .from("users")
+        .from("students")
         .update({ status: "inactive" })
-        .in("user_id", userIds);
+        .in("student_id", selectedStudentIds);
 
       if (error) throw error;
       toast.success(`${selectedStudentIds.length} student(s) deactivated`);

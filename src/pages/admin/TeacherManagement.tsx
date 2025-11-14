@@ -17,7 +17,7 @@ import { EditTeacherDialog } from "@/components/admin/EditTeacherDialog";
 
 interface Teacher {
   teacher_id: string;
-  user_id: string;
+  auth_user_id: string;
   full_name: string;
   email: string;
   phone: string;
@@ -253,11 +253,11 @@ export default function TeacherManagement() {
     if (!selectedTeacher) return;
 
     try {
-      // Delete user (will cascade to teachers table)
+      // Delete teacher record (auth deletion handled by trigger)
       const { error } = await supabase
-        .from("users")
+        .from("teachers")
         .delete()
-        .eq("user_id", selectedTeacher.user_id);
+        .eq("teacher_id", selectedTeacher.teacher_id);
 
       if (error) throw error;
       toast.success("Teacher deleted successfully");
