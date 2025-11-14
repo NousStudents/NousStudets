@@ -31,42 +31,55 @@ export default function SuperAdminLogin() {
     setLoading(true);
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      // Step 1: Sign in with email and password
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (signInError) throw signInError;
+      if (signInError) {
+        throw new Error(`Login failed: ${signInError.message}`);
+      }
 
-      // Check if user is super admin
+      if (!signInData.user) {
+        throw new Error("Login failed: No user data received");
+      }
+
+      // Step 2: Check if user is super admin
       const { data: superAdminData, error: superAdminError } = await supabase
         .from("super_admins")
-        .select("super_admin_id")
-        .eq("auth_user_id", (await supabase.auth.getUser()).data.user?.id)
+        .select("super_admin_id, email, full_name, status")
+        .eq("auth_user_id", signInData.user.id)
         .eq("status", "active")
         .maybeSingle();
 
       if (superAdminError) {
-        console.error("Error checking super admin status:", superAdminError);
+        console.error("Super admin check error:", superAdminError);
         await supabase.auth.signOut();
-        throw new Error("Error verifying super admin status. Please try again.");
+        throw new Error(
+          `Database error: ${superAdminError.message}. Please contact support.`
+        );
       }
 
       if (!superAdminData) {
         await supabase.auth.signOut();
-        throw new Error("Access denied. You are not a super administrator.");
+        throw new Error(
+          "Access Denied: Your account is not registered as a super administrator. Please contact the system administrator."
+        );
       }
 
+      // Success!
       toast({
-        title: "Success",
-        description: "Logged in successfully",
+        title: "Login Successful",
+        description: `Welcome back, ${superAdminData.full_name}!`,
       });
 
       navigate("/super-admin");
     } catch (error: any) {
+      console.error("Login error:", error);
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Login Failed",
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
