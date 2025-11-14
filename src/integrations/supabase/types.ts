@@ -963,6 +963,33 @@ export type Database = {
           },
         ]
       }
+      super_admins: {
+        Row: {
+          auth_user_id: string
+          created_at: string | null
+          email: string
+          full_name: string
+          status: string | null
+          super_admin_id: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string | null
+          email: string
+          full_name: string
+          status?: string | null
+          super_admin_id?: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          status?: string | null
+          super_admin_id?: string
+        }
+        Relationships: []
+      }
       teachers: {
         Row: {
           auth_user_id: string
@@ -1111,6 +1138,7 @@ export type Database = {
       get_teacher_id: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
       has_role: { Args: { _role: string }; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "teacher" | "student" | "parent"

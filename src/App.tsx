@@ -22,6 +22,7 @@ import ClassManagement from "./pages/admin/ClassManagement";
 import TeacherManagement from "./pages/admin/TeacherManagement";
 import ParentManagement from "./pages/admin/ParentManagement";
 import CleanupUtility from "./pages/admin/CleanupUtility";
+import SuperAdmin from "./pages/SuperAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -149,6 +150,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/super-admin" element={<SuperAdmin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
