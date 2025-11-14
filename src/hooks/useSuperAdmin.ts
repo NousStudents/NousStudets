@@ -21,13 +21,14 @@ export const useSuperAdmin = () => {
           .select("super_admin_id")
           .eq("auth_user_id", user.id)
           .eq("status", "active")
-          .single();
+          .maybeSingle();
 
-        if (error && error.code !== "PGRST116") {
+        if (error) {
           console.error("Error checking super admin:", error);
+          setIsSuperAdmin(false);
+        } else {
+          setIsSuperAdmin(!!data);
         }
-
-        setIsSuperAdmin(!!data);
       } catch (error) {
         console.error("Error checking super admin:", error);
         setIsSuperAdmin(false);
