@@ -80,22 +80,17 @@ export default function StudentManagement() {
         return;
       }
 
-      // Fetch students with their information  
+      // Fetch students directly with all their information
       const { data: studentsData, error: studentsError} = await supabase
         .from("students")
         .select(`
-          student_id,
-          roll_no,
-          section,
-          gender,
-          dob,
-          admission_date,
-          class_id,
-          full_name,
-          email,
-          status
-        `)
-        .eq("school_id", adminData.school_id);
+          *,
+          classes (
+            class_name,
+            section,
+            school_id
+          )
+        `);
 
       console.log("Students query result:", studentsData, "Error:", studentsError);
 
@@ -104,51 +99,59 @@ export default function StudentManagement() {
         toast.error(`Failed to fetch students: ${studentsError.message}`);
       }
 
-      // Fetch classes separately
-      const { data: classesData, error: classesError } = await supabase
-        .from("classes")
-        .select("class_id, class_name, section")
-        .eq("school_id", adminData.school_id);
-
-      console.log("Classes query result:", classesData, "Error:", classesError);
-
-      if (classesError) {
-        console.error("Classes query error:", classesError);
-      }
-
-      // Create a map of class_id to class_name for quick lookup
-      const classMap = new Map();
-      if (classesData) {
-        classesData.forEach((c: any) => {
-          classMap.set(c.class_id, c.class_name);
-        });
-      }
-
       if (studentsData) {
-        const formattedStudents = studentsData.map((s: any) => ({
-          student_id: s.student_id,
-          user_id: s.student_id, // Keep for compatibility
-          full_name: s.full_name || "N/A",
-          email: s.email || "N/A",
-          roll_no: s.roll_no || "N/A",
-          class_id: s.class_id,
-          class_name: classMap.get(s.class_id) || "No Class",
-          section: s.section || "",
-          gender: s.gender || "",
-          dob: s.dob || "",
-          admission_date: s.admission_date || "",
-          status: s.status || "inactive",
-        }));
+        // Filter by school and get parent names  
+        const studentsInSchool = studentsData.filter((s: any) => 
+          s.classes?.school_id === adminData.school_id
+        );
+
+        const formattedStudents = await Promise.all(
+          studentsInSchool.map(async (s: any) => {
+            let parent_name = "Not Assigned";
+            if (s.parent_id) {
+              const { data: parentData } = await supabase
+                .from("parents")
+                .select("full_name")
+                .eq("parent_id", s.parent_id)
+                .single();
+              parent_name = parentData?.full_name || "Not Assigned";
+            }
+
+            return {
+              student_id: s.student_id,
+              auth_user_id: s.auth_user_id,
+              full_name: s.full_name || "N/A",
+              email: s.email || "N/A",
+              phone: s.phone || "N/A",
+              roll_no: s.roll_no || "N/A",
+              class_id: s.class_id,
+              class_name: s.classes 
+                ? `${s.classes.class_name}${s.classes.section ? ` (${s.classes.section})` : ''}`
+                : "Not Assigned",
+              section: s.section || "",
+              gender: s.gender || "",
+              dob: s.dob || "",
+              admission_date: s.admission_date || "",
+              parent_name,
+              parent_id: s.parent_id,
+              status: s.status || "inactive",
+            };
+          })
+        );
         console.log("Formatted students:", formattedStudents);
         setStudents(formattedStudents);
       } else {
         setStudents([]);
       }
 
+      // Fetch all classes for the school
+      const { data: classesData } = await supabase
+        .from("classes")
+        .select("class_id, class_name, section")
+        .eq("school_id", adminData.school_id);
+      
       if (classesData) {
         setClasses(classesData);
-      } else {
-        setClasses([]);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -162,11 +165,11 @@ export default function StudentManagement() {
     if (!selectedStudent) return;
 
     try {
-      // Delete user (will cascade to students table)
+      // Delete student record (auth deletion handled by trigger)
       const { error } = await supabase
-        .from("users")
+        .from("students")
         .delete()
-        .eq("user_id", selectedStudent.user_id);
+        .eq("student_id", selectedStudent.student_id);
 
       if (error) throw error;
       toast.success("Student deleted successfully");
@@ -182,9 +185,9 @@ export default function StudentManagement() {
     try {
       const newStatus = student.status === "active" ? "inactive" : "active";
       const { error } = await supabase
-        .from("users")
+        .from("students")
         .update({ status: newStatus })
-        .eq("user_id", student.user_id);
+        .eq("student_id", student.student_id);
 
       if (error) throw error;
       toast.success(`Student ${newStatus === "active" ? "activated" : "deactivated"}`);

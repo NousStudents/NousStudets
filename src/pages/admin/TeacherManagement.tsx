@@ -69,36 +69,23 @@ export default function TeacherManagement() {
 
   const fetchData = async () => {
     try {
-      const { data: userData } = await supabase
-        .from("users")
+      const { data: adminData } = await supabase
+        .from("admins")
         .select("school_id")
         .eq("auth_user_id", user?.id)
         .single();
 
-      if (!userData?.school_id) {
+      if (!adminData?.school_id) {
         toast.error("School information not found");
         setLoading(false);
         return;
       }
 
-      // Fetch teachers with their user information - using school_id directly on teachers table
+      // Fetch teachers directly with all info
       const { data: teachersData, error: teachersError } = await supabase
         .from("teachers")
-        .select(`
-          teacher_id,
-          user_id,
-          school_id,
-          qualification,
-          experience,
-          subject_specialization,
-          users!inner (
-            full_name,
-            email,
-            phone,
-            status
-          )
-        `)
-        .eq("school_id", userData.school_id);
+        .select("*")
+        .eq("school_id", adminData.school_id);
 
       if (teachersError) {
         console.error("Teachers query error:", teachersError);
@@ -113,51 +100,49 @@ export default function TeacherManagement() {
           subject_name,
           teacher_id,
           classes (
-            class_name
+            class_name,
+            school_id
           )
-        `)
-        .eq("classes.school_id", userData.school_id);
+        `);
 
       if (subjectsError) {
         console.error("Subjects query error:", subjectsError);
       }
 
-      // Create a map of teacher_id to their subjects
-      const teacherSubjectsMap = new Map<string, string[]>();
-      const formattedSubjects: Subject[] = [];
+      if (teachersData) {
+        const formattedTeachers = teachersData.map((teacher: any) => {
+          const teacherSubjects = subjectsData
+            ?.filter((s: any) => 
+              s.teacher_id === teacher.teacher_id && 
+              s.classes?.school_id === adminData.school_id
+            )
+            .map((s: any) => s.subject_name) || [];
 
-      if (subjectsData) {
-        subjectsData.forEach((s: any) => {
-          if (s.teacher_id) {
-            const subjects = teacherSubjectsMap.get(s.teacher_id) || [];
-            subjects.push(s.subject_name);
-            teacherSubjectsMap.set(s.teacher_id, subjects);
-          }
-          formattedSubjects.push({
-            subject_id: s.subject_id,
-            subject_name: s.subject_name,
-            class_name: s.classes?.class_name || "N/A",
-          });
+          return {
+            teacher_id: teacher.teacher_id,
+            auth_user_id: teacher.auth_user_id,
+            full_name: teacher.full_name,
+            email: teacher.email,
+            phone: teacher.phone || "N/A",
+            qualification: teacher.qualification || "N/A",
+            experience: teacher.experience || 0,
+            status: teacher.status,
+            subjects: teacherSubjects,
+          };
         });
+        setTeachers(formattedTeachers);
       }
 
-      setAllSubjects(formattedSubjects);
-
-      if (teachersData) {
-        const formattedTeachers = teachersData.map((t: any) => ({
-          teacher_id: t.teacher_id,
-          user_id: t.user_id,
-          full_name: t.users?.full_name || "N/A",
-          email: t.users?.email || "N/A",
-          phone: t.users?.phone || "N/A",
-          qualification: t.qualification || "N/A",
-          experience: t.experience || 0,
-          status: t.users?.status || "inactive",
-          subjects: teacherSubjectsMap.get(t.teacher_id) || [],
-        }));
-        setTeachers(formattedTeachers);
-      } else {
-        setTeachers([]);
+      if (subjectsData) {
+        setAllSubjects(
+          subjectsData
+            .filter((s: any) => s.classes?.school_id === adminData.school_id)
+            .map((s: any) => ({
+              subject_id: s.subject_id,
+              subject_name: s.subject_name,
+              class_name: s.classes?.class_name || "N/A",
+            }))
+        );
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -288,9 +273,9 @@ export default function TeacherManagement() {
     try {
       const newStatus = teacher.status === "active" ? "inactive" : "active";
       const { error } = await supabase
-        .from("users")
+        .from("teachers")
         .update({ status: newStatus })
-        .eq("user_id", teacher.user_id);
+        .eq("teacher_id", teacher.teacher_id);
 
       if (error) throw error;
       toast.success(`Teacher ${newStatus === "active" ? "activated" : "deactivated"}`);
