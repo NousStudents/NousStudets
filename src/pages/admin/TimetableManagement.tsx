@@ -65,41 +65,24 @@ export default function TimetableManagement() {
           .order('start_time'),
         supabase.from('classes').select('*').order('class_name'),
         supabase.from('subjects').select('*').order('subject_name'),
-        supabase.from('teachers').select('teacher_id, user_id')
+        supabase.from('teachers').select('teacher_id, full_name')
       ]);
 
       // Enrich timetable with teacher names
-      if (timetableRes.data) {
-        const enrichedData = await Promise.all(
-          timetableRes.data.map(async (entry: any) => {
-            const teacher = teachersRes.data?.find((t: any) => t.teacher_id === entry.teacher_id);
-            if (teacher) {
-              const { data: userData } = await supabase
-                .from('users')
-                .select('full_name')
-                .eq('user_id', teacher.user_id)
-                .single();
-              return { ...entry, teacher_name: userData?.full_name };
-            }
-            return entry;
-          })
-        );
+      if (timetableRes.data && teachersRes.data) {
+        const enrichedData = timetableRes.data.map((entry: any) => {
+          const teacher = teachersRes.data.find((t: any) => t.teacher_id === entry.teacher_id);
+          return { 
+            ...entry, 
+            teacher_name: teacher?.full_name || 'N/A'
+          };
+        });
         setTimetableEntries(enrichedData);
       }
 
-      // Enrich teachers list with names
+      // Teachers already have full_name from the query
       if (teachersRes.data) {
-        const enrichedTeachers = await Promise.all(
-          teachersRes.data.map(async (teacher: any) => {
-            const { data: userData } = await supabase
-              .from('users')
-              .select('full_name')
-              .eq('user_id', teacher.user_id)
-              .single();
-            return { ...teacher, users: { full_name: userData?.full_name } };
-          })
-        );
-        setTeachers(enrichedTeachers);
+        setTeachers(teachersRes.data);
       }
 
       setClasses(classesRes.data || []);
