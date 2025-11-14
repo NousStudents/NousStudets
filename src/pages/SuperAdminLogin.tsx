@@ -44,9 +44,15 @@ export default function SuperAdminLogin() {
         .select("super_admin_id")
         .eq("auth_user_id", (await supabase.auth.getUser()).data.user?.id)
         .eq("status", "active")
-        .single();
+        .maybeSingle();
 
-      if (superAdminError || !superAdminData) {
+      if (superAdminError) {
+        console.error("Error checking super admin status:", superAdminError);
+        await supabase.auth.signOut();
+        throw new Error("Error verifying super admin status. Please try again.");
+      }
+
+      if (!superAdminData) {
         await supabase.auth.signOut();
         throw new Error("Access denied. You are not a super administrator.");
       }
