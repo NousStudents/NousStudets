@@ -84,45 +84,34 @@ serve(async (req) => {
       .select('super_admin_id')
       .eq('auth_user_id', user.id)
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
 
     const isSuperAdmin = !!superAdminData;
     console.log('Is super admin:', isSuperAdmin);
 
-    // Variable to store the user data for audit logging
-    let userData: { user_id: string } | null = null;
+    // Variable to store the admin data for audit logging
+    let adminData: { admin_id: string; school_id: string } | null = null;
 
     // If not super admin, check if user is regular admin
     if (!isSuperAdmin) {
-      const { data: userDataResult } = await supabaseClient
-        .from('users')
-        .select('user_id')
+      const { data: adminDataResult, error: adminError } = await supabaseClient
+        .from('admins')
+        .select('admin_id, school_id')
         .eq('auth_user_id', user.id)
-        .single();
+        .eq('status', 'active')
+        .maybeSingle();
 
-      if (!userDataResult) {
-        return new Response(
-          JSON.stringify({ error: 'User not found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+      console.log('Admin check result:', { adminDataResult, adminError });
 
-      userData = userDataResult;
-
-      const { data: roleData } = await supabaseClient
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userData.user_id)
-        .eq('role', 'admin')
-        .single();
-
-      if (!roleData) {
+      if (adminError || !adminDataResult) {
         console.log('Access denied: User is not an admin');
         return new Response(
           JSON.stringify({ error: 'Access Denied: Admin privileges required' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      adminData = adminDataResult;
     }
 
     // Parse request body
@@ -153,6 +142,15 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // For school admins, verify the school_id matches their own school
+    if (adminData && schoolId !== adminData.school_id) {
+      console.log('Access denied: Admin cannot create users for different school');
+      return new Response(
+        JSON.stringify({ error: 'Access Denied: Cannot create users for a different school' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -203,8 +201,7 @@ serve(async (req) => {
         await supabaseClient.from('students').delete().eq('user_id', userId);
         await supabaseClient.from('parents').delete().eq('user_id', userId);
         
-        // 4. Delete user roles
-        await supabaseClient.from('user_roles').delete().eq('user_id', userId);
+        // 4. No user_roles table to clean up (using role-specific tables)
         
         // 5. Delete user record
         const { error: userDeleteError } = await supabaseClient
@@ -448,23 +445,33 @@ serve(async (req) => {
     
     console.log('User record created successfully:', newUser.user_id);
 
-    // Assign role in user_roles table using upsert to prevent duplicates
-    const { error: roleInsertError } = await supabaseClient
-      .from('user_roles')
-      .upsert({
-        user_id: newUser.user_id,
-        role: role,
-        granted_by: userData?.user_id || user.id
-      }, {
-        onConflict: 'user_id,role'
-      });
-
-    if (roleInsertError) {
-      console.error('Error assigning role:', roleInsertError);
-    }
+    // Role is managed through role-specific tables (admins, teachers, students, parents)
+    // No need for separate user_roles table
 
     // Create role-specific records
-    if (role === 'teacher') {
+    if (role === 'admin') {
+      const { error: adminError } = await supabaseClient
+        .from('admins')
+        .insert({
+          auth_user_id: newAuthUser.user!.id,
+          email: email,
+          full_name: fullName,
+          phone: phone || null,
+          school_id: schoolId,
+          status: 'active'
+        });
+
+      if (adminError) {
+        console.error('Error creating admin record:', adminError);
+        // Cleanup
+        await supabaseClient.from('users').delete().eq('user_id', newUser.user_id);
+        await supabaseClient.auth.admin.deleteUser(newAuthUser.user!.id);
+        return new Response(
+          JSON.stringify({ error: `Failed to create admin: ${adminError.message}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else if (role === 'teacher') {
       const { error: teacherError } = await supabaseClient
         .from('teachers')
         .insert({
@@ -477,8 +484,7 @@ serve(async (req) => {
 
       if (teacherError) {
         console.error('Error creating teacher record:', teacherError);
-        // Cleanup: delete user records if teacher creation fails
-        await supabaseClient.from('user_roles').delete().eq('user_id', newUser.user_id);
+        // Cleanup
         await supabaseClient.from('users').delete().eq('user_id', newUser.user_id);
         await supabaseClient.auth.admin.deleteUser(newAuthUser.user!.id);
         return new Response(
@@ -502,7 +508,6 @@ serve(async (req) => {
       if (studentError) {
         console.error('Error creating student record:', studentError);
         // Cleanup
-        await supabaseClient.from('user_roles').delete().eq('user_id', newUser.user_id);
         await supabaseClient.from('users').delete().eq('user_id', newUser.user_id);
         await supabaseClient.auth.admin.deleteUser(newAuthUser.user!.id);
         return new Response(
@@ -524,7 +529,6 @@ serve(async (req) => {
       if (parentError) {
         console.error('Error creating parent record:', parentError);
         // Cleanup
-        await supabaseClient.from('user_roles').delete().eq('user_id', newUser.user_id);
         await supabaseClient.from('users').delete().eq('user_id', newUser.user_id);
         await supabaseClient.auth.admin.deleteUser(newAuthUser.user!.id);
         return new Response(
@@ -576,7 +580,7 @@ serve(async (req) => {
       .from('audit_logs')
       .insert({
         action: 'USER_CREATED',
-        performed_by: userData?.user_id || user.id,
+        performed_by: adminData?.admin_id || user.id,
         target_user_id: newUser.user_id,
         details: {
           email,
