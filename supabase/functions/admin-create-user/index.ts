@@ -78,33 +78,51 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id, user.email);
 
-    // Check if user is admin
-    const { data: userData } = await supabaseClient
-      .from('users')
-      .select('user_id')
+    // Check if user is super admin first
+    const { data: superAdminData } = await supabaseClient
+      .from('super_admins')
+      .select('super_admin_id')
       .eq('auth_user_id', user.id)
+      .eq('status', 'active')
       .single();
 
-    if (!userData) {
-      return new Response(
-        JSON.stringify({ error: 'User not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const isSuperAdmin = !!superAdminData;
+    console.log('Is super admin:', isSuperAdmin);
 
-    const { data: roleData } = await supabaseClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userData.user_id)
-      .eq('role', 'admin')
-      .single();
+    // Variable to store the user data for audit logging
+    let userData: { user_id: string } | null = null;
 
-    if (!roleData) {
-      console.log('Access denied: User is not an admin');
-      return new Response(
-        JSON.stringify({ error: 'Access Denied: Admin privileges required' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // If not super admin, check if user is regular admin
+    if (!isSuperAdmin) {
+      const { data: userDataResult } = await supabaseClient
+        .from('users')
+        .select('user_id')
+        .eq('auth_user_id', user.id)
+        .single();
+
+      if (!userDataResult) {
+        return new Response(
+          JSON.stringify({ error: 'User not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      userData = userDataResult;
+
+      const { data: roleData } = await supabaseClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userData.user_id)
+        .eq('role', 'admin')
+        .single();
+
+      if (!roleData) {
+        console.log('Access denied: User is not an admin');
+        return new Response(
+          JSON.stringify({ error: 'Access Denied: Admin privileges required' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Parse request body
@@ -436,7 +454,7 @@ serve(async (req) => {
       .upsert({
         user_id: newUser.user_id,
         role: role,
-        granted_by: userData.user_id
+        granted_by: userData?.user_id || user.id
       }, {
         onConflict: 'user_id,role'
       });
@@ -558,7 +576,7 @@ serve(async (req) => {
       .from('audit_logs')
       .insert({
         action: 'USER_CREATED',
-        performed_by: userData.user_id,
+        performed_by: userData?.user_id || user.id,
         target_user_id: newUser.user_id,
         details: {
           email,
