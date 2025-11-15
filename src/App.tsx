@@ -25,6 +25,7 @@ import ParentManagement from "./pages/admin/ParentManagement";
 import CleanupUtility from "./pages/admin/CleanupUtility";
 import SuperAdmin from "./pages/SuperAdmin";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
+import SuperAdminSignup from "./pages/SuperAdminSignup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -152,15 +153,16 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route path="/super-admin/login" element={<SuperAdminLogin />} />
-            <Route
-              path="/super-admin"
-              element={
-                <SuperAdminProtectedRoute>
-                  <SuperAdmin />
-                </SuperAdminProtectedRoute>
-              }
-            />
+          <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+          <Route path="/super-admin/signup" element={<SuperAdminSignup />} />
+          <Route
+            path="/super-admin"
+            element={
+              <SuperAdminProtectedRoute>
+                <SuperAdmin />
+              </SuperAdminProtectedRoute>
+            }
+          />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
