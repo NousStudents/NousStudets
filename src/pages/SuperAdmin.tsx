@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -14,6 +15,7 @@ export default function SuperAdmin() {
   const navigate = useNavigate();
   const { isSuperAdmin, loading } = useSuperAdmin();
   const [creating, setCreating] = useState(false);
+  const [schools, setSchools] = useState<Array<{ school_id: string; school_name: string }>>([]);
 
   // School form state
   const [schoolData, setSchoolData] = useState({
@@ -35,6 +37,26 @@ export default function SuperAdmin() {
     phone: "",
     school_id: "",
   });
+
+  useEffect(() => {
+    const fetchSchools = async () => {
+      const { data, error } = await supabase
+        .from("schools")
+        .select("school_id, school_name")
+        .order("school_name");
+      
+      if (error) {
+        toast.error("Failed to fetch schools");
+        return;
+      }
+      
+      setSchools(data || []);
+    };
+
+    if (isSuperAdmin) {
+      fetchSchools();
+    }
+  }, [isSuperAdmin]);
 
   if (loading) {
     return (
@@ -290,14 +312,23 @@ export default function SuperAdmin() {
                   </div>
 
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="school_id">School ID *</Label>
-                    <Input
-                      id="school_id"
-                      required
-                      placeholder="Enter the school UUID"
+                    <Label htmlFor="school_id">School *</Label>
+                    <Select
                       value={adminData.school_id}
-                      onChange={(e) => setAdminData({ ...adminData, school_id: e.target.value })}
-                    />
+                      onValueChange={(value) => setAdminData({ ...adminData, school_id: value })}
+                      required
+                    >
+                      <SelectTrigger id="school_id">
+                        <SelectValue placeholder="Select a school" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {schools.map((school) => (
+                          <SelectItem key={school.school_id} value={school.school_id}>
+                            {school.school_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
