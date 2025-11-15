@@ -23,6 +23,7 @@ import ClassManagement from "./pages/admin/ClassManagement";
 import TeacherManagement from "./pages/admin/TeacherManagement";
 import ParentManagement from "./pages/admin/ParentManagement";
 import CleanupUtility from "./pages/admin/CleanupUtility";
+import SQLEditor from "./pages/admin/SQLEditor";
 import SuperAdmin from "./pages/SuperAdmin";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
 import SuperAdminSignup from "./pages/SuperAdminSignup";
@@ -150,6 +151,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <CleanupUtility />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/sql-editor"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <SQLEditor />
                 </ProtectedRoute>
               }
             />

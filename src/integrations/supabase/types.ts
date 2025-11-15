@@ -1132,6 +1132,7 @@ export type Database = {
     }
     Functions: {
       current_school_id: { Args: never; Returns: string }
+      execute_sql_query: { Args: { query_text: string }; Returns: Json }
       get_admin_id: { Args: never; Returns: string }
       get_parent_id: { Args: never; Returns: string }
       get_student_id: { Args: never; Returns: string }

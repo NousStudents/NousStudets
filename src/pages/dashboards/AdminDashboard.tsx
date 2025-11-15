@@ -19,7 +19,8 @@ import {
   FileText,
   Building2,
   GraduationCap,
-  UserCheck
+  UserCheck,
+  Database
 } from 'lucide-react';
 
 export default function AdminDashboard({ profile }: { profile: any }) {
@@ -225,6 +226,16 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             >
               <AlertCircle className="h-6 w-6" />
               <span className="text-sm">Cleanup</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
+              onClick={() => isMobile ? undefined : navigate('/admin/sql-editor')}
+              disabled={isMobile}
+              title={isMobile ? "Desktop required for SQL editor" : ""}
+            >
+              <Database className="h-6 w-6" />
+              <span className="text-sm">SQL Editor</span>
             </Button>
             <Button 
               variant="outline" 
