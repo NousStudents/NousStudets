@@ -1126,6 +1126,50 @@ export type Database = {
           },
         ]
       }
+      users: {
+        Row: {
+          auth_user_id: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          phone: string | null
+          role: string | null
+          school_id: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_user_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          phone?: string | null
+          role?: string | null
+          school_id?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Update: {
+          auth_user_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          phone?: string | null
+          role?: string | null
+          school_id?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
