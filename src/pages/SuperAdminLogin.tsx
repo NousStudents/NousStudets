@@ -138,6 +138,17 @@ export default function SuperAdminLogin() {
                 "Login"
               )}
             </Button>
+            <div className="text-center text-sm">
+              <span className="text-muted-foreground">Don't have an account? </span>
+              <Button
+                type="button"
+                variant="link"
+                className="p-0 h-auto"
+                onClick={() => navigate("/super-admin/signup")}
+              >
+                Sign Up
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
