@@ -150,9 +150,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => isMobile ? undefined : navigate('/admin/school')}
-              disabled={isMobile}
-              title={isMobile ? "Desktop required for school management" : ""}
+              onClick={() => navigate('/admin/school')}
             >
               <Building2 className="h-6 w-6" />
               <span className="text-sm">School</span>
@@ -160,9 +158,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => isMobile ? undefined : navigate('/admin/students')}
-              disabled={isMobile}
-              title={isMobile ? "Desktop required for student management" : ""}
+              onClick={() => navigate('/admin/students')}
             >
               <GraduationCap className="h-6 w-6" />
               <span className="text-sm">Students</span>
@@ -170,9 +166,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => isMobile ? undefined : navigate('/admin/teachers')}
-              disabled={isMobile}
-              title={isMobile ? "Desktop required for teacher management" : ""}
+              onClick={() => navigate('/admin/teachers')}
             >
               <UserCheck className="h-6 w-6" />
               <span className="text-sm">Teachers</span>
@@ -180,9 +174,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => isMobile ? undefined : navigate('/admin/parents')}
-              disabled={isMobile}
-              title={isMobile ? "Desktop required for parent management" : ""}
+              onClick={() => navigate('/admin/parents')}
             >
               <Users className="h-6 w-6" />
               <span className="text-sm">Parents</span>
@@ -190,9 +182,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => isMobile ? undefined : navigate('/admin/users')}
-              disabled={isMobile}
-              title={isMobile ? "Desktop required for user management" : ""}
+              onClick={() => navigate('/admin/users')}
             >
               <UserPlus className="h-6 w-6" />
               <span className="text-sm">Users</span>
@@ -200,9 +190,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => isMobile ? undefined : navigate('/admin/classes')}
-              disabled={isMobile}
-              title={isMobile ? "Desktop required for class management" : ""}
+              onClick={() => navigate('/admin/classes')}
             >
               <School className="h-6 w-6" />
               <span className="text-sm">Classes</span>
@@ -210,9 +198,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => isMobile ? undefined : navigate('/admin/timetable')}
-              disabled={isMobile}
-              title={isMobile ? "Desktop required for timetable management" : ""}
+              onClick={() => navigate('/admin/timetable')}
             >
               <Calendar className="h-6 w-6" />
               <span className="text-sm">Timetable</span>
@@ -220,9 +206,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => isMobile ? undefined : navigate('/admin/cleanup')}
-              disabled={isMobile}
-              title={isMobile ? "Desktop required for database cleanup" : ""}
+              onClick={() => navigate('/admin/cleanup')}
             >
               <AlertCircle className="h-6 w-6" />
               <span className="text-sm">Cleanup</span>
@@ -230,9 +214,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => isMobile ? undefined : navigate('/admin/sql-editor')}
-              disabled={isMobile}
-              title={isMobile ? "Desktop required for SQL editor" : ""}
+              onClick={() => navigate('/admin/sql-editor')}
             >
               <Database className="h-6 w-6" />
               <span className="text-sm">SQL Editor</span>
@@ -246,11 +228,6 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               <span className="text-sm">Exams</span>
             </Button>
           </div>
-          {isMobile && (
-            <p className="text-sm text-muted-foreground mt-4 text-center">
-              ℹ️ Management actions require desktop
-            </p>
-          )}
         </CardContent>
       </Card>
 

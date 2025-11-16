@@ -12,7 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, UserPlus, Shield, AlertCircle } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
-import { MobileAdminRestriction } from "@/components/MobileAdminRestriction";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -381,125 +380,122 @@ export default function UserManagement() {
           </div>
         </div>
 
-        <MobileAdminRestriction action="create and manage users">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />
-                Create New User
-              </CardTitle>
-              <CardDescription className="text-sm">
-                School ID is automatically filled from your admin profile. Users will receive their login credentials.
-              </CardDescription>
-            </CardHeader>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <UserPlus className="h-4 w-4 sm:h-5 sm:w-5" />
+              Create New User
+            </CardTitle>
+            <CardDescription>
+              Fill in the information below to create a new user account
+            </CardDescription>
+          </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Role Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="role">Role *</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) => setFormData({ ...formData, role: value })}
+                  required
+                >
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="teacher">Teacher</SelectItem>
+                    <SelectItem value="parent">Parent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Common Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name *</Label>
                   <Input
                     id="fullName"
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    placeholder="Enter full name"
                     required
                   />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
+                  <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="user@example.com"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="Enter phone number"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role *</Label>
-                  <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="student">Student</SelectItem>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                      <SelectItem value="parent">Parent</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Initial Password *</Label>
-                  <PasswordInput
-                    id="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Enter secure password"
                     required
                   />
                 </div>
               </div>
 
-              {/* Role-specific fields */}
-              {formData.role === 'student' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password *</Label>
+                  <PasswordInput
+                    id="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Student Fields */}
+              {formData.role === "student" && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="classId">Class *</Label>
-                      <Select value={formData.classId} onValueChange={(value) => setFormData({ ...formData, classId: value })}>
-                        <SelectTrigger>
+                      <Select
+                        value={formData.classId}
+                        onValueChange={(value) => setFormData({ ...formData, classId: value })}
+                        required
+                      >
+                        <SelectTrigger id="classId">
                           <SelectValue placeholder="Select class" />
                         </SelectTrigger>
                         <SelectContent>
-                          {classes.map(cls => (
+                          {classes.map((cls) => (
                             <SelectItem key={cls.class_id} value={cls.class_id}>
-                              {cls.class_name}
+                              {cls.class_name} {cls.section ? `- ${cls.section}` : ""}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="section">Section</Label>
-                      <Input
-                        id="section"
-                        value={formData.section}
-                        onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-                        placeholder="e.g., A, B, C"
-                      />
-                    </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="rollNo">Roll Number</Label>
                       <Input
                         id="rollNo"
                         value={formData.rollNo}
                         onChange={(e) => setFormData({ ...formData, rollNo: e.target.value })}
-                        placeholder="Enter roll number"
                       />
                     </div>
+                  </div>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="gender">Gender</Label>
-                      <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
-                        <SelectTrigger>
+                      <Select
+                        value={formData.gender}
+                        onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                      >
+                        <SelectTrigger id="gender">
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                         <SelectContent>
@@ -509,7 +505,6 @@ export default function UserManagement() {
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="dob">Date of Birth</Label>
                       <Input
@@ -519,27 +514,62 @@ export default function UserManagement() {
                         onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                       />
                     </div>
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="admissionDate">Admission Date</Label>
-                      <Input
-                        id="admissionDate"
-                        type="date"
-                        value={formData.admissionDate}
-                        onChange={(e) => setFormData({ ...formData, admissionDate: e.target.value })}
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="admissionDate">Admission Date</Label>
+                    <Input
+                      id="admissionDate"
+                      type="date"
+                      value={formData.admissionDate}
+                      onChange={(e) => setFormData({ ...formData, admissionDate: e.target.value })}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Teacher Fields */}
+              {formData.role === "teacher" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="qualification">Qualification</Label>
+                    <Input
+                      id="qualification"
+                      value={formData.qualification}
+                      onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="experience">Experience (years)</Label>
+                    <Input
+                      id="experience"
+                      type="number"
+                      value={formData.experience}
+                      onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="subjectSpecialization">Subject Specialization</Label>
+                    <Input
+                      id="subjectSpecialization"
+                      value={formData.subjectSpecialization}
+                      onChange={(e) => setFormData({ ...formData, subjectSpecialization: e.target.value })}
+                    />
                   </div>
                 </div>
               )}
 
-              {formData.role === 'parent' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Parent Fields */}
+              {formData.role === "parent" && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="relation">Relation *</Label>
-                      <Select value={formData.relation} onValueChange={(value) => setFormData({ ...formData, relation: value })}>
-                        <SelectTrigger>
+                      <Label htmlFor="relation">Relation</Label>
+                      <Select
+                        value={formData.relation}
+                        onValueChange={(value) => setFormData({ ...formData, relation: value })}
+                      >
+                        <SelectTrigger id="relation">
                           <SelectValue placeholder="Select relation" />
                         </SelectTrigger>
                         <SelectContent>
@@ -549,91 +579,49 @@ export default function UserManagement() {
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="occupation">Occupation</Label>
                       <Input
                         id="occupation"
                         value={formData.occupation}
                         onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
-                        placeholder="Enter occupation"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <Label>Linked Students *</Label>
-                    {!adminSchoolId ? (
-                      <div className="border border-destructive rounded-lg p-4">
-                        <p className="text-sm text-destructive">Unable to load students. Please refresh the page.</p>
-                      </div>
-                    ) : (
-                      <div className="border rounded-lg p-4 max-h-60 overflow-y-auto space-y-2">
-                        {students.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">
-                            No students available in your school. Create student accounts first.
-                          </p>
-                        ) : (
-                          students.map(student => (
-                            <div key={student.student_id} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={student.student_id}
-                                checked={formData.selectedStudents.includes(student.student_id)}
-                                onCheckedChange={() => handleStudentToggle(student.student_id)}
-                              />
-                              <label
-                                htmlFor={student.student_id}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                              >
-                                {student.full_name} {student.roll_no && `(Roll: ${student.roll_no})`}
-                              </label>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      Select one or more students to link to this parent account.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {formData.role === 'teacher' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Link to Students (Optional)</Label>
                     <div className="space-y-2">
-                      <Label htmlFor="qualification">Qualification</Label>
-                      <Input
-                        id="qualification"
-                        value={formData.qualification}
-                        onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
-                        placeholder="e.g., M.Ed, B.Sc in Mathematics"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="experience">Experience (Years)</Label>
-                      <Input
-                        id="experience"
-                        type="number"
-                        value={formData.experience}
-                        onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                        placeholder="Years of experience"
-                      />
-                    </div>
-
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="subjectSpecialization">Subject Specialization</Label>
-                      <Input
-                        id="subjectSpecialization"
-                        value={formData.subjectSpecialization}
-                        onChange={(e) => setFormData({ ...formData, subjectSpecialization: e.target.value })}
-                        placeholder="e.g., Mathematics, Physics, Chemistry"
-                      />
+                      {students.map((student) => (
+                        <div key={student.student_id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={student.student_id}
+                            checked={formData.selectedStudents.includes(student.student_id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setFormData({
+                                  ...formData,
+                                  selectedStudents: [...formData.selectedStudents, student.student_id]
+                                });
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  selectedStudents: formData.selectedStudents.filter(id => id !== student.student_id)
+                                });
+                              }
+                            }}
+                          />
+                          <Label
+                            htmlFor={student.student_id}
+                            className="text-sm font-normal cursor-pointer"
+                          >
+                            {student.full_name} (Roll: {student.roll_no})
+                          </Label>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                </>
               )}
 
               <Button type="submit" disabled={loading} className="w-full">
@@ -645,7 +633,7 @@ export default function UserManagement() {
                 ) : (
                   <>
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Create User Account
+                    Create User
                   </>
                 )}
               </Button>
@@ -653,20 +641,26 @@ export default function UserManagement() {
           </CardContent>
         </Card>
 
-        <Card className="border-primary/20 bg-primary/5">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Security Notice</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
+              Security Information
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• School ID is automatically assigned from your admin account</li>
-              <li>• All account creation actions are logged with admin details and timestamp</li>
-              <li>• Users must change their password on first login</li>
-              <li>• Public signup is completely disabled for security</li>
-            </ul>
+            <div className="bg-muted/50 p-4 rounded-lg space-y-2 text-sm">
+              <p className="font-semibold text-foreground">Important Notes:</p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <li>Users will need to change their password on first login</li>
+                <li>Email verification is disabled for admin-created accounts</li>
+                <li>All account creation actions are logged with admin details and timestamp</li>
+                <li>Users must change their password on first login</li>
+                <li>Public signup is completely disabled for security</li>
+              </ul>
+            </div>
           </CardContent>
         </Card>
-        </MobileAdminRestriction>
       </div>
     </div>
     </>
