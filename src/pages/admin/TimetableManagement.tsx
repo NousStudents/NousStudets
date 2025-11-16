@@ -9,9 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, Plus, Pencil, Trash2, School } from 'lucide-react';
+import { Calendar, Clock, Plus, Pencil, Trash2, School, Loader2 } from 'lucide-react';
 import { BackButton } from '@/components/BackButton';
-import { MobileAdminRestriction } from '@/components/MobileAdminRestriction';
 
 interface TimetableEntry {
   timetable_id: string;
@@ -219,41 +218,38 @@ export default function TimetableManagement() {
           </div>
         </div>
         
-        <MobileAdminRestriction action="add or edit timetable entries">
-          <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-            <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Schedule
-              </Button>
-            </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+        <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
+          <DialogTrigger asChild>
+            <Button className="w-full sm:w-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Schedule
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
-                {editingEntry ? 'Edit Timetable Entry' : 'Add New Timetable Entry'}
-              </DialogTitle>
+              <DialogTitle>{editingEntry ? 'Edit Schedule' : 'Add New Schedule'}</DialogTitle>
               <DialogDescription>
-                {editingEntry 
-                  ? 'Update the schedule details below'
-                  : 'Fill in the details to create a new schedule entry'}
+                {editingEntry ? 'Update the timetable entry' : 'Create a new timetable entry for a class'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="class_id">Class</Label>
+                  <Label htmlFor="class_id">Class *</Label>
                   <Select
                     value={formData.class_id}
-                    onValueChange={(value) => setFormData({ ...formData, class_id: value })}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, class_id: value, subject_id: '' });
+                    }}
                     required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="class_id">
                       <SelectValue placeholder="Select class" />
                     </SelectTrigger>
                     <SelectContent>
                       {classes.map((cls) => (
                         <SelectItem key={cls.class_id} value={cls.class_id}>
-                          {cls.class_name} - {cls.section || 'A'}
+                          {cls.class_name} {cls.section ? `- ${cls.section}` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -261,13 +257,14 @@ export default function TimetableManagement() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="subject_id">Subject</Label>
+                  <Label htmlFor="subject_id">Subject *</Label>
                   <Select
                     value={formData.subject_id}
                     onValueChange={(value) => setFormData({ ...formData, subject_id: value })}
                     required
+                    disabled={!formData.class_id}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="subject_id">
                       <SelectValue placeholder="Select subject" />
                     </SelectTrigger>
                     <SelectContent>
@@ -279,21 +276,22 @@ export default function TimetableManagement() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="teacher_id">Teacher</Label>
                   <Select
                     value={formData.teacher_id}
                     onValueChange={(value) => setFormData({ ...formData, teacher_id: value })}
-                    required
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select teacher" />
+                    <SelectTrigger id="teacher_id">
+                      <SelectValue placeholder="Select teacher (optional)" />
                     </SelectTrigger>
                     <SelectContent>
                       {teachers.map((teacher) => (
                         <SelectItem key={teacher.teacher_id} value={teacher.teacher_id}>
-                          {teacher.users?.full_name || 'Unknown'}
+                          {teacher.full_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -301,27 +299,31 @@ export default function TimetableManagement() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="day_of_week">Day of Week</Label>
+                  <Label htmlFor="day_of_week">Day of Week *</Label>
                   <Select
                     value={formData.day_of_week}
                     onValueChange={(value) => setFormData({ ...formData, day_of_week: value })}
                     required
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="day_of_week">
                       <SelectValue placeholder="Select day" />
                     </SelectTrigger>
                     <SelectContent>
-                      {DAYS.map((day) => (
-                        <SelectItem key={day} value={day}>
-                          {day}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="Monday">Monday</SelectItem>
+                      <SelectItem value="Tuesday">Tuesday</SelectItem>
+                      <SelectItem value="Wednesday">Wednesday</SelectItem>
+                      <SelectItem value="Thursday">Thursday</SelectItem>
+                      <SelectItem value="Friday">Friday</SelectItem>
+                      <SelectItem value="Saturday">Saturday</SelectItem>
+                      <SelectItem value="Sunday">Sunday</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="start_time">Start Time</Label>
+                  <Label htmlFor="start_time">Start Time *</Label>
                   <Input
                     id="start_time"
                     type="time"
@@ -332,7 +334,7 @@ export default function TimetableManagement() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="end_time">End Time</Label>
+                  <Label htmlFor="end_time">End Time *</Label>
                   <Input
                     id="end_time"
                     type="time"
@@ -344,17 +346,23 @@ export default function TimetableManagement() {
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => handleDialogChange(false)}>
+                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {editingEntry ? 'Update' : 'Create'}
+                <Button type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {editingEntry ? 'Updating...' : 'Creating...'}
+                    </>
+                  ) : (
+                    editingEntry ? 'Update' : 'Create'
+                  )}
                 </Button>
               </div>
             </form>
           </DialogContent>
         </Dialog>
-        </MobileAdminRestriction>
       </div>
 
       <Card>
