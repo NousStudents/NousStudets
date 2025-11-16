@@ -72,65 +72,65 @@ export default function StudentDashboard({ profile }: { profile: any }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-foreground mb-2">
-          Welcome back, {profile?.full_name?.split(' ')[0]}!
+      <div className="animate-fade-in">
+        <h2 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-3">
+          Welcome back, {profile?.full_name?.split(' ')[0]}! 👋
         </h2>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-lg">
           Here's your academic overview for today.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-card border-primary/20">
+        <Card className="bg-gradient-green-blue border-pastel-green/30 animate-fade-in">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Clock className="h-4 w-4" />
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Clock className="h-5 w-5 text-pastel-green" />
               Attendance
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{studentData.attendance_percentage}%</div>
-            <p className="text-xs text-success mt-1">+2% from last month</p>
+            <div className="text-4xl font-bold bg-gradient-green-blue bg-clip-text text-transparent">{studentData.attendance_percentage}%</div>
+            <p className="text-xs text-success mt-2 font-medium">+2% from last month</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-card border-secondary/20">
+        <Card className="bg-gradient-pink-yellow border-pastel-coral/30 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <FileText className="h-4 w-4" />
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+              <FileText className="h-5 w-5 text-pastel-coral" />
               Pending Assignments
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{studentData.pending_assignments}</div>
-            <p className="text-xs text-muted-foreground mt-1">Due this week</p>
+            <div className="text-4xl font-bold bg-gradient-pink-yellow bg-clip-text text-transparent">{studentData.pending_assignments}</div>
+            <p className="text-xs text-muted-foreground mt-2">Due this week</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-card border-accent/20">
+        <Card className="bg-gradient-blue-purple border-pastel-purple/30 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-pastel-purple" />
               Upcoming Exams
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{studentData.upcoming_exams}</div>
-            <p className="text-xs text-muted-foreground mt-1">Next 2 weeks</p>
+            <div className="text-4xl font-bold bg-gradient-blue-purple bg-clip-text text-transparent">{studentData.upcoming_exams}</div>
+            <p className="text-xs text-muted-foreground mt-2">Next 2 weeks</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-card border-success/20">
+        <Card className="bg-gradient-card border-pastel-yellow/30 animate-fade-in" style={{ animationDelay: '0.3s' }}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-pastel-yellow" />
               Average Grade
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{studentData.average_grade}</div>
-            <p className="text-xs text-success mt-1">+5% from last term</p>
+            <div className="text-4xl font-bold text-pastel-yellow">{studentData.average_grade}</div>
+            <p className="text-xs text-success mt-2 font-medium">+5% from last term</p>
           </CardContent>
         </Card>
       </div>
