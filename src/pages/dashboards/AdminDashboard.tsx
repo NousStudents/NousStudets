@@ -86,61 +86,61 @@ export default function AdminDashboard({ profile }: { profile: any }) {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-card border-primary/20">
+        <Card className="bg-gradient-blue-purple border-pastel-purple/30 animate-fade-in">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Users className="h-4 w-4" />
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Users className="h-5 w-5 text-pastel-purple" />
               Total Students
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{stats.totalStudents}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active enrollments</p>
+            <div className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">{stats.totalStudents}</div>
+            <p className="text-xs text-muted-foreground mt-2">Active enrollments</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-card border-secondary/20">
+        <Card className="bg-gradient-pink-yellow border-pastel-pink/30 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <UserPlus className="h-4 w-4" />
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-pastel-coral" />
               Total Teachers
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{stats.totalTeachers}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active faculty</p>
+            <div className="text-4xl font-bold bg-gradient-pink-yellow bg-clip-text text-transparent">{stats.totalTeachers}</div>
+            <p className="text-xs text-muted-foreground mt-2">Active faculty</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-card border-success/20">
+        <Card className="bg-gradient-green-blue border-pastel-green/30 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <School className="h-4 w-4" />
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+              <School className="h-5 w-5 text-pastel-green" />
               Total Classes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{stats.totalClasses}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active sections</p>
+            <div className="text-4xl font-bold bg-gradient-green-blue bg-clip-text text-transparent">{stats.totalClasses}</div>
+            <p className="text-xs text-muted-foreground mt-2">Active sections</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-card border-warning/20">
+        <Card className="bg-gradient-card border-pastel-yellow/30 animate-fade-in" style={{ animationDelay: '0.3s' }}>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-pastel-yellow" />
               Active Users
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{stats.activeUsers}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total system users</p>
+            <div className="text-4xl font-bold text-pastel-yellow">{stats.activeUsers}</div>
+            <p className="text-xs text-muted-foreground mt-2">Total system users</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="animate-slide-up">
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
           <CardDescription>Common administrative tasks</CardDescription>
@@ -148,84 +148,84 @@ export default function AdminDashboard({ profile }: { profile: any }) {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <Button 
-              variant="outline" 
-              className="h-auto flex-col gap-2 py-4"
+              variant="pastelPurple" 
+              className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/school')}
             >
-              <Building2 className="h-6 w-6" />
-              <span className="text-sm">School</span>
+              <Building2 className="h-7 w-7" />
+              <span className="text-sm font-medium">School</span>
             </Button>
             <Button 
-              variant="outline" 
-              className="h-auto flex-col gap-2 py-4"
+              variant="pastelBlue" 
+              className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/students')}
             >
-              <GraduationCap className="h-6 w-6" />
-              <span className="text-sm">Students</span>
+              <GraduationCap className="h-7 w-7" />
+              <span className="text-sm font-medium">Students</span>
             </Button>
             <Button 
-              variant="outline" 
-              className="h-auto flex-col gap-2 py-4"
+              variant="pastelGreen" 
+              className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/teachers')}
             >
-              <UserCheck className="h-6 w-6" />
-              <span className="text-sm">Teachers</span>
+              <UserCheck className="h-7 w-7" />
+              <span className="text-sm font-medium">Teachers</span>
             </Button>
             <Button 
-              variant="outline" 
-              className="h-auto flex-col gap-2 py-4"
+              variant="pastelPink" 
+              className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/parents')}
             >
-              <Users className="h-6 w-6" />
-              <span className="text-sm">Parents</span>
+              <Users className="h-7 w-7" />
+              <span className="text-sm font-medium">Parents</span>
             </Button>
             <Button
-              variant="outline" 
-              className="h-auto flex-col gap-2 py-4"
+              variant="pastelYellow" 
+              className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/users')}
             >
-              <UserPlus className="h-6 w-6" />
-              <span className="text-sm">Users</span>
+              <UserPlus className="h-7 w-7" />
+              <span className="text-sm font-medium">Users</span>
             </Button>
             <Button 
-              variant="outline" 
-              className="h-auto flex-col gap-2 py-4"
+              variant="pastelCoral" 
+              className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/classes')}
             >
-              <School className="h-6 w-6" />
-              <span className="text-sm">Classes</span>
+              <School className="h-7 w-7" />
+              <span className="text-sm font-medium">Classes</span>
             </Button>
             <Button 
-              variant="outline" 
-              className="h-auto flex-col gap-2 py-4"
+              variant="pastelPurple" 
+              className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/timetable')}
             >
-              <Calendar className="h-6 w-6" />
-              <span className="text-sm">Timetable</span>
+              <Calendar className="h-7 w-7" />
+              <span className="text-sm font-medium">Timetable</span>
             </Button>
             <Button 
               variant="outline" 
-              className="h-auto flex-col gap-2 py-4"
+              className="h-auto flex-col gap-3 py-5 rounded-2xl border-2 border-pastel-coral/40 hover:bg-pastel-coral/10"
               onClick={() => navigate('/admin/cleanup')}
             >
-              <AlertCircle className="h-6 w-6" />
-              <span className="text-sm">Cleanup</span>
+              <AlertCircle className="h-7 w-7 text-pastel-coral" />
+              <span className="text-sm font-medium">Cleanup</span>
             </Button>
             <Button 
-              variant="outline" 
-              className="h-auto flex-col gap-2 py-4"
+              variant="pastelBlue" 
+              className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/sql-editor')}
             >
-              <Database className="h-6 w-6" />
-              <span className="text-sm">SQL Editor</span>
+              <Database className="h-7 w-7" />
+              <span className="text-sm font-medium">SQL Editor</span>
             </Button>
             <Button 
-              variant="outline" 
-              className="h-auto flex-col gap-2 py-4"
+              variant="pastelGreen" 
+              className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/exams')}
             >
-              <FileText className="h-6 w-6" />
-              <span className="text-sm">Exams</span>
+              <FileText className="h-7 w-7" />
+              <span className="text-sm font-medium">Exams</span>
             </Button>
           </div>
         </CardContent>
