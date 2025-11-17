@@ -6,7 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { GraduationCap, Bell } from 'lucide-react';
+import { GraduationCap, Bell, MessageCircle, Video } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { ProfileSheet } from '@/components/ProfileSheet';
 import { BackButton } from '@/components/BackButton';
 import StudentDashboard from './dashboards/StudentDashboard';
@@ -163,7 +164,17 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Link to="/messages">
+                <Button variant="ghost" size="icon">
+                  <MessageCircle className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Link to="/meetings">
+                <Button variant="ghost" size="icon">
+                  <Video className="h-5 w-5" />
+                </Button>
+              </Link>
               <Button variant="ghost" size="icon">
                 <Bell className="h-5 w-5" />
               </Button>

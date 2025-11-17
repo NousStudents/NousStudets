@@ -262,6 +262,33 @@ export type Database = {
           },
         ]
       }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          id: string
+          joined_at: string | null
+          last_read_at: string | null
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          joined_at?: string | null
+          last_read_at?: string | null
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          joined_at?: string | null
+          last_read_at?: string | null
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string | null
@@ -620,10 +647,105 @@ export type Database = {
           },
         ]
       }
+      meeting_participants: {
+        Row: {
+          id: string
+          joined_at: string | null
+          meeting_id: string
+          role: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string | null
+          meeting_id: string
+          role?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string | null
+          meeting_id?: string
+          role?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_participants_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["meeting_id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          meeting_id: string
+          meeting_type: string | null
+          meeting_url: string | null
+          organizer_id: string
+          scheduled_at: string
+          school_id: string
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          meeting_id?: string
+          meeting_type?: string | null
+          meeting_url?: string | null
+          organizer_id: string
+          scheduled_at: string
+          school_id: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          meeting_id?: string
+          meeting_type?: string | null
+          meeting_url?: string | null
+          organizer_id?: string
+          scheduled_at?: string
+          school_id?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
       messages: {
         Row: {
+          conversation_id: string | null
+          file_name: string | null
+          file_type: string | null
+          file_url: string | null
+          group_name: string | null
+          is_group: boolean | null
           message_id: string
           message_text: string
+          message_type: string | null
           read_at: string | null
           receiver_id: string
           school_id: string
@@ -631,8 +753,15 @@ export type Database = {
           sent_at: string | null
         }
         Insert: {
+          conversation_id?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          group_name?: string | null
+          is_group?: boolean | null
           message_id?: string
           message_text: string
+          message_type?: string | null
           read_at?: string | null
           receiver_id: string
           school_id: string
@@ -640,8 +769,15 @@ export type Database = {
           sent_at?: string | null
         }
         Update: {
+          conversation_id?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          group_name?: string | null
+          is_group?: boolean | null
           message_id?: string
           message_text?: string
+          message_type?: string | null
           read_at?: string | null
           receiver_id?: string
           school_id?: string

@@ -15,6 +15,8 @@ import Assignments from "./pages/Assignments";
 import Exams from "./pages/Exams";
 import Attendance from "./pages/Attendance";
 import Fees from "./pages/Fees";
+import Messages from "./pages/Messages";
+import Meetings from "./pages/Meetings";
 import UserManagement from "./pages/admin/UserManagement";
 import TimetableManagement from "./pages/admin/TimetableManagement";
 import SchoolManagement from "./pages/admin/SchoolManagement";
@@ -87,6 +89,22 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["admin", "student", "parent"]}>
                   <Fees />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/messages" 
+              element={
+                <ProtectedRoute roles={["admin", "teacher", "student", "parent"]}>
+                  <Messages />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/meetings" 
+              element={
+                <ProtectedRoute roles={["admin", "teacher", "student", "parent"]}>
+                  <Meetings />
                 </ProtectedRoute>
               } 
             />
