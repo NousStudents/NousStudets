@@ -6,9 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Users, MessageCircle, Paperclip } from "lucide-react";
+import { Send, Users, MessageCircle, Plus, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { useRole } from "@/hooks/useRole";
+import { FileUploadButton } from "@/components/messaging/FileUploadButton";
+import { GroupChatDialog } from "@/components/messaging/GroupChatDialog";
+import { MessageSearch, SearchFilters } from "@/components/messaging/MessageSearch";
 
 interface Message {
   message_id: string;
@@ -22,6 +25,8 @@ interface Message {
   group_name: string | null;
   file_url: string | null;
   file_name: string | null;
+  file_type: string | null;
+  message_type: string | null;
 }
 
 interface Conversation {
@@ -39,8 +44,11 @@ export default function Messages() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [filteredMessages, setFilteredMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [uploadedFile, setUploadedFile] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -54,6 +62,10 @@ export default function Messages() {
       fetchMessages(selectedConversation);
     }
   }, [selectedConversation]);
+
+  useEffect(() => {
+    setFilteredMessages(messages);
+  }, [messages]);
 
   const fetchConversations = async () => {
     try {
@@ -131,24 +143,56 @@ export default function Messages() {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+    if ((!newMessage.trim() && !uploadedFile) || !selectedConversation) return;
 
     try {
       const { error } = await supabase.from("messages").insert({
         sender_id: user?.id,
         receiver_id: selectedConversation,
-        message_text: newMessage,
+        message_text: newMessage || (uploadedFile ? "Sent a file" : ""),
         conversation_id: selectedConversation,
         school_id: user?.user_metadata?.school_id,
-        message_type: "text",
+        message_type: uploadedFile ? "file" : "text",
+        file_url: uploadedFile?.url,
+        file_name: uploadedFile?.name,
+        file_type: uploadedFile?.type,
       });
 
       if (error) throw error;
       setNewMessage("");
+      setUploadedFile(null);
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
     }
+  };
+
+  const handleSearch = (filters: SearchFilters) => {
+    let filtered = [...messages];
+
+    if (filters.query) {
+      filtered = filtered.filter((msg) =>
+        msg.message_text.toLowerCase().includes(filters.query.toLowerCase())
+      );
+    }
+
+    if (filters.dateFrom) {
+      filtered = filtered.filter(
+        (msg) => new Date(msg.sent_at) >= filters.dateFrom!
+      );
+    }
+
+    if (filters.dateTo) {
+      filtered = filtered.filter(
+        (msg) => new Date(msg.sent_at) <= filters.dateTo!
+      );
+    }
+
+    if (filters.messageType) {
+      filtered = filtered.filter((msg) => msg.message_type === filters.messageType);
+    }
+
+    setFilteredMessages(filtered);
   };
 
   const getInitials = (name: string) => {
@@ -166,9 +210,19 @@ export default function Messages() {
         {/* Conversations List */}
         <Card className="md:col-span-1 animate-fade-in">
           <CardHeader className="bg-gradient-blue-purple">
-            <CardTitle className="text-white flex items-center gap-2">
-              <MessageCircle className="w-5 h-5" />
-              Messages
+            <CardTitle className="text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-5 h-5" />
+                Messages
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setGroupDialogOpen(true)}
+                className="text-white hover:bg-white/20"
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -219,8 +273,13 @@ export default function Messages() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col p-4">
+            {selectedConversation && (
+              <div className="mb-4">
+                <MessageSearch onSearch={handleSearch} />
+              </div>
+            )}
             <ScrollArea className="flex-1 pr-4">
-              {messages.map((msg) => (
+              {filteredMessages.map((msg) => (
                 <div
                   key={msg.message_id}
                   className={`mb-4 flex ${
@@ -255,22 +314,50 @@ export default function Messages() {
             </ScrollArea>
 
             {selectedConversation && (
-              <div className="flex gap-2 mt-4">
-                <Input
-                  placeholder="Type a message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                  className="flex-1"
-                />
-                <Button onClick={sendMessage} variant="pastelBlue" size="icon">
-                  <Send className="w-4 h-4" />
-                </Button>
+              <div className="space-y-2 mt-4">
+                {uploadedFile && (
+                  <div className="px-3 py-2 bg-muted rounded-lg text-sm flex items-center justify-between">
+                    <span className="truncate">{uploadedFile.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setUploadedFile(null)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <FileUploadButton
+                    onFileUploaded={(url, name, type) =>
+                      setUploadedFile({ url, name, type })
+                    }
+                  />
+                  <Input
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                    className="flex-1"
+                  />
+                  <Button onClick={sendMessage} variant="pastelBlue" size="icon">
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      <GroupChatDialog
+        open={groupDialogOpen}
+        onOpenChange={setGroupDialogOpen}
+        onGroupCreated={() => {
+          fetchConversations();
+          toast.success("Group chat created!");
+        }}
+      />
     </div>
   );
 }
