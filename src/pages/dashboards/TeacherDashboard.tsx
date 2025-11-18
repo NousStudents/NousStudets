@@ -70,10 +70,10 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-card border-primary/20">
+        <Card className="bg-pastel-blue/30 border-pastel-blue/50">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Users className="h-4 w-4" />
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Users className="h-4 w-4 text-pastel-blue" />
               Total Students
             </CardTitle>
           </CardHeader>
@@ -83,10 +83,10 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-card border-secondary/20">
+        <Card className="bg-pastel-mint/30 border-pastel-mint/50">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-pastel-mint" />
               Today's Classes
             </CardTitle>
           </CardHeader>
@@ -96,10 +96,10 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-card border-warning/20">
+        <Card className="bg-pastel-peach/30 border-pastel-peach/50">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-pastel-coral" />
               Pending Grading
             </CardTitle>
           </CardHeader>
@@ -109,7 +109,7 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-card border-success/20">
+        <Card className="bg-pastel-green/30 border-pastel-green/50">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <CheckSquare className="h-4 w-4" />
