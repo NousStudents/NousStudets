@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Users, MessageCircle, Plus, Paperclip } from "lucide-react";
+import { Send, Users, MessageCircle, Plus, Paperclip, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useRole } from "@/hooks/useRole";
 import { FileUploadButton } from "@/components/messaging/FileUploadButton";
@@ -41,6 +42,7 @@ interface Conversation {
 export default function Messages() {
   const { user } = useAuth();
   const { role } = useRole();
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -206,6 +208,15 @@ export default function Messages() {
 
   return (
     <div className="container mx-auto p-4 h-screen">
+      <Button
+        variant="ghost"
+        onClick={() => navigate("/dashboard")}
+        className="mb-4"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back to Dashboard
+      </Button>
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
         {/* Conversations List */}
         <Card className="md:col-span-1 animate-fade-in">
