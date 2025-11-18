@@ -9,11 +9,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gradient-primary text-primary-foreground shadow-sm hover:shadow-lg",
-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:shadow-lg hover:bg-destructive/90",
-        outline: "border-2 border-primary/30 bg-card hover:bg-gradient-card hover:border-primary/50 shadow-sm",
-        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:shadow-lg hover:bg-secondary/80",
-        ghost: "hover:bg-gradient-card hover:shadow-sm",
+        default: "bg-primary text-primary-foreground shadow-sm hover:shadow-lg hover:brightness-95",
+        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:shadow-lg hover:brightness-95",
+        outline: "border-2 border-primary/30 bg-card hover:bg-muted hover:border-primary/50 shadow-sm",
+        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:shadow-lg hover:brightness-95",
+        ghost: "hover:bg-muted hover:shadow-sm",
         link: "text-primary underline-offset-4 hover:underline",
         pastelPink: "bg-pastel-pink text-pastel-pink-foreground shadow-sm hover:shadow-lg hover:brightness-95",
         pastelBlue: "bg-pastel-blue text-pastel-blue-foreground shadow-sm hover:shadow-lg hover:brightness-95",
@@ -21,7 +21,6 @@ const buttonVariants = cva(
         pastelGreen: "bg-pastel-green text-pastel-green-foreground shadow-sm hover:shadow-lg hover:brightness-95",
         pastelYellow: "bg-pastel-yellow text-pastel-yellow-foreground shadow-sm hover:shadow-lg hover:brightness-95",
         pastelCoral: "bg-pastel-coral text-pastel-coral-foreground shadow-sm hover:shadow-lg hover:brightness-95",
-        gradient: "bg-gradient-rainbow text-white shadow-md hover:shadow-lg",
       },
       size: {
         default: "h-11 px-6 py-2.5",

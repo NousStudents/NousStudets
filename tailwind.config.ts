@@ -71,15 +71,6 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
       },
-      backgroundImage: {
-        'gradient-primary': 'var(--gradient-primary)',
-        'gradient-hero': 'var(--gradient-hero)',
-        'gradient-card': 'var(--gradient-card)',
-        'gradient-blue-purple': 'var(--gradient-blue-purple)',
-        'gradient-pink-yellow': 'var(--gradient-pink-yellow)',
-        'gradient-green-blue': 'var(--gradient-green-blue)',
-        'gradient-rainbow': 'var(--gradient-rainbow)',
-      },
       boxShadow: {
         'sm': 'var(--shadow-sm)',
         'md': 'var(--shadow-md)',

@@ -69,20 +69,6 @@ All colors MUST be HSL.
 
     --radius: 1.5rem;  /* Extra rounded corners for softer look */
 
-    /* Beautiful Pastel Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(270 50% 70%) 0%, hsl(200 60% 75%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(40 50% 97%) 0%, hsl(270 40% 95%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(340 40% 96%) 0%, hsl(200 40% 96%) 100%);
-    --gradient-blue-purple: linear-gradient(135deg, hsl(200 60% 75%) 0%, hsl(270 50% 70%) 100%);
-    --gradient-pink-yellow: linear-gradient(135deg, hsl(340 65% 80%) 0%, hsl(45 75% 75%) 100%);
-    --gradient-green-blue: linear-gradient(135deg, hsl(150 45% 70%) 0%, hsl(200 60% 75%) 100%);
-    --gradient-rainbow: linear-gradient(135deg, 
-      hsl(340 65% 80%) 0%, 
-      hsl(270 50% 70%) 25%, 
-      hsl(200 60% 75%) 50%, 
-      hsl(150 45% 70%) 75%, 
-      hsl(45 75% 75%) 100%);
-
     /* Soft Pastel Shadows */
     --shadow-sm: 0 2px 8px rgba(200, 180, 220, 0.12);
     --shadow-md: 0 4px 16px rgba(200, 180, 220, 0.16);

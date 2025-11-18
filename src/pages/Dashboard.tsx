@@ -148,7 +148,7 @@ const Dashboard = () => {
     <>
       <ProfileSheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen} />
       
-      <div className="min-h-screen bg-gradient-hero">
+      <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">

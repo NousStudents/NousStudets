@@ -23,7 +23,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <header className="container mx-auto px-4 py-4 sm:py-6">
         <nav className="flex items-center justify-between">
@@ -31,7 +31,7 @@ const Index = () => {
             <div className="p-2 bg-primary rounded-xl">
               <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            <h1 className="text-xl sm:text-2xl font-bold text-primary">
               Nous
             </h1>
           </div>
@@ -47,7 +47,7 @@ const Index = () => {
           <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
               Modern School Management
-              <span className="block bg-gradient-primary bg-clip-text text-transparent mt-2">
+              <span className="block text-primary mt-2">
                 Built for the Future
               </span>
             </h2>
@@ -136,9 +136,9 @@ const Index = () => {
 
         {/* CTA */}
         <section className="container mx-auto px-4 py-12 sm:py-20">
-          <div className="bg-gradient-primary rounded-3xl p-8 sm:p-12 text-center text-white">
-            <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">Ready to Transform Your School?</h3>
-            <p className="text-base sm:text-lg md:text-xl opacity-90 mb-6 sm:mb-8 max-w-2xl mx-auto">
+          <div className="bg-pastel-purple rounded-3xl p-8 sm:p-12 text-center shadow-lg">
+            <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-pastel-purple-foreground">Ready to Transform Your School?</h3>
+            <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 max-w-2xl mx-auto text-pastel-purple-foreground">
               Join modern educational institutions using Nous to streamline operations and enhance learning.
             </p>
             <Button size="lg" variant="secondary" onClick={() => navigate('/auth')} className="w-full sm:w-auto">
