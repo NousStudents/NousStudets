@@ -86,20 +86,20 @@ export default function AdminDashboard({ profile }: { profile: any }) {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-blue-purple border-pastel-purple/30 animate-fade-in">
+        <Card className="bg-pastel-blue/30 border-pastel-blue/50 animate-fade-in">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Users className="h-5 w-5 text-pastel-purple" />
+              <Users className="h-5 w-5 text-pastel-blue" />
               Total Students
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">{stats.totalStudents}</div>
+            <div className="text-4xl font-bold text-foreground">{stats.totalStudents}</div>
             <p className="text-xs text-muted-foreground mt-2">Active enrollments</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-pink-yellow border-pastel-pink/30 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+        <Card className="bg-pastel-peach/30 border-pastel-peach/50 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-pastel-coral" />
@@ -107,28 +107,28 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold bg-gradient-pink-yellow bg-clip-text text-transparent">{stats.totalTeachers}</div>
+            <div className="text-4xl font-bold text-foreground">{stats.totalTeachers}</div>
             <p className="text-xs text-muted-foreground mt-2">Active faculty</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-green-blue border-pastel-green/30 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+        <Card className="bg-pastel-mint/30 border-pastel-mint/50 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
-              <School className="h-5 w-5 text-pastel-green" />
+              <School className="h-5 w-5 text-pastel-mint" />
               Total Classes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold bg-gradient-green-blue bg-clip-text text-transparent">{stats.totalClasses}</div>
+            <div className="text-4xl font-bold text-foreground">{stats.totalClasses}</div>
             <p className="text-xs text-muted-foreground mt-2">Active sections</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-card border-pastel-yellow/30 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+        <Card className="bg-pastel-lavender/30 border-pastel-lavender/50 animate-fade-in" style={{ animationDelay: '0.3s' }}>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-pastel-yellow" />
+              <UserCheck className="h-5 w-5 text-pastel-lavender" />
               Active Users
             </CardTitle>
           </CardHeader>

@@ -19,6 +19,7 @@ import Messages from "./pages/Messages";
 import Meetings from "./pages/Meetings";
 import UserManagement from "./pages/admin/UserManagement";
 import TimetableManagement from "./pages/admin/TimetableManagement";
+import WeeklyTimetable from "./pages/admin/WeeklyTimetable";
 import SchoolManagement from "./pages/admin/SchoolManagement";
 import StudentManagement from "./pages/admin/StudentManagement";
 import ClassManagement from "./pages/admin/ClassManagement";
@@ -121,6 +122,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <TimetableManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/weekly-timetable"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <WeeklyTimetable />
                 </ProtectedRoute>
               }
             />
