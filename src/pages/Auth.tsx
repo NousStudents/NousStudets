@@ -46,7 +46,7 @@ const Auth = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-6xl grid md:grid-cols-2 gap-8 items-center">
         {/* Hero Section */}
         <div className="hidden md:flex flex-col items-start space-y-6">
@@ -54,7 +54,7 @@ const Auth = () => {
             <div className="p-3 bg-primary rounded-2xl">
               <GraduationCap className="h-8 w-8 text-primary-foreground" />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold text-primary">
               Nous
             </h1>
           </div>

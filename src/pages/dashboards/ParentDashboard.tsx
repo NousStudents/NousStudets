@@ -68,7 +68,7 @@ export default function ParentDashboard({ profile }: { profile: any }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {children.length > 0 ? (
           children.map((child, index) => (
-            <Card key={child.student_id} className="bg-gradient-card border-primary/20">
+            <Card key={child.student_id} className="bg-card border-primary/20">
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-primary/10 rounded-full">
@@ -215,55 +215,55 @@ export default function ParentDashboard({ profile }: { profile: any }) {
 
           {/* Quick Stats Summary */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <Card className="bg-gradient-card border-success/20">
+            <Card className="bg-pastel-green border-pastel-green/30">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <CardTitle className="text-sm font-medium text-pastel-green-foreground flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4" />
                   Overall Attendance
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-success">95%</div>
-                <p className="text-xs text-muted-foreground mt-1">This month</p>
+                <div className="text-3xl font-bold text-pastel-green-foreground">95%</div>
+                <p className="text-xs text-pastel-green-foreground/80 mt-1">This month</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-card border-primary/20">
+            <Card className="bg-pastel-blue border-pastel-blue/30">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <CardTitle className="text-sm font-medium text-pastel-blue-foreground flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" />
                   Average Performance
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-foreground">A-</div>
-                <p className="text-xs text-success mt-1">+5% improvement</p>
+                <div className="text-3xl font-bold text-pastel-blue-foreground">A-</div>
+                <p className="text-xs text-pastel-blue-foreground/80 mt-1">+5% improvement</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-card border-warning/20">
+            <Card className="bg-pastel-yellow border-pastel-yellow/30">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <CardTitle className="text-sm font-medium text-pastel-yellow-foreground flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Pending Assignments
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-foreground">3</div>
-                <p className="text-xs text-muted-foreground mt-1">Due this week</p>
+                <div className="text-3xl font-bold text-pastel-yellow-foreground">3</div>
+                <p className="text-xs text-pastel-yellow-foreground/80 mt-1">Due this week</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-card border-destructive/20">
+            <Card className="bg-pastel-coral border-pastel-coral/30">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <CardTitle className="text-sm font-medium text-pastel-coral-foreground flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
                   Pending Fees
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-foreground">₹0</div>
-                <p className="text-xs text-success mt-1">All paid</p>
+                <div className="text-3xl font-bold text-pastel-coral-foreground">₹0</div>
+                <p className="text-xs text-pastel-coral-foreground/80 mt-1">All paid</p>
               </CardContent>
             </Card>
           </div>

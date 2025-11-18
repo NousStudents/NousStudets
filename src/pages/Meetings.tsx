@@ -152,7 +152,7 @@ export default function Meetings() {
       </Button>
       
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold bg-gradient-rainbow bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold text-foreground">
           Meetings
         </h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -201,7 +201,7 @@ export default function Meetings() {
                   }
                 />
               </div>
-              <Button onClick={createMeeting} className="w-full" variant="gradient">
+              <Button onClick={createMeeting} className="w-full" variant="pastelPurple">
                 Create Meeting
               </Button>
             </div>
@@ -214,8 +214,8 @@ export default function Meetings() {
           const status = getMeetingStatus(meeting.scheduled_at);
           return (
             <Card key={meeting.meeting_id} className="hover:shadow-hover transition-all animate-fade-in">
-              <CardHeader className="bg-gradient-to-br from-pastel-purple to-pastel-blue">
-                <CardTitle className="text-white flex items-center gap-2">
+              <CardHeader className="bg-pastel-purple">
+                <CardTitle className="text-pastel-purple-foreground flex items-center gap-2">
                   <Video className="w-5 h-5" />
                   {meeting.title}
                 </CardTitle>
@@ -259,7 +259,7 @@ export default function Meetings() {
             <p className="text-muted-foreground mb-4">
               Create your first meeting to get started with virtual collaboration
             </p>
-            <Button onClick={() => setIsDialogOpen(true)} variant="gradient">
+            <Button onClick={() => setIsDialogOpen(true)} variant="pastelPurple">
               Schedule Meeting
             </Button>
           </CardContent>

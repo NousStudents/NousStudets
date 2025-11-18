@@ -220,8 +220,8 @@ export default function Messages() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
         {/* Conversations List */}
         <Card className="md:col-span-1 animate-fade-in">
-          <CardHeader className="bg-gradient-blue-purple">
-            <CardTitle className="text-white flex items-center justify-between">
+          <CardHeader className="bg-pastel-blue">
+            <CardTitle className="text-pastel-blue-foreground flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-5 h-5" />
                 Messages
@@ -230,7 +230,7 @@ export default function Messages() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setGroupDialogOpen(true)}
-                className="text-white hover:bg-white/20"
+                className="text-pastel-blue-foreground hover:bg-white/20"
               >
                 <Plus className="w-5 h-5" />
               </Button>
@@ -248,7 +248,7 @@ export default function Messages() {
                 >
                   <div className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarFallback className="bg-gradient-pink-yellow text-white">
+                      <AvatarFallback className="bg-pastel-pink text-pastel-pink-foreground">
                         {conv.isGroup ? <Users className="w-4 h-4" /> : getInitials(conv.name)}
                       </AvatarFallback>
                     </Avatar>
@@ -278,8 +278,8 @@ export default function Messages() {
 
         {/* Chat Area */}
         <Card className="md:col-span-2 flex flex-col animate-fade-in">
-          <CardHeader className="bg-gradient-green-blue">
-            <CardTitle className="text-white">
+          <CardHeader className="bg-pastel-green">
+            <CardTitle className="text-pastel-green-foreground">
               {selectedConversation ? "Chat" : "Select a conversation"}
             </CardTitle>
           </CardHeader>
@@ -300,7 +300,7 @@ export default function Messages() {
                   <div
                     className={`max-w-[70%] rounded-2xl px-4 py-2 ${
                       msg.sender_id === user?.id
-                        ? "bg-gradient-blue-purple text-white"
+                        ? "bg-pastel-purple text-pastel-purple-foreground"
                         : "bg-pastel-blue/20"
                     }`}
                   >
