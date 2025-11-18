@@ -8,16 +8,22 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, ArrowLeft, LogOut } from "lucide-react";
+import { Loader2, Upload, ArrowLeft, LogOut, Moon, Sun, Volume2, VolumeX, Monitor } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useRole } from "@/hooks/useRole";
+import { useTheme } from "next-themes";
+import { useSound } from "@/contexts/SoundContext";
 
 export default function Profile() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { role, loading: roleLoading } = useRole();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+  const { isMuted, toggleMute, playClick } = useSound();
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -465,6 +471,83 @@ export default function Profile() {
                 Change Password
               </Button>
             </form>
+
+            <Separator />
+
+            {/* Preferences Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Preferences</h3>
+              
+              {/* Theme Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="theme">Theme</Label>
+                <Select value={theme} onValueChange={(value: "light" | "dark" | "system") => {
+                  setTheme(value);
+                  playClick();
+                  toast({
+                    title: "Theme Updated",
+                    description: `Theme changed to ${value}`,
+                  });
+                }}>
+                  <SelectTrigger id="theme">
+                    <SelectValue placeholder="Select theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">
+                      <div className="flex items-center gap-2">
+                        <Sun className="h-4 w-4" />
+                        Light
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="dark">
+                      <div className="flex items-center gap-2">
+                        <Moon className="h-4 w-4" />
+                        Dark
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="system">
+                      <div className="flex items-center gap-2">
+                        <Monitor className="h-4 w-4" />
+                        System
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Choose your preferred color theme
+                </p>
+              </div>
+
+              {/* Sound Toggle */}
+              <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+                <div className="flex items-center space-x-4">
+                  {isMuted ? (
+                    <VolumeX className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <Volume2 className="h-5 w-5 text-primary" />
+                  )}
+                  <div className="space-y-0.5">
+                    <Label htmlFor="sound-toggle" className="text-base cursor-pointer">
+                      UI Sound Effects
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Enable or disable button click sounds
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="sound-toggle"
+                  checked={!isMuted}
+                  onCheckedChange={() => {
+                    toggleMute();
+                    if (isMuted) {
+                      // Play a test sound when enabling
+                      setTimeout(() => playClick(), 100);
+                    }
+                  }}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

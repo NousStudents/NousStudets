@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, Clock, Video, Plus, Users } from "lucide-react";
+import { Calendar, Clock, Video, Plus, Users, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useRole } from "@/hooks/useRole";
 import { format } from "date-fns";
@@ -26,6 +27,7 @@ interface Meeting {
 export default function Meetings() {
   const { user } = useAuth();
   const { role } = useRole();
+  const navigate = useNavigate();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -140,6 +142,15 @@ export default function Meetings() {
 
   return (
     <div className="container mx-auto p-6">
+      <Button
+        variant="ghost"
+        onClick={() => navigate("/dashboard")}
+        className="mb-4"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back to Dashboard
+      </Button>
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold bg-gradient-rainbow bg-clip-text text-transparent">
           Meetings
