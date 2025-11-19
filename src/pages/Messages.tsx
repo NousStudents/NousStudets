@@ -4,15 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Users, MessageCircle, Plus, Paperclip, ArrowLeft } from "lucide-react";
+import { Send, Users, Search, Paperclip, Image as ImageIcon, ArrowLeft, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 import { useRole } from "@/hooks/useRole";
-import { FileUploadButton } from "@/components/messaging/FileUploadButton";
-import { GroupChatDialog } from "@/components/messaging/GroupChatDialog";
-import { MessageSearch, SearchFilters } from "@/components/messaging/MessageSearch";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Message {
   message_id: string;
@@ -37,6 +35,16 @@ interface Conversation {
   timestamp: string;
   isGroup: boolean;
   unreadCount: number;
+  avatar?: string;
+  otherUserId?: string;
+}
+
+interface SchoolUser {
+  user_id: string;
+  full_name: string;
+  role: string;
+  email: string;
+  profile_image?: string;
 }
 
 export default function Messages() {
@@ -46,18 +54,27 @@ export default function Messages() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [filteredMessages, setFilteredMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [uploadedFile, setUploadedFile] = useState<{ url: string; name: string; type: string } | null>(null);
-  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+  const [schoolUsers, setSchoolUsers] = useState<SchoolUser[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [schoolId, setSchoolId] = useState<string>("");
 
   useEffect(() => {
     if (user) {
+      fetchCurrentUserData();
+    }
+  }, [user, role]);
+
+  useEffect(() => {
+    if (currentUserId && schoolId) {
       fetchConversations();
+      fetchSchoolUsers();
       subscribeToMessages();
     }
-  }, [user]);
+  }, [currentUserId, schoolId]);
 
   useEffect(() => {
     if (selectedConversation) {
@@ -65,37 +82,126 @@ export default function Messages() {
     }
   }, [selectedConversation]);
 
-  useEffect(() => {
-    setFilteredMessages(messages);
-  }, [messages]);
+  const fetchCurrentUserData = async () => {
+    try {
+      let userId = "";
+      let userSchoolId = "";
+
+      if (role === "admin") {
+        const { data } = await supabase
+          .from("admins")
+          .select("admin_id, school_id")
+          .eq("auth_user_id", user?.id)
+          .single();
+        userId = data?.admin_id || "";
+        userSchoolId = data?.school_id || "";
+      } else if (role === "teacher") {
+        const { data } = await supabase
+          .from("teachers")
+          .select("teacher_id, school_id")
+          .eq("auth_user_id", user?.id)
+          .single();
+        userId = data?.teacher_id || "";
+        userSchoolId = data?.school_id || "";
+      } else if (role === "student") {
+        const { data } = await supabase
+          .from("students")
+          .select("student_id, classes(school_id)")
+          .eq("auth_user_id", user?.id)
+          .single();
+        userId = data?.student_id || "";
+        userSchoolId = (data?.classes as any)?.school_id || "";
+      } else if (role === "parent") {
+        const { data } = await supabase
+          .from("parents")
+          .select("parent_id, school_id")
+          .eq("auth_user_id", user?.id)
+          .single();
+        userId = data?.parent_id || "";
+        userSchoolId = data?.school_id || "";
+      }
+
+      setCurrentUserId(userId);
+      setSchoolId(userSchoolId);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+
+  const fetchSchoolUsers = async () => {
+    try {
+      const users: SchoolUser[] = [];
+
+      const { data: admins } = await supabase
+        .from("admins")
+        .select("admin_id, full_name, email, profile_image")
+        .eq("school_id", schoolId);
+      admins?.forEach(a => users.push({ user_id: a.admin_id, full_name: a.full_name, role: "admin", email: a.email, profile_image: a.profile_image || undefined }));
+
+      const { data: teachers } = await supabase
+        .from("teachers")
+        .select("teacher_id, full_name, email, profile_image")
+        .eq("school_id", schoolId);
+      teachers?.forEach(t => users.push({ user_id: t.teacher_id, full_name: t.full_name, role: "teacher", email: t.email, profile_image: t.profile_image || undefined }));
+
+      const { data: students } = await supabase
+        .from("students")
+        .select("student_id, full_name, email, profile_picture, classes!inner(school_id)")
+        .eq("classes.school_id", schoolId);
+      students?.forEach(s => users.push({ user_id: s.student_id, full_name: s.full_name, role: "student", email: s.email, profile_image: s.profile_picture || undefined }));
+
+      const { data: parents } = await supabase
+        .from("parents")
+        .select("parent_id, full_name, email, profile_image")
+        .eq("school_id", schoolId);
+      parents?.forEach(p => users.push({ user_id: p.parent_id, full_name: p.full_name, role: "parent", email: p.email, profile_image: p.profile_image || undefined }));
+
+      setSchoolUsers(users.filter(u => u.user_id !== currentUserId));
+    } catch (error) {
+      console.error("Error fetching school users:", error);
+    }
+  };
 
   const fetchConversations = async () => {
     try {
       const { data, error } = await supabase
         .from("messages")
         .select("*")
-        .or(`sender_id.eq.${user?.id},receiver_id.eq.${user?.id}`)
+        .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`)
         .order("sent_at", { ascending: false });
 
       if (error) throw error;
 
-      // Group messages by conversation
       const convMap = new Map<string, Conversation>();
       data?.forEach((msg) => {
-        const convId = msg.conversation_id || msg.sender_id + msg.receiver_id;
+        const convId = msg.conversation_id || (msg.sender_id === currentUserId ? msg.receiver_id : msg.sender_id);
         if (!convMap.has(convId)) {
           convMap.set(convId, {
             id: convId,
-            name: msg.group_name || "Direct Message",
-            lastMessage: msg.message_text,
+            name: msg.group_name || "Chat",
+            lastMessage: msg.message_text || "📎 Attachment",
             timestamp: msg.sent_at,
-            isGroup: msg.is_group,
+            isGroup: msg.is_group || false,
             unreadCount: msg.read_at ? 0 : 1,
+            otherUserId: msg.sender_id === currentUserId ? msg.receiver_id : msg.sender_id,
           });
         }
       });
 
-      setConversations(Array.from(convMap.values()));
+      const enrichedConvs = await Promise.all(
+        Array.from(convMap.values()).map(async (conv) => {
+          if (!conv.isGroup && conv.otherUserId) {
+            const user = schoolUsers.find(u => u.user_id === conv.otherUserId);
+            if (user) {
+              conv.name = user.full_name;
+              conv.avatar = user.profile_image;
+            }
+          }
+          return conv;
+        })
+      );
+
+      setConversations(enrichedConvs);
     } catch (error) {
       console.error("Error fetching conversations:", error);
       toast.error("Failed to load conversations");
@@ -109,11 +215,17 @@ export default function Messages() {
       const { data, error } = await supabase
         .from("messages")
         .select("*")
-        .eq("conversation_id", conversationId)
+        .or(`conversation_id.eq.${conversationId},sender_id.eq.${conversationId},receiver_id.eq.${conversationId}`)
         .order("sent_at", { ascending: true });
 
       if (error) throw error;
       setMessages(data || []);
+
+      await supabase
+        .from("messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("receiver_id", currentUserId)
+        .is("read_at", null);
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
@@ -121,20 +233,19 @@ export default function Messages() {
 
   const subscribeToMessages = () => {
     const channel = supabase
-      .channel("messages")
+      .channel("messages-channel")
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "messages",
         },
-        (payload) => {
-          const newMsg = payload.new as Message;
-          if (newMsg.conversation_id === selectedConversation) {
-            setMessages((prev) => [...prev, newMsg]);
-          }
+        () => {
           fetchConversations();
+          if (selectedConversation) {
+            fetchMessages(selectedConversation);
+          }
         }
       )
       .subscribe();
@@ -145,56 +256,28 @@ export default function Messages() {
   };
 
   const sendMessage = async () => {
-    if ((!newMessage.trim() && !uploadedFile) || !selectedConversation) return;
+    if (!newMessage.trim() && !selectedConversation) return;
 
     try {
       const { error } = await supabase.from("messages").insert({
-        sender_id: user?.id,
-        receiver_id: selectedConversation,
-        message_text: newMessage || (uploadedFile ? "Sent a file" : ""),
+        sender_id: currentUserId,
+        receiver_id: selectedConversation || "",
+        message_text: newMessage,
+        school_id: schoolId,
         conversation_id: selectedConversation,
-        school_id: user?.user_metadata?.school_id,
-        message_type: uploadedFile ? "file" : "text",
-        file_url: uploadedFile?.url,
-        file_name: uploadedFile?.name,
-        file_type: uploadedFile?.type,
       });
 
       if (error) throw error;
       setNewMessage("");
-      setUploadedFile(null);
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
     }
   };
 
-  const handleSearch = (filters: SearchFilters) => {
-    let filtered = [...messages];
-
-    if (filters.query) {
-      filtered = filtered.filter((msg) =>
-        msg.message_text.toLowerCase().includes(filters.query.toLowerCase())
-      );
-    }
-
-    if (filters.dateFrom) {
-      filtered = filtered.filter(
-        (msg) => new Date(msg.sent_at) >= filters.dateFrom!
-      );
-    }
-
-    if (filters.dateTo) {
-      filtered = filtered.filter(
-        (msg) => new Date(msg.sent_at) <= filters.dateTo!
-      );
-    }
-
-    if (filters.messageType) {
-      filtered = filtered.filter((msg) => msg.message_type === filters.messageType);
-    }
-
-    setFilteredMessages(filtered);
+  const startNewChat = (userId: string) => {
+    setSelectedConversation(userId);
+    setShowNewChat(false);
   };
 
   const getInitials = (name: string) => {
@@ -206,169 +289,255 @@ export default function Messages() {
       .slice(0, 2);
   };
 
+  const selectedConvData = conversations.find(c => c.id === selectedConversation);
+
+  const filteredUsers = schoolUsers.filter(u =>
+    u.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredConversations = conversations.filter(c =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="container mx-auto p-4 h-screen">
-      <Button
-        variant="ghost"
-        onClick={() => navigate("/dashboard")}
-        className="mb-4"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Dashboard
-      </Button>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
-        {/* Conversations List */}
-        <Card className="md:col-span-1 animate-fade-in">
-          <CardHeader className="bg-pastel-blue">
-            <CardTitle className="text-pastel-blue-foreground flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="w-5 h-5" />
-                Messages
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setGroupDialogOpen(true)}
-                className="text-pastel-blue-foreground hover:bg-white/20"
-              >
-                <Plus className="w-5 h-5" />
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[calc(100vh-200px)]">
-              {conversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  onClick={() => setSelectedConversation(conv.id)}
-                  className={`p-4 cursor-pointer hover:bg-pastel-blue/20 transition-all ${
-                    selectedConversation === conv.id ? "bg-pastel-blue/30" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback className="bg-pastel-pink text-pastel-pink-foreground">
-                        {conv.isGroup ? <Users className="w-4 h-4" /> : getInitials(conv.name)}
+    <div className="h-screen bg-background flex flex-col">
+      <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-semibold text-foreground">Messages</h1>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowNewChat(!showNewChat)}
+        >
+          <Users className="h-5 w-5" />
+        </Button>
+      </header>
+
+      <div className="flex-1 flex overflow-hidden">
+        <div className={cn(
+          "w-full md:w-96 bg-card border-r border-border flex flex-col",
+          selectedConversation && "hidden md:flex"
+        )}>
+          <div className="p-3 border-b border-border">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-background"
+              />
+            </div>
+          </div>
+
+          {showNewChat && (
+            <div className="p-3 border-b border-border bg-blue-50">
+              <h3 className="font-medium mb-2 text-sm">School Members</h3>
+              <ScrollArea className="h-48">
+                {filteredUsers.map((user) => (
+                  <button
+                    key={user.user_id}
+                    onClick={() => startNewChat(user.user_id)}
+                    className="w-full flex items-center gap-3 p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-blue-200 text-blue-700">
+                        {getInitials(user.full_name)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center">
-                        <p className="font-semibold truncate">{conv.name}</p>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(conv.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
+                    <div className="flex-1 text-left">
+                      <p className="font-medium text-sm">{user.full_name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
                     </div>
-                    {conv.unreadCount > 0 && (
-                      <span className="bg-pastel-pink text-white text-xs rounded-full px-2 py-1">
-                        {conv.unreadCount}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                  </button>
+                ))}
+              </ScrollArea>
+            </div>
+          )}
 
-        {/* Chat Area */}
-        <Card className="md:col-span-2 flex flex-col animate-fade-in">
-          <CardHeader className="bg-pastel-green">
-            <CardTitle className="text-pastel-green-foreground">
-              {selectedConversation ? "Chat" : "Select a conversation"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col p-4">
-            {selectedConversation && (
-              <div className="mb-4">
-                <MessageSearch onSearch={handleSearch} />
+          <ScrollArea className="flex-1">
+            {loading ? (
+              <div className="p-4 text-center text-muted-foreground">Loading...</div>
+            ) : filteredConversations.length === 0 ? (
+              <div className="p-4 text-center text-muted-foreground">
+                No conversations yet
               </div>
-            )}
-            <ScrollArea className="flex-1 pr-4">
-              {filteredMessages.map((msg) => (
-                <div
-                  key={msg.message_id}
-                  className={`mb-4 flex ${
-                    msg.sender_id === user?.id ? "justify-end" : "justify-start"
-                  }`}
+            ) : (
+              filteredConversations.map((conv) => (
+                <button
+                  key={conv.id}
+                  onClick={() => setSelectedConversation(conv.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-4 hover:bg-accent transition-colors border-b border-border",
+                    selectedConversation === conv.id && "bg-accent"
+                  )}
                 >
-                  <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                      msg.sender_id === user?.id
-                        ? "bg-pastel-purple text-pastel-purple-foreground"
-                        : "bg-pastel-blue/20"
-                    }`}
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="bg-green-200 text-green-700">
+                      {conv.isGroup ? <Users className="h-5 w-5" /> : getInitials(conv.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 text-left overflow-hidden">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-medium text-sm truncate">{conv.name}</p>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(conv.timestamp), "HH:mm")}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {conv.lastMessage}
+                    </p>
+                  </div>
+                  {conv.unreadCount > 0 && (
+                    <div className="bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {conv.unreadCount}
+                    </div>
+                  )}
+                </button>
+              ))
+            )}
+          </ScrollArea>
+        </div>
+
+        <div className={cn(
+          "flex-1 flex flex-col bg-green-50",
+          !selectedConversation && "hidden md:flex"
+        )}>
+          {selectedConversation ? (
+            <>
+              <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden"
+                    onClick={() => setSelectedConversation(null)}
                   >
-                    {msg.file_url && (
-                      <div className="mb-2 flex items-center gap-2 text-sm">
-                        <Paperclip className="w-4 h-4" />
-                        <a href={msg.file_url} target="_blank" className="underline">
-                          {msg.file_name}
-                        </a>
-                      </div>
-                    )}
-                    <p>{msg.message_text}</p>
-                    <span className="text-xs opacity-70 mt-1 block">
-                      {new Date(msg.sent_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-blue-200 text-blue-700">
+                      {selectedConvData?.isGroup ? (
+                        <Users className="h-5 w-5" />
+                      ) : (
+                        getInitials(selectedConvData?.name || "")
+                      )}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{selectedConvData?.name}</p>
+                    <p className="text-xs text-muted-foreground">Online</p>
                   </div>
                 </div>
-              ))}
-            </ScrollArea>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </div>
 
-            {selectedConversation && (
-              <div className="space-y-2 mt-4">
-                {uploadedFile && (
-                  <div className="px-3 py-2 bg-muted rounded-lg text-sm flex items-center justify-between">
-                    <span className="truncate">{uploadedFile.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setUploadedFile(null)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <FileUploadButton
-                    onFileUploaded={(url, name, type) =>
-                      setUploadedFile({ url, name, type })
-                    }
-                  />
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4">
+                  {messages.map((msg) => {
+                    const isOwn = msg.sender_id === currentUserId;
+                    return (
+                      <div
+                        key={msg.message_id}
+                        className={cn(
+                          "flex items-end gap-2",
+                          isOwn ? "justify-end" : "justify-start"
+                        )}
+                      >
+                        {!isOwn && (
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-blue-200 text-blue-700 text-xs">
+                              U
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div
+                          className={cn(
+                            "max-w-[70%] rounded-2xl px-4 py-2",
+                            isOwn
+                              ? "bg-green-500 text-white rounded-br-none"
+                              : "bg-white text-foreground rounded-bl-none"
+                          )}
+                        >
+                          {msg.file_url && (
+                            <div className="mb-2">
+                              {msg.file_type?.startsWith("image/") ? (
+                                <img
+                                  src={msg.file_url}
+                                  alt={msg.file_name || "Image"}
+                                  className="rounded-lg max-w-full"
+                                />
+                              ) : (
+                                <a
+                                  href={msg.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 underline"
+                                >
+                                  <Paperclip className="h-4 w-4" />
+                                  {msg.file_name}
+                                </a>
+                              )}
+                            </div>
+                          )}
+                          <p className="text-sm">{msg.message_text}</p>
+                          <p
+                            className={cn(
+                              "text-xs mt-1",
+                              isOwn ? "text-green-100" : "text-muted-foreground"
+                            )}
+                          >
+                            {format(new Date(msg.sent_at), "HH:mm")}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+
+              <div className="bg-card border-t border-border p-4">
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="text-muted-foreground">
+                    <Paperclip className="h-5 w-5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground">
+                    <ImageIcon className="h-5 w-5" />
+                  </Button>
                   <Input
                     placeholder="Type a message..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                    className="flex-1"
+                    className="flex-1 bg-background"
                   />
-                  <Button onClick={sendMessage} variant="pastelBlue" size="icon">
-                    <Send className="w-4 h-4" />
+                  <Button
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim()}
+                    className="bg-green-500 hover:bg-green-600 text-white"
+                  >
+                    <Send className="h-5 w-5" />
                   </Button>
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <Users className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                <p className="text-lg">Select a conversation to start messaging</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-
-      <GroupChatDialog
-        open={groupDialogOpen}
-        onOpenChange={setGroupDialogOpen}
-        onGroupCreated={() => {
-          fetchConversations();
-          toast.success("Group chat created!");
-        }}
-      />
     </div>
   );
 }
