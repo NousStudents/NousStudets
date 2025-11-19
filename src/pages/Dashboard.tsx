@@ -9,7 +9,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { GraduationCap, Bell, MessageCircle, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProfileSheet } from '@/components/ProfileSheet';
-import { BackButton } from '@/components/BackButton';
 import StudentDashboard from './dashboards/StudentDashboard';
 import TeacherDashboard from './dashboards/TeacherDashboard';
 import ParentDashboard from './dashboards/ParentDashboard';
@@ -154,7 +153,6 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3">
-              <BackButton to="/" />
               <div className="p-2 bg-primary rounded-xl">
                 <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
