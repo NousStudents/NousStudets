@@ -10,6 +10,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useSound } from "@/contexts/SoundContext";
 import { Loader2, UserPlus, Shield, AlertCircle } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import {
@@ -38,6 +39,7 @@ interface Student {
 export default function UserManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { playUserCreated, playLoading } = useSound();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [adminSchoolId, setAdminSchoolId] = useState("");
@@ -242,6 +244,7 @@ export default function UserManagement() {
     }
 
     setLoading(true);
+    playLoading();
 
     try {
       // Get the current session to ensure we have a valid token
@@ -288,6 +291,7 @@ export default function UserManagement() {
         throw new Error(data.error);
       }
 
+      playUserCreated();
       toast({
         title: "Success",
         description: `User ${formData.email} created successfully`,

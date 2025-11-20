@@ -6,6 +6,8 @@ interface SoundContextType {
   playClick: () => void;
   playSuccess: () => void;
   playError: () => void;
+  playUserCreated: () => void;
+  playLoading: () => void;
 }
 
 const SoundContext = createContext<SoundContextType | undefined>(undefined);
@@ -59,9 +61,18 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     setTimeout(() => playSound(800, 0.1), 100);
   };
   const playError = () => playSound(300, 0.2, "square");
+  
+  const playUserCreated = () => {
+    if (isMuted) return;
+    playSound(700, 0.1, "sine");
+    setTimeout(() => playSound(900, 0.1, "sine"), 120);
+    setTimeout(() => playSound(1100, 0.15, "sine"), 240);
+  };
+  
+  const playLoading = () => playSound(500, 0.08, "triangle");
 
   return (
-    <SoundContext.Provider value={{ isMuted, toggleMute, playClick, playSuccess, playError }}>
+    <SoundContext.Provider value={{ isMuted, toggleMute, playClick, playSuccess, playError, playUserCreated, playLoading }}>
       {children}
     </SoundContext.Provider>
   );
