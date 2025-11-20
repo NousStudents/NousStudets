@@ -80,30 +80,51 @@ export default function StudentManagement() {
         return;
       }
 
-      // Fetch students directly with all their information
-      const { data: studentsData, error: studentsError} = await supabase
+      // Fetch classes first
+      const { data: classesData, error: classesError } = await supabase
+        .from("classes")
+        .select("*")
+        .eq("school_id", adminData.school_id);
+
+      if (classesError) {
+        console.error("Classes query error:", classesError);
+        toast.error(`Failed to fetch classes: ${classesError.message}`);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch students
+      const { data: studentsData, error: studentsError } = await supabase
         .from("students")
-        .select(`
-          *,
-          classes (
-            class_name,
-            section,
-            school_id
-          )
-        `);
+        .select("*");
 
       console.log("Students query result:", studentsData, "Error:", studentsError);
 
       if (studentsError) {
         console.error("Students query error:", studentsError);
         toast.error(`Failed to fetch students: ${studentsError.message}`);
+        setLoading(false);
+        return;
       }
 
-      if (studentsData) {
-        // Filter by school and get parent names  
-        const studentsInSchool = studentsData.filter((s: any) => 
-          s.classes?.school_id === adminData.school_id
-        );
+      if (studentsData && classesData) {
+        // Create a map of classes for easy lookup
+        const classMap = new Map(classesData.map(c => [c.class_id, c]));
+        
+        // Filter students by school and join with class data
+        const studentsInSchool = studentsData
+          .filter((s: any) => {
+            const studentClass = classMap.get(s.class_id);
+            return studentClass && studentClass.school_id === adminData.school_id;
+          })
+          .map((s: any) => {
+            const studentClass = classMap.get(s.class_id);
+            return {
+              ...s,
+              class_name: studentClass?.class_name || '',
+              section: studentClass?.section || ''
+            };
+          });
 
         const formattedStudents = await Promise.all(
           studentsInSchool.map(async (s: any) => {
@@ -125,8 +146,8 @@ export default function StudentManagement() {
               phone: s.phone || "N/A",
               roll_no: s.roll_no || "N/A",
               class_id: s.class_id,
-              class_name: s.classes 
-                ? `${s.classes.class_name}${s.classes.section ? ` (${s.classes.section})` : ''}`
+              class_name: s.class_name 
+                ? `${s.class_name}${s.section ? ` (${s.section})` : ''}`
                 : "Not Assigned",
               section: s.section || "",
               gender: s.gender || "",
@@ -144,15 +165,8 @@ export default function StudentManagement() {
         setStudents([]);
       }
 
-      // Fetch all classes for the school
-      const { data: classesData } = await supabase
-        .from("classes")
-        .select("class_id, class_name, section")
-        .eq("school_id", adminData.school_id);
-      
-      if (classesData) {
-        setClasses(classesData);
-      }
+      // Set classes state
+      setClasses(classesData || []);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Failed to load students");
