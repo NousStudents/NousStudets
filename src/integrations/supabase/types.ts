@@ -1318,6 +1318,7 @@ export type Database = {
       get_student_id: { Args: never; Returns: string }
       get_teacher_id: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
+      get_user_role_for_auth: { Args: { user_id: string }; Returns: string }
       has_role: { Args: { _role: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
     }

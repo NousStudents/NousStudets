@@ -65,36 +65,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { error: authError };
       }
 
-      // Verify role matches by checking all role tables simultaneously
+      // Verify role matches using a secure database function that bypasses RLS
       if (authData.user) {
-        // Check all role tables in parallel for better performance
-        const [adminResult, teacherResult, studentResult, parentResult] = await Promise.all([
-          supabase.from('admins').select('admin_id').eq('auth_user_id', authData.user.id).maybeSingle(),
-          supabase.from('teachers').select('teacher_id').eq('auth_user_id', authData.user.id).maybeSingle(),
-          supabase.from('students').select('student_id').eq('auth_user_id', authData.user.id).maybeSingle(),
-          supabase.from('parents').select('parent_id').eq('auth_user_id', authData.user.id).maybeSingle(),
-        ]);
+        // Use the secure function to get user role
+        const { data: actualRole, error: roleError } = await supabase.rpc(
+          'get_user_role_for_auth',
+          { user_id: authData.user.id }
+        );
 
-        let actualRole: string | null = null;
-        
-        if (adminResult.data) actualRole = 'admin';
-        else if (teacherResult.data) actualRole = 'teacher';
-        else if (studentResult.data) actualRole = 'student';
-        else if (parentResult.data) actualRole = 'parent';
-
-        // Log for debugging
-        console.log('Role check results:', {
+        console.log('Role verification:', {
           userId: authData.user.id,
           email: authData.user.email,
           selectedRole,
           actualRole,
-          hasAdmin: !!adminResult.data,
-          hasTeacher: !!teacherResult.data,
-          hasStudent: !!studentResult.data,
-          hasParent: !!parentResult.data,
+          roleError,
         });
 
-        if (!actualRole) {
+        if (roleError || !actualRole) {
           await supabase.auth.signOut();
           toast({
             title: "Role Not Found",
