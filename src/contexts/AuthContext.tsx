@@ -65,67 +65,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { error: authError };
       }
 
-      // Verify role matches by checking role-specific tables
+      // Verify role matches by checking all role tables simultaneously
       if (authData.user) {
+        // Check all role tables in parallel for better performance
+        const [adminResult, teacherResult, studentResult, parentResult] = await Promise.all([
+          supabase.from('admins').select('admin_id').eq('auth_user_id', authData.user.id).maybeSingle(),
+          supabase.from('teachers').select('teacher_id').eq('auth_user_id', authData.user.id).maybeSingle(),
+          supabase.from('students').select('student_id').eq('auth_user_id', authData.user.id).maybeSingle(),
+          supabase.from('parents').select('parent_id').eq('auth_user_id', authData.user.id).maybeSingle(),
+        ]);
+
         let actualRole: string | null = null;
         
-        // Check each role table
-        const { data: adminData } = await supabase
-          .from('admins')
-          .select('admin_id')
-          .eq('auth_user_id', authData.user.id)
-          .maybeSingle();
-        
-        if (adminData) actualRole = 'admin';
-        
+        if (adminResult.data) actualRole = 'admin';
+        else if (teacherResult.data) actualRole = 'teacher';
+        else if (studentResult.data) actualRole = 'student';
+        else if (parentResult.data) actualRole = 'parent';
+
+        // Log for debugging
+        console.log('Role check results:', {
+          userId: authData.user.id,
+          email: authData.user.email,
+          selectedRole,
+          actualRole,
+          hasAdmin: !!adminResult.data,
+          hasTeacher: !!teacherResult.data,
+          hasStudent: !!studentResult.data,
+          hasParent: !!parentResult.data,
+        });
+
         if (!actualRole) {
-          const { data: teacherData } = await supabase
-            .from('teachers')
-            .select('teacher_id')
-            .eq('auth_user_id', authData.user.id)
-            .maybeSingle();
-          
-          if (teacherData) actualRole = 'teacher';
-        }
-        
-        if (!actualRole) {
-          const { data: studentData } = await supabase
-            .from('students')
-            .select('student_id')
-            .eq('auth_user_id', authData.user.id)
-            .maybeSingle();
-          
-          if (studentData) actualRole = 'student';
-        }
-        
-        if (!actualRole) {
-          const { data: parentData } = await supabase
-            .from('parents')
-            .select('parent_id')
-            .eq('auth_user_id', authData.user.id)
-            .maybeSingle();
-          
-          if (parentData) actualRole = 'parent';
+          await supabase.auth.signOut();
+          toast({
+            title: "Role Not Found",
+            description: "We couldn't verify your role. Please try again or contact admin.",
+          });
+          return { error: new Error('Unable to verify user role. Please contact administration.') };
         }
 
-      if (!actualRole) {
-        await supabase.auth.signOut();
-        toast({
-          title: "Role Not Found",
-          description: "We couldn't verify your role. Please try again or contact admin.",
-        });
-        return { error: new Error('Unable to verify user role. Please contact administration.') };
-      }
-
-      if (actualRole !== selectedRole) {
-        await supabase.auth.signOut();
-        const error = new Error(`Your account is registered as ${actualRole}, not ${selectedRole}.`);
-        toast({
-          title: "Role Mismatch",
-          description: error.message,
-        });
-        return { error };
-      }
+        if (actualRole !== selectedRole) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Role Mismatch",
+            description: `Your account is registered as ${actualRole}, not ${selectedRole}.`,
+          });
+          return { error: new Error(`Your account is registered as ${actualRole}, not ${selectedRole}.`) };
+        }
       }
       
       return { error: null };
