@@ -108,27 +108,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (parentData) actualRole = 'parent';
         }
 
-        if (!actualRole) {
-          await supabase.auth.signOut();
-          const error = new Error('Unable to verify user role. Please contact administration.');
-          toast({
-            variant: "destructive",
-            title: "Login Failed",
-            description: error.message,
-          });
-          return { error };
-        }
+      if (!actualRole) {
+        await supabase.auth.signOut();
+        toast({
+          title: "Role Not Found",
+          description: "We couldn't verify your role. Please try again or contact admin.",
+        });
+        return { error: new Error('Unable to verify user role. Please contact administration.') };
+      }
 
-        if (actualRole !== selectedRole) {
-          await supabase.auth.signOut();
-          const error = new Error(`Your account is registered as ${actualRole}, not ${selectedRole}.`);
-          toast({
-            variant: "destructive",
-            title: "Role Mismatch",
-            description: error.message,
-          });
-          return { error };
-        }
+      if (actualRole !== selectedRole) {
+        await supabase.auth.signOut();
+        const error = new Error(`Your account is registered as ${actualRole}, not ${selectedRole}.`);
+        toast({
+          title: "Role Mismatch",
+          description: error.message,
+        });
+        return { error };
+      }
       }
       
       return { error: null };

@@ -136,49 +136,49 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
         </TabsList>
 
         {/* Mobile Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-border">
+        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-t border-gray-700 shadow-2xl">
           <TabsList className="w-full h-auto grid grid-cols-6 gap-0 bg-transparent rounded-none p-0">
             <TabsTrigger 
               value="overview" 
-              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+              className="flex-col gap-1.5 h-16 rounded-none bg-transparent text-gray-400 data-[state=active]:text-primary data-[state=active]:bg-primary/20 transition-all duration-300 ease-in-out border-none"
             >
-              <BookOpen className="h-5 w-5" />
-              <span className="text-xs">Overview</span>
+              <BookOpen className="h-5 w-5 stroke-[1.5]" />
+              <span className="text-[10px] font-medium">Overview</span>
             </TabsTrigger>
             <TabsTrigger 
               value="timetable" 
-              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+              className="flex-col gap-1.5 h-16 rounded-none bg-transparent text-gray-400 data-[state=active]:text-primary data-[state=active]:bg-primary/20 transition-all duration-300 ease-in-out border-none"
             >
-              <Calendar className="h-5 w-5" />
-              <span className="text-xs">Timetable</span>
+              <Calendar className="h-5 w-5 stroke-[1.5]" />
+              <span className="text-[10px] font-medium">Timetable</span>
             </TabsTrigger>
             <TabsTrigger 
               value="classes" 
-              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+              className="flex-col gap-1.5 h-16 rounded-none bg-transparent text-gray-400 data-[state=active]:text-primary data-[state=active]:bg-primary/20 transition-all duration-300 ease-in-out border-none"
             >
-              <Users className="h-5 w-5" />
-              <span className="text-xs">Classes</span>
+              <Users className="h-5 w-5 stroke-[1.5]" />
+              <span className="text-[10px] font-medium">Classes</span>
             </TabsTrigger>
             <TabsTrigger 
               value="assignments" 
-              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+              className="flex-col gap-1.5 h-16 rounded-none bg-transparent text-gray-400 data-[state=active]:text-primary data-[state=active]:bg-primary/20 transition-all duration-300 ease-in-out border-none"
             >
-              <BookOpen className="h-5 w-5" />
-              <span className="text-xs">Assignments</span>
+              <BookOpen className="h-5 w-5 stroke-[1.5]" />
+              <span className="text-[10px] font-medium">Assignments</span>
             </TabsTrigger>
             <TabsTrigger 
               value="attendance" 
-              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+              className="flex-col gap-1.5 h-16 rounded-none bg-transparent text-gray-400 data-[state=active]:text-primary data-[state=active]:bg-primary/20 transition-all duration-300 ease-in-out border-none"
             >
-              <CheckSquare className="h-5 w-5" />
-              <span className="text-xs">Attendance</span>
+              <CheckSquare className="h-5 w-5 stroke-[1.5]" />
+              <span className="text-[10px] font-medium">Attendance</span>
             </TabsTrigger>
             <TabsTrigger 
               value="students" 
-              className="flex-col gap-1 h-16 rounded-none data-[state=active]:bg-primary/10"
+              className="flex-col gap-1.5 h-16 rounded-none bg-transparent text-gray-400 data-[state=active]:text-primary data-[state=active]:bg-primary/20 transition-all duration-300 ease-in-out border-none"
             >
-              <Users className="h-5 w-5" />
-              <span className="text-xs">Students</span>
+              <Users className="h-5 w-5 stroke-[1.5]" />
+              <span className="text-[10px] font-medium">Students</span>
             </TabsTrigger>
           </TabsList>
         </div>
