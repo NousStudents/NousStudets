@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Wand2, Loader2, AlertCircle } from 'lucide-react';
+import { Wand2, Loader2, AlertCircle, Eye } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { TimetableComparisonDialog } from './TimetableComparisonDialog';
 
 interface TimeSlot {
   start_time: string;
@@ -35,12 +36,24 @@ const TIME_SLOTS: TimeSlot[] = [
 
 interface TimetableAutoGeneratorProps {
   onGenerated: () => void;
+  currentEntries: any[];
+  classes: any[];
+  subjects: any[];
+  teachers: any[];
 }
 
-export function TimetableAutoGenerator({ onGenerated }: TimetableAutoGeneratorProps) {
+export function TimetableAutoGenerator({ 
+  onGenerated, 
+  currentEntries,
+  classes: classesProp,
+  subjects: subjectsProp,
+  teachers: teachersProp,
+}: TimetableAutoGeneratorProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [proposedEntries, setProposedEntries] = useState<any[]>([]);
   const [config, setConfig] = useState<GeneratorConfig>({
     periodsPerDay: 6,
     daysPerWeek: 6,
@@ -167,22 +180,10 @@ export function TimetableAutoGenerator({ onGenerated }: TimetableAutoGeneratorPr
       // Delete existing timetable
       await supabase.from('timetable').delete().neq('timetable_id', '00000000-0000-0000-0000-000000000000');
 
-      // Insert generated timetable
-      if (timetableEntries.length > 0) {
-        const { error: insertError } = await supabase
-          .from('timetable')
-          .insert(timetableEntries);
-
-        if (insertError) throw insertError;
-      }
-
-      toast({
-        title: 'Success',
-        description: `Generated ${timetableEntries.length} timetable entries across ${classes?.length || 0} classes`,
-      });
-
+      // Show comparison dialog instead of directly inserting
+      setProposedEntries(timetableEntries);
       setOpen(false);
-      onGenerated();
+      setComparisonOpen(true);
     } catch (error: any) {
       console.error('Error generating timetable:', error);
       toast({
@@ -195,7 +196,50 @@ export function TimetableAutoGenerator({ onGenerated }: TimetableAutoGeneratorPr
     }
   };
 
+  const handleAcceptProposal = async () => {
+    try {
+      // Delete existing timetable
+      await supabase.from('timetable').delete().neq('timetable_id', '00000000-0000-0000-0000-000000000000');
+
+      // Insert proposed timetable
+      if (proposedEntries.length > 0) {
+        const { error: insertError } = await supabase
+          .from('timetable')
+          .insert(proposedEntries);
+
+        if (insertError) throw insertError;
+      }
+
+      toast({
+        title: 'Success',
+        description: `Applied ${proposedEntries.length} timetable entries across all classes`,
+      });
+
+      setComparisonOpen(false);
+      setProposedEntries([]);
+      onGenerated();
+    } catch (error: any) {
+      console.error('Error applying timetable:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to apply timetable',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const handleRejectProposal = () => {
+    setComparisonOpen(false);
+    setProposedEntries([]);
+    toast({
+      title: 'Cancelled',
+      description: 'Proposed timetable was not applied',
+    });
+  };
+
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2">
@@ -302,13 +346,26 @@ export function TimetableAutoGenerator({ onGenerated }: TimetableAutoGeneratorPr
               </>
             ) : (
               <>
-                <Wand2 className="mr-2 h-4 w-4" />
-                Generate
+                <Eye className="mr-2 h-4 w-4" />
+                Preview
               </>
             )}
           </Button>
         </div>
       </DialogContent>
     </Dialog>
+
+    <TimetableComparisonDialog
+      open={comparisonOpen}
+      onOpenChange={setComparisonOpen}
+      currentEntries={currentEntries}
+      proposedEntries={proposedEntries}
+      classes={classesProp}
+      subjects={subjectsProp}
+      teachers={teachersProp}
+      onAccept={handleAcceptProposal}
+      onReject={handleRejectProposal}
+    />
+    </>
   );
 }
