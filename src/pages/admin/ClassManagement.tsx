@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { BackButton } from "@/components/BackButton";
-import { School, Edit, Trash2, Plus } from "lucide-react";
+import { School, Edit, Trash2, Plus, BookOpen } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface Class {
   class_id: string;
@@ -24,6 +25,13 @@ interface Class {
 interface Teacher {
   teacher_id: string;
   full_name: string;
+}
+
+interface Subject {
+  subject_id: string;
+  subject_name: string;
+  teacher_id: string | null;
+  teacher_name: string;
 }
 
 export default function ClassManagement() {
@@ -39,6 +47,17 @@ export default function ClassManagement() {
     section: "",
     class_teacher_id: "",
   });
+  
+  const [subjectsDialogOpen, setSubjectsDialogOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjectDialogOpen, setSubjectDialogOpen] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [subjectFormData, setSubjectFormData] = useState({
+    subject_name: "",
+    teacher_id: "",
+  });
+  const [deleteSubjectDialogOpen, setDeleteSubjectDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -269,6 +288,137 @@ export default function ClassManagement() {
     setFormData({ class_name: "", section: "", class_teacher_id: "none" });
   };
 
+  const handleManageSubjects = async (classData: Class) => {
+    setSelectedClass(classData);
+    setSubjectsDialogOpen(true);
+    await fetchSubjects(classData.class_id);
+  };
+
+  const fetchSubjects = async (classId: string) => {
+    try {
+      const { data: subjectsData, error } = await supabase
+        .from("subjects")
+        .select("subject_id, subject_name, teacher_id")
+        .eq("class_id", classId);
+
+      if (error) {
+        console.error("Error fetching subjects:", error);
+        toast.error("Failed to load subjects");
+        return;
+      }
+
+      const teacherMap = new Map<string, string>();
+      teachers.forEach((t) => {
+        teacherMap.set(t.teacher_id, t.full_name);
+      });
+
+      const formattedSubjects = (subjectsData || []).map((s) => ({
+        subject_id: s.subject_id,
+        subject_name: s.subject_name,
+        teacher_id: s.teacher_id,
+        teacher_name: s.teacher_id ? (teacherMap.get(s.teacher_id) || "Not Assigned") : "Not Assigned",
+      }));
+
+      setSubjects(formattedSubjects);
+    } catch (error) {
+      console.error("Error fetching subjects:", error);
+      toast.error("Failed to load subjects");
+    }
+  };
+
+  const handleSubjectSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedClass) return;
+
+    try {
+      if (!subjectFormData.subject_name.trim()) {
+        toast.error("Subject name is required");
+        return;
+      }
+
+      const teacherId = subjectFormData.teacher_id === "none" ? null : subjectFormData.teacher_id;
+
+      if (editingSubject) {
+        const { error } = await supabase
+          .from("subjects")
+          .update({
+            subject_name: subjectFormData.subject_name.trim(),
+            teacher_id: teacherId,
+          })
+          .eq("subject_id", editingSubject.subject_id);
+
+        if (error) {
+          console.error("Error updating subject:", error);
+          toast.error("Failed to update subject");
+          return;
+        }
+        toast.success("Subject updated successfully");
+      } else {
+        const { error } = await supabase
+          .from("subjects")
+          .insert({
+            subject_name: subjectFormData.subject_name.trim(),
+            teacher_id: teacherId,
+            class_id: selectedClass.class_id,
+          });
+
+        if (error) {
+          console.error("Error creating subject:", error);
+          toast.error("Failed to create subject");
+          return;
+        }
+        toast.success("Subject created successfully");
+      }
+
+      await fetchSubjects(selectedClass.class_id);
+      handleSubjectDialogClose();
+    } catch (error: any) {
+      console.error("Error saving subject:", error);
+      toast.error(error.message || "Failed to save subject");
+    }
+  };
+
+  const handleDeleteSubject = async () => {
+    if (!editingSubject || !selectedClass) return;
+
+    try {
+      const { error } = await supabase
+        .from("subjects")
+        .delete()
+        .eq("subject_id", editingSubject.subject_id);
+
+      if (error) {
+        console.error("Error deleting subject:", error);
+        toast.error("Failed to delete subject");
+        return;
+      }
+
+      toast.success("Subject deleted successfully");
+      await fetchSubjects(selectedClass.class_id);
+      setDeleteSubjectDialogOpen(false);
+      setEditingSubject(null);
+    } catch (error: any) {
+      console.error("Error deleting subject:", error);
+      toast.error(error.message || "Failed to delete subject");
+    }
+  };
+
+  const handleEditSubject = (subject: Subject) => {
+    setEditingSubject(subject);
+    setSubjectFormData({
+      subject_name: subject.subject_name,
+      teacher_id: subject.teacher_id || "none",
+    });
+    setSubjectDialogOpen(true);
+  };
+
+  const handleSubjectDialogClose = () => {
+    setSubjectDialogOpen(false);
+    setEditingSubject(null);
+    setSubjectFormData({ subject_name: "", teacher_id: "none" });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -305,13 +455,14 @@ export default function ClassManagement() {
                 <TableHead>Class Name</TableHead>
                 <TableHead>Section</TableHead>
                 <TableHead>Class Teacher</TableHead>
+                <TableHead>Subjects</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {classes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     No classes found. Click "Add Class" to create your first class.
                   </TableCell>
                 </TableRow>
@@ -321,6 +472,12 @@ export default function ClassManagement() {
                     <TableCell>{classData.class_name}</TableCell>
                     <TableCell>{classData.section}</TableCell>
                     <TableCell>{classData.teacher_name}</TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="outline" onClick={() => handleManageSubjects(classData)}>
+                        <BookOpen className="w-4 h-4 mr-2" />
+                        Manage Subjects
+                      </Button>
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" onClick={() => handleEdit(classData)}>
@@ -401,6 +558,118 @@ export default function ClassManagement() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={subjectsDialogOpen} onOpenChange={setSubjectsDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              Manage Subjects - {selectedClass?.class_name} {selectedClass?.section}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <Badge variant="secondary">{subjects.length} Subjects</Badge>
+              <Button size="sm" onClick={() => setSubjectDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Subject
+              </Button>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Subject Name</TableHead>
+                  <TableHead>Teacher</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {subjects.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                      No subjects added yet. Click "Add Subject" to get started.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  subjects.map((subject) => (
+                    <TableRow key={subject.subject_id}>
+                      <TableCell>{subject.subject_name}</TableCell>
+                      <TableCell>{subject.teacher_name}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleEditSubject(subject)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              setEditingSubject(subject);
+                              setDeleteSubjectDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={subjectDialogOpen} onOpenChange={handleSubjectDialogClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingSubject ? "Edit Subject" : "Add New Subject"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubjectSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="subject_name">Subject Name *</Label>
+              <Input
+                id="subject_name"
+                value={subjectFormData.subject_name}
+                onChange={(e) => setSubjectFormData({ ...subjectFormData, subject_name: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="teacher_id">Teacher</Label>
+              <Select value={subjectFormData.teacher_id} onValueChange={(v) => setSubjectFormData({ ...subjectFormData, teacher_id: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Teacher" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="none">None</SelectItem>
+                  {teachers.map((t) => (
+                    <SelectItem key={t.teacher_id} value={t.teacher_id}>
+                      {t.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit">{editingSubject ? "Update" : "Create"}</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteSubjectDialogOpen} onOpenChange={setDeleteSubjectDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this subject? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSubject}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
