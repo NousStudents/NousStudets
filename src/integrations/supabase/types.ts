@@ -327,6 +327,50 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          avatar_url: string | null
+          conversation_id: string
+          created_at: string | null
+          created_by: string
+          description: string | null
+          is_group: boolean | null
+          name: string
+          school_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          conversation_id?: string
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          is_group?: boolean | null
+          name: string
+          school_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          conversation_id?: string
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          is_group?: boolean | null
+          name?: string
+          school_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string | null
