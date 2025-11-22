@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { BackButton } from '@/components/BackButton';
 import { Calendar, Clock, Plus, Save, Loader2 } from 'lucide-react';
+import { TimetableAutoGenerator } from '@/components/admin/TimetableAutoGenerator';
 
 interface TimeSlot {
   start_time: string;
@@ -181,10 +182,13 @@ export default function WeeklyTimetable() {
             </p>
           </div>
         </div>
-        <Button onClick={saveTimetable} disabled={saving} className="gap-2">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save All Changes
-        </Button>
+        <div className="flex gap-2">
+          <TimetableAutoGenerator onGenerated={fetchData} />
+          <Button onClick={saveTimetable} disabled={saving} className="gap-2">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save All Changes
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-8">
