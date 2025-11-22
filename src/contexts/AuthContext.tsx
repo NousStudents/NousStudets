@@ -65,6 +65,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { error: authError };
       }
 
+      // Check if email is verified
+      if (authData.user && !authData.user.email_confirmed_at) {
+        await supabase.auth.signOut();
+        toast({
+          variant: "destructive",
+          title: "Email Not Verified",
+          description: "Please verify your email address before logging in. Check your inbox for the confirmation link.",
+        });
+        return { error: new Error('Email not verified') };
+      }
+
       // Verify role matches using a secure database function that bypasses RLS
       if (authData.user) {
         // Use the secure function to get user role
