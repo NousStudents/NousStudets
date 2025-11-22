@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Users, Search, Paperclip, Image as ImageIcon, ArrowLeft, MoreVertical } from "lucide-react";
+import { Send, Users, Search, ArrowLeft, MoreVertical, Check, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useRole } from "@/hooks/useRole";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { FileUploadButton } from "@/components/messaging/FileUploadButton";
 
 interface Message {
   message_id: string;
@@ -37,6 +38,8 @@ interface Conversation {
   unreadCount: number;
   avatar?: string;
   otherUserId?: string;
+  isOnline?: boolean;
+  isTyping?: boolean;
 }
 
 interface SchoolUser {
@@ -45,6 +48,15 @@ interface SchoolUser {
   role: string;
   email: string;
   profile_image?: string;
+  isOnline?: boolean;
+}
+
+interface ChatRequest {
+  request_id: string;
+  sender_id: string;
+  receiver_id: string;
+  status: string;
+  created_at: string;
 }
 
 export default function Messages() {
@@ -61,6 +73,12 @@ export default function Messages() {
   const [showNewChat, setShowNewChat] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [schoolId, setSchoolId] = useState<string>("");
+  const [chatRequests, setChatRequests] = useState<ChatRequest[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<ChatRequest[]>([]);
+  const [userStatuses, setUserStatuses] = useState<Record<string, { isOnline: boolean; lastSeen: string }>>({});
+  const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -70,9 +88,15 @@ export default function Messages() {
 
   useEffect(() => {
     if (currentUserId && schoolId) {
+      updateUserStatus(true);
       fetchConversations();
       fetchSchoolUsers();
-      subscribeToMessages();
+      fetchChatRequests();
+      subscribeToRealtime();
+
+      return () => {
+        updateUserStatus(false);
+      };
     }
   }, [currentUserId, schoolId]);
 
@@ -81,6 +105,27 @@ export default function Messages() {
       fetchMessages(selectedConversation);
     }
   }, [selectedConversation]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const updateUserStatus = async (isOnline: boolean) => {
+    try {
+      await supabase.from("user_status").upsert({
+        user_id: currentUserId,
+        is_online: isOnline,
+        last_seen: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error updating user status:", error);
+    }
+  };
 
   const fetchCurrentUserData = async () => {
     try {
@@ -157,8 +202,37 @@ export default function Messages() {
       parents?.forEach(p => users.push({ user_id: p.parent_id, full_name: p.full_name, role: "parent", email: p.email, profile_image: p.profile_image || undefined }));
 
       setSchoolUsers(users.filter(u => u.user_id !== currentUserId));
+
+      // Fetch user statuses
+      const { data: statuses } = await supabase
+        .from("user_status")
+        .select("*")
+        .in("user_id", users.map(u => u.user_id));
+
+      const statusMap: Record<string, { isOnline: boolean; lastSeen: string }> = {};
+      statuses?.forEach(s => {
+        statusMap[s.user_id] = { isOnline: s.is_online, lastSeen: s.last_seen };
+      });
+      setUserStatuses(statusMap);
     } catch (error) {
       console.error("Error fetching school users:", error);
+    }
+  };
+
+  const fetchChatRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("chat_requests")
+        .select("*")
+        .eq("school_id", schoolId)
+        .or(`sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId}`);
+
+      if (error) throw error;
+
+      setChatRequests(data || []);
+      setPendingRequests(data?.filter(r => r.receiver_id === currentUserId && r.status === "pending") || []);
+    } catch (error) {
+      console.error("Error fetching chat requests:", error);
     }
   };
 
@@ -176,14 +250,17 @@ export default function Messages() {
       data?.forEach((msg) => {
         const convId = msg.conversation_id || (msg.sender_id === currentUserId ? msg.receiver_id : msg.sender_id);
         if (!convMap.has(convId)) {
+          const otherUserId = msg.sender_id === currentUserId ? msg.receiver_id : msg.sender_id;
           convMap.set(convId, {
             id: convId,
             name: msg.group_name || "Chat",
             lastMessage: msg.message_text || "📎 Attachment",
             timestamp: msg.sent_at,
             isGroup: msg.is_group || false,
-            unreadCount: msg.read_at ? 0 : 1,
-            otherUserId: msg.sender_id === currentUserId ? msg.receiver_id : msg.sender_id,
+            unreadCount: msg.read_at || msg.sender_id === currentUserId ? 0 : 1,
+            otherUserId,
+            isOnline: userStatuses[otherUserId]?.isOnline || false,
+            isTyping: typingUsers[convId] || false,
           });
         }
       });
@@ -195,6 +272,7 @@ export default function Messages() {
             if (user) {
               conv.name = user.full_name;
               conv.avatar = user.profile_image;
+              conv.isOnline = userStatuses[conv.otherUserId]?.isOnline || false;
             }
           }
           return conv;
@@ -221,19 +299,22 @@ export default function Messages() {
       if (error) throw error;
       setMessages(data || []);
 
+      // Mark messages as read
       await supabase
         .from("messages")
         .update({ read_at: new Date().toISOString() })
         .eq("receiver_id", currentUserId)
+        .eq("conversation_id", conversationId)
         .is("read_at", null);
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
   };
 
-  const subscribeToMessages = () => {
-    const channel = supabase
-      .channel("messages-channel")
+  const subscribeToRealtime = () => {
+    // Subscribe to messages
+    const messagesChannel = supabase
+      .channel("messages-realtime")
       .on(
         "postgres_changes",
         {
@@ -241,27 +322,194 @@ export default function Messages() {
           schema: "public",
           table: "messages",
         },
-        () => {
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const newMsg = payload.new as Message;
+            if (
+              (newMsg.sender_id === currentUserId || newMsg.receiver_id === currentUserId) &&
+              selectedConversation === (newMsg.conversation_id || (newMsg.sender_id === currentUserId ? newMsg.receiver_id : newMsg.sender_id))
+            ) {
+              setMessages(prev => [...prev, newMsg]);
+            }
+          }
           fetchConversations();
-          if (selectedConversation) {
-            fetchMessages(selectedConversation);
+        }
+      )
+      .subscribe();
+
+    // Subscribe to user statuses
+    const statusChannel = supabase
+      .channel("user-status-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_status",
+        },
+        (payload) => {
+          const status = payload.new as any;
+          setUserStatuses(prev => ({
+            ...prev,
+            [status.user_id]: { isOnline: status.is_online, lastSeen: status.last_seen },
+          }));
+          fetchConversations();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to typing indicators
+    const typingChannel = supabase
+      .channel("typing-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "typing_indicators",
+        },
+        (payload) => {
+          const typing = payload.new as any;
+          if (typing.conversation_id === selectedConversation && typing.user_id !== currentUserId) {
+            setTypingUsers(prev => ({ ...prev, [typing.conversation_id]: typing.is_typing }));
+            setTimeout(() => {
+              setTypingUsers(prev => ({ ...prev, [typing.conversation_id]: false }));
+            }, 3000);
           }
         }
       )
       .subscribe();
 
+    // Subscribe to chat requests
+    const requestsChannel = supabase
+      .channel("chat-requests-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "chat_requests",
+        },
+        () => {
+          fetchChatRequests();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(statusChannel);
+      supabase.removeChannel(typingChannel);
+      supabase.removeChannel(requestsChannel);
     };
   };
 
+  const handleTyping = () => {
+    if (!selectedConversation) return;
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Send typing indicator
+    supabase.from("typing_indicators").upsert({
+      conversation_id: selectedConversation,
+      user_id: currentUserId,
+      is_typing: true,
+      updated_at: new Date().toISOString(),
+    });
+
+    // Clear typing after 3 seconds
+    typingTimeoutRef.current = setTimeout(() => {
+      supabase.from("typing_indicators").upsert({
+        conversation_id: selectedConversation,
+        user_id: currentUserId,
+        is_typing: false,
+        updated_at: new Date().toISOString(),
+      });
+    }, 3000);
+  };
+
+  const canMessageUser = (targetUserId: string, targetRole: string): boolean => {
+    // Admins and teachers can message anyone
+    if (role === "admin" || role === "teacher") return true;
+
+    // Students can message teachers and admins directly
+    if (role === "student" && (targetRole === "teacher" || targetRole === "admin")) return true;
+
+    // For student-to-student, check if request is accepted
+    if (role === "student" && targetRole === "student") {
+      const existingRequest = chatRequests.find(
+        r =>
+          ((r.sender_id === currentUserId && r.receiver_id === targetUserId) ||
+            (r.sender_id === targetUserId && r.receiver_id === currentUserId)) &&
+          r.status === "accepted"
+      );
+      return !!existingRequest;
+    }
+
+    return true;
+  };
+
+  const sendChatRequest = async (receiverId: string) => {
+    try {
+      const { error } = await supabase.from("chat_requests").insert({
+        sender_id: currentUserId,
+        receiver_id: receiverId,
+        school_id: schoolId,
+        status: "pending",
+      });
+
+      if (error) throw error;
+      toast.success("Chat request sent!");
+      fetchChatRequests();
+    } catch (error: any) {
+      if (error.code === "23505") {
+        toast.error("Request already sent");
+      } else {
+        toast.error("Failed to send request");
+      }
+    }
+  };
+
+  const acceptChatRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from("chat_requests")
+        .update({ status: "accepted" })
+        .eq("request_id", requestId);
+
+      if (error) throw error;
+      toast.success("Chat request accepted!");
+      fetchChatRequests();
+    } catch (error) {
+      toast.error("Failed to accept request");
+    }
+  };
+
+  const rejectChatRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from("chat_requests")
+        .update({ status: "rejected" })
+        .eq("request_id", requestId);
+
+      if (error) throw error;
+      toast.success("Chat request rejected");
+      fetchChatRequests();
+    } catch (error) {
+      toast.error("Failed to reject request");
+    }
+  };
+
   const sendMessage = async () => {
-    if (!newMessage.trim() && !selectedConversation) return;
+    if (!newMessage.trim() || !selectedConversation) return;
 
     try {
       const { error } = await supabase.from("messages").insert({
         sender_id: currentUserId,
-        receiver_id: selectedConversation || "",
+        receiver_id: selectedConversation,
         message_text: newMessage,
         school_id: schoolId,
         conversation_id: selectedConversation,
@@ -275,9 +523,44 @@ export default function Messages() {
     }
   };
 
-  const startNewChat = (userId: string) => {
+  const startNewChat = (userId: string, userRole: string) => {
+    if (!canMessageUser(userId, userRole)) {
+      const hasPendingRequest = chatRequests.find(
+        r => r.sender_id === currentUserId && r.receiver_id === userId && r.status === "pending"
+      );
+      if (hasPendingRequest) {
+        toast.info("Request already sent. Waiting for acceptance.");
+      } else {
+        sendChatRequest(userId);
+      }
+      return;
+    }
+
     setSelectedConversation(userId);
     setShowNewChat(false);
+  };
+
+  const handleFileUploaded = async (fileUrl: string, fileName: string, fileType: string) => {
+    if (!selectedConversation) return;
+
+    try {
+      const { error } = await supabase.from("messages").insert({
+        sender_id: currentUserId,
+        receiver_id: selectedConversation,
+        message_text: fileName,
+        school_id: schoolId,
+        conversation_id: selectedConversation,
+        file_url: fileUrl,
+        file_name: fileName,
+        file_type: fileType,
+        message_type: "file",
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error sending file:", error);
+      toast.error("Failed to send file");
+    }
   };
 
   const getInitials = (name: string) => {
@@ -318,6 +601,33 @@ export default function Messages() {
         </Button>
       </header>
 
+      {pendingRequests.length > 0 && (
+        <div className="bg-blue-50 border-b border-blue-200 p-3">
+          <p className="font-medium text-sm mb-2">Chat Requests ({pendingRequests.length})</p>
+          <div className="space-y-2">
+            {pendingRequests.map((req) => {
+              const sender = schoolUsers.find(u => u.user_id === req.sender_id);
+              return (
+                <div key={req.request_id} className="flex items-center justify-between bg-white rounded-lg p-2">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-blue-200 text-blue-700 text-xs">
+                        {getInitials(sender?.full_name || "?")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium">{sender?.full_name}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => acceptChatRequest(req.request_id)}>Accept</Button>
+                    <Button size="sm" variant="outline" onClick={() => rejectChatRequest(req.request_id)}>Decline</Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 flex overflow-hidden">
         <div className={cn(
           "w-full md:w-96 bg-card border-r border-border flex flex-col",
@@ -339,23 +649,42 @@ export default function Messages() {
             <div className="p-3 border-b border-border bg-blue-50">
               <h3 className="font-medium mb-2 text-sm">School Members</h3>
               <ScrollArea className="h-48">
-                {filteredUsers.map((user) => (
-                  <button
-                    key={user.user_id}
-                    onClick={() => startNewChat(user.user_id)}
-                    className="w-full flex items-center gap-3 p-2 hover:bg-blue-100 rounded-lg transition-colors"
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-blue-200 text-blue-700">
-                        {getInitials(user.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 text-left">
-                      <p className="font-medium text-sm">{user.full_name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
-                    </div>
-                  </button>
-                ))}
+                {filteredUsers.map((user) => {
+                  const userOnline = userStatuses[user.user_id]?.isOnline || false;
+                  const canMessage = canMessageUser(user.user_id, user.role);
+                  const hasPendingRequest = chatRequests.find(
+                    r => r.sender_id === currentUserId && r.receiver_id === user.user_id && r.status === "pending"
+                  );
+
+                  return (
+                    <button
+                      key={user.user_id}
+                      onClick={() => startNewChat(user.user_id, user.role)}
+                      className="w-full flex items-center gap-3 p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                    >
+                      <div className="relative">
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback className="bg-blue-200 text-blue-700">
+                            {getInitials(user.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        {userOnline && (
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                        )}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-medium text-sm">{user.full_name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+                      </div>
+                      {!canMessage && hasPendingRequest && (
+                        <span className="text-xs text-yellow-600">Pending</span>
+                      )}
+                      {!canMessage && !hasPendingRequest && role === "student" && user.role === "student" && (
+                        <span className="text-xs text-blue-600">Request</span>
+                      )}
+                    </button>
+                  );
+                })}
               </ScrollArea>
             </div>
           )}
@@ -377,11 +706,16 @@ export default function Messages() {
                     selectedConversation === conv.id && "bg-accent"
                   )}
                 >
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback className="bg-green-200 text-green-700">
-                      {conv.isGroup ? <Users className="h-5 w-5" /> : getInitials(conv.name)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-12 w-12">
+                      <AvatarFallback className="bg-green-200 text-green-700">
+                        {conv.isGroup ? <Users className="h-5 w-5" /> : getInitials(conv.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {conv.isOnline && !conv.isGroup && (
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                    )}
+                  </div>
                   <div className="flex-1 text-left overflow-hidden">
                     <div className="flex items-center justify-between mb-1">
                       <p className="font-medium text-sm truncate">{conv.name}</p>
@@ -390,7 +724,7 @@ export default function Messages() {
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
-                      {conv.lastMessage}
+                      {conv.isTyping ? "typing..." : conv.lastMessage}
                     </p>
                   </div>
                   {conv.unreadCount > 0 && (
@@ -420,18 +754,25 @@ export default function Messages() {
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-blue-200 text-blue-700">
-                      {selectedConvData?.isGroup ? (
-                        <Users className="h-5 w-5" />
-                      ) : (
-                        getInitials(selectedConvData?.name || "")
-                      )}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-blue-200 text-blue-700">
+                        {selectedConvData?.isGroup ? (
+                          <Users className="h-5 w-5" />
+                        ) : (
+                          getInitials(selectedConvData?.name || "")
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                    {selectedConvData?.isOnline && !selectedConvData.isGroup && (
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                    )}
+                  </div>
                   <div>
                     <p className="font-medium">{selectedConvData?.name}</p>
-                    <p className="text-xs text-muted-foreground">Online</p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedConvData?.isOnline ? "Online" : "Offline"}
+                    </p>
                   </div>
                 </div>
                 <Button variant="ghost" size="icon">
@@ -454,7 +795,7 @@ export default function Messages() {
                         {!isOwn && (
                           <Avatar className="h-8 w-8">
                             <AvatarFallback className="bg-blue-200 text-blue-700 text-xs">
-                              U
+                              {getInitials(selectedConvData?.name || "U")}
                             </AvatarFallback>
                           </Avatar>
                         )}
@@ -479,42 +820,63 @@ export default function Messages() {
                                   href={msg.file_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center gap-2 underline"
+                                  className="flex items-center gap-2 underline text-sm"
                                 >
-                                  <Paperclip className="h-4 w-4" />
-                                  {msg.file_name}
+                                  📎 {msg.file_name}
                                 </a>
                               )}
                             </div>
                           )}
                           <p className="text-sm">{msg.message_text}</p>
-                          <p
-                            className={cn(
-                              "text-xs mt-1",
-                              isOwn ? "text-green-100" : "text-muted-foreground"
+                          <div className="flex items-center gap-1 mt-1">
+                            <p
+                              className={cn(
+                                "text-xs",
+                                isOwn ? "text-green-100" : "text-muted-foreground"
+                              )}
+                            >
+                              {format(new Date(msg.sent_at), "HH:mm")}
+                            </p>
+                            {isOwn && (
+                              <span className="text-green-100">
+                                {msg.read_at ? (
+                                  <CheckCheck className="h-3 w-3" />
+                                ) : (
+                                  <Check className="h-3 w-3" />
+                                )}
+                              </span>
                             )}
-                          >
-                            {format(new Date(msg.sent_at), "HH:mm")}
-                          </p>
+                          </div>
                         </div>
                       </div>
                     );
                   })}
+                  {typingUsers[selectedConversation] && (
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-blue-200 text-blue-700 text-xs">
+                          {getInitials(selectedConvData?.name || "U")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="bg-white rounded-2xl px-4 py-2">
+                        <p className="text-sm text-muted-foreground">typing...</p>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
 
               <div className="bg-card border-t border-border p-4">
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" className="text-muted-foreground">
-                    <Paperclip className="h-5 w-5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground">
-                    <ImageIcon className="h-5 w-5" />
-                  </Button>
+                  <FileUploadButton onFileUploaded={handleFileUploaded} />
                   <Input
                     placeholder="Type a message..."
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                      handleTyping();
+                    }}
                     onKeyPress={(e) => e.key === "Enter" && sendMessage()}
                     className="flex-1 bg-background"
                   />
