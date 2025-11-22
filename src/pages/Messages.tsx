@@ -12,6 +12,8 @@ import { useRole } from "@/hooks/useRole";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { FileUploadButton } from "@/components/messaging/FileUploadButton";
+import { CreateGroupDialog } from "@/components/messaging/CreateGroupDialog";
+import { GroupInfoDialog } from "@/components/messaging/GroupInfoDialog";
 
 interface Message {
   message_id: string;
@@ -79,6 +81,9 @@ export default function Messages() {
   const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [groupConversations, setGroupConversations] = useState<any[]>([]);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [selectedGroupInfo, setSelectedGroupInfo] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
@@ -90,6 +95,7 @@ export default function Messages() {
     if (currentUserId && schoolId) {
       updateUserStatus(true);
       fetchConversations();
+      fetchGroupConversations();
       fetchSchoolUsers();
       fetchChatRequests();
       subscribeToRealtime();
@@ -219,6 +225,64 @@ export default function Messages() {
     }
   };
 
+  const fetchGroupConversations = async () => {
+    try {
+      const { data: myParticipations, error: partError } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", currentUserId);
+
+      if (partError) throw partError;
+
+      const conversationIds = myParticipations?.map(p => p.conversation_id) || [];
+      
+      if (conversationIds.length === 0) {
+        setGroupConversations([]);
+        return;
+      }
+
+      const { data: groups, error: groupError } = await supabase
+        .from("conversations")
+        .select("*")
+        .in("conversation_id", conversationIds)
+        .eq("is_group", true);
+
+      if (groupError) throw groupError;
+
+      // Fetch last message for each group
+      const groupsWithMessages = await Promise.all(
+        (groups || []).map(async (group) => {
+          const { data: lastMessage } = await supabase
+            .from("messages")
+            .select("message_text, sent_at, sender_id")
+            .eq("conversation_id", group.conversation_id)
+            .order("sent_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          // Count unread messages
+          const { count: unreadCount } = await supabase
+            .from("messages")
+            .select("*", { count: "exact", head: true })
+            .eq("conversation_id", group.conversation_id)
+            .neq("sender_id", currentUserId)
+            .is("read_at", null);
+
+          return {
+            ...group,
+            lastMessage: lastMessage?.message_text || "No messages yet",
+            timestamp: lastMessage?.sent_at || group.created_at,
+            unreadCount: unreadCount || 0,
+          };
+        })
+      );
+
+      setGroupConversations(groupsWithMessages);
+    } catch (error) {
+      console.error("Error fetching group conversations:", error);
+    }
+  };
+
   const fetchChatRequests = async () => {
     try {
       const { data, error } = await supabase
@@ -290,22 +354,43 @@ export default function Messages() {
 
   const fetchMessages = async (conversationId: string) => {
     try {
-      const { data, error } = await supabase
+      // Check if it's a group conversation
+      const isGroup = groupConversations.some(g => g.conversation_id === conversationId);
+
+      let query = supabase
         .from("messages")
         .select("*")
-        .or(`conversation_id.eq.${conversationId},sender_id.eq.${conversationId},receiver_id.eq.${conversationId}`)
         .order("sent_at", { ascending: true });
+
+      if (isGroup) {
+        // For groups, get all messages with this conversation_id
+        query = query.eq("conversation_id", conversationId);
+      } else {
+        // For 1-on-1, get messages between two users
+        query = query.or(`conversation_id.eq.${conversationId},sender_id.eq.${conversationId},receiver_id.eq.${conversationId}`);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setMessages(data || []);
 
       // Mark messages as read
-      await supabase
-        .from("messages")
-        .update({ read_at: new Date().toISOString() })
-        .eq("receiver_id", currentUserId)
-        .eq("conversation_id", conversationId)
-        .is("read_at", null);
+      if (isGroup) {
+        await supabase
+          .from("messages")
+          .update({ read_at: new Date().toISOString() })
+          .eq("conversation_id", conversationId)
+          .neq("sender_id", currentUserId)
+          .is("read_at", null);
+      } else {
+        await supabase
+          .from("messages")
+          .update({ read_at: new Date().toISOString() })
+          .eq("receiver_id", currentUserId)
+          .eq("conversation_id", conversationId)
+          .is("read_at", null);
+      }
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
@@ -326,13 +411,14 @@ export default function Messages() {
           if (payload.eventType === "INSERT") {
             const newMsg = payload.new as Message;
             if (
-              (newMsg.sender_id === currentUserId || newMsg.receiver_id === currentUserId) &&
+              (newMsg.sender_id === currentUserId || newMsg.receiver_id === currentUserId || newMsg.conversation_id === selectedConversation) &&
               selectedConversation === (newMsg.conversation_id || (newMsg.sender_id === currentUserId ? newMsg.receiver_id : newMsg.sender_id))
             ) {
               setMessages(prev => [...prev, newMsg]);
             }
           }
           fetchConversations();
+          fetchGroupConversations();
         }
       )
       .subscribe();
@@ -396,11 +482,28 @@ export default function Messages() {
       )
       .subscribe();
 
+    // Subscribe to conversations
+    const conversationsChannel = supabase
+      .channel("conversations-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "conversations",
+        },
+        () => {
+          fetchGroupConversations();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(statusChannel);
       supabase.removeChannel(typingChannel);
       supabase.removeChannel(requestsChannel);
+      supabase.removeChannel(conversationsChannel);
     };
   };
 
@@ -507,15 +610,42 @@ export default function Messages() {
     if (!newMessage.trim() || !selectedConversation) return;
 
     try {
-      const { error } = await supabase.from("messages").insert({
-        sender_id: currentUserId,
-        receiver_id: selectedConversation,
-        message_text: newMessage,
-        school_id: schoolId,
-        conversation_id: selectedConversation,
-      });
+      // Check if it's a group conversation
+      const isGroup = groupConversations.some(g => g.conversation_id === selectedConversation);
 
-      if (error) throw error;
+      if (isGroup) {
+        // For groups, get all participants and send to conversation_id
+        const { data: participants } = await supabase
+          .from("conversation_participants")
+          .select("user_id")
+          .eq("conversation_id", selectedConversation);
+
+        // We'll use the first participant as receiver (for compatibility) but conversation_id is what matters
+        const receiverId = participants?.[0]?.user_id || selectedConversation;
+
+        const { error } = await supabase.from("messages").insert({
+          sender_id: currentUserId,
+          receiver_id: receiverId,
+          message_text: newMessage,
+          school_id: schoolId,
+          conversation_id: selectedConversation,
+          is_group: true,
+        });
+
+        if (error) throw error;
+      } else {
+        // Regular 1-on-1 chat
+        const { error } = await supabase.from("messages").insert({
+          sender_id: currentUserId,
+          receiver_id: selectedConversation,
+          message_text: newMessage,
+          school_id: schoolId,
+          conversation_id: selectedConversation,
+        });
+
+        if (error) throw error;
+      }
+
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
@@ -544,19 +674,45 @@ export default function Messages() {
     if (!selectedConversation) return;
 
     try {
-      const { error } = await supabase.from("messages").insert({
-        sender_id: currentUserId,
-        receiver_id: selectedConversation,
-        message_text: fileName,
-        school_id: schoolId,
-        conversation_id: selectedConversation,
-        file_url: fileUrl,
-        file_name: fileName,
-        file_type: fileType,
-        message_type: "file",
-      });
+      const isGroup = groupConversations.some(g => g.conversation_id === selectedConversation);
 
-      if (error) throw error;
+      if (isGroup) {
+        const { data: participants } = await supabase
+          .from("conversation_participants")
+          .select("user_id")
+          .eq("conversation_id", selectedConversation);
+
+        const receiverId = participants?.[0]?.user_id || selectedConversation;
+
+        const { error } = await supabase.from("messages").insert({
+          sender_id: currentUserId,
+          receiver_id: receiverId,
+          message_text: fileName,
+          school_id: schoolId,
+          conversation_id: selectedConversation,
+          file_url: fileUrl,
+          file_name: fileName,
+          file_type: fileType,
+          message_type: "file",
+          is_group: true,
+        });
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("messages").insert({
+          sender_id: currentUserId,
+          receiver_id: selectedConversation,
+          message_text: fileName,
+          school_id: schoolId,
+          conversation_id: selectedConversation,
+          file_url: fileUrl,
+          file_name: fileName,
+          file_type: fileType,
+          message_type: "file",
+        });
+
+        if (error) throw error;
+      }
     } catch (error) {
       console.error("Error sending file:", error);
       toast.error("Failed to send file");
@@ -573,6 +729,8 @@ export default function Messages() {
   };
 
   const selectedConvData = conversations.find(c => c.id === selectedConversation);
+  const selectedGroupData = groupConversations.find(g => g.conversation_id === selectedConversation);
+  const isSelectedGroup = !!selectedGroupData;
 
   const filteredUsers = schoolUsers.filter(u =>
     u.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -581,6 +739,10 @@ export default function Messages() {
 
   const filteredConversations = conversations.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredGroups = groupConversations.filter(g =>
+    g.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -592,13 +754,26 @@ export default function Messages() {
           </Button>
           <h1 className="text-xl font-semibold text-foreground">Messages</h1>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowNewChat(!showNewChat)}
-        >
-          <Users className="h-5 w-5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {(role === "admin" || role === "teacher") && (
+            <CreateGroupDialog
+              currentUserId={currentUserId}
+              schoolId={schoolId}
+              schoolUsers={schoolUsers}
+              onGroupCreated={() => {
+                fetchGroupConversations();
+                toast.success("Group created! You can now start messaging.");
+              }}
+            />
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowNewChat(!showNewChat)}
+          >
+            <Users className="h-5 w-5" />
+          </Button>
+        </div>
       </header>
 
       {pendingRequests.length > 0 && (
@@ -692,12 +867,59 @@ export default function Messages() {
           <ScrollArea className="flex-1">
             {loading ? (
               <div className="p-4 text-center text-muted-foreground">Loading...</div>
-            ) : filteredConversations.length === 0 ? (
+            ) : filteredConversations.length === 0 && filteredGroups.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground">
                 No conversations yet
               </div>
             ) : (
-              filteredConversations.map((conv) => (
+              <>
+                {filteredGroups.length > 0 && (
+                  <div className="border-b border-border">
+                    <div className="px-4 py-2 bg-accent/50">
+                      <p className="text-xs font-medium text-muted-foreground">GROUP CHATS</p>
+                    </div>
+                    {filteredGroups.map((group) => (
+                      <button
+                        key={group.conversation_id}
+                        onClick={() => setSelectedConversation(group.conversation_id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 p-4 hover:bg-accent transition-colors border-b border-border",
+                          selectedConversation === group.conversation_id && "bg-accent"
+                        )}
+                      >
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback className="bg-blue-200 text-blue-700">
+                            <Users className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 text-left overflow-hidden">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-medium text-sm truncate">{group.name}</p>
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(group.timestamp), "HH:mm")}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {group.lastMessage}
+                          </p>
+                        </div>
+                        {group.unreadCount > 0 && (
+                          <div className="bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            {group.unreadCount}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {filteredConversations.length > 0 && (
+                  <div>
+                    {filteredGroups.length > 0 && (
+                      <div className="px-4 py-2 bg-accent/50">
+                        <p className="text-xs font-medium text-muted-foreground">DIRECT MESSAGES</p>
+                      </div>
+                    )}
+                    {filteredConversations.map((conv) => (
                 <button
                   key={conv.id}
                   onClick={() => setSelectedConversation(conv.id)}
@@ -732,8 +954,11 @@ export default function Messages() {
                       {conv.unreadCount}
                     </div>
                   )}
-                </button>
-              ))
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
             )}
           </ScrollArea>
         </div>
@@ -769,16 +994,46 @@ export default function Messages() {
                     )}
                   </div>
                   <div>
-                    <p className="font-medium">{selectedConvData?.name}</p>
+                    <p className="font-medium">
+                      {isSelectedGroup ? selectedGroupData?.name : selectedConvData?.name}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {selectedConvData?.isOnline ? "Online" : "Offline"}
+                      {isSelectedGroup 
+                        ? "Group chat" 
+                        : (selectedConvData?.isOnline ? "Online" : "Offline")
+                      }
                     </p>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
+                {isSelectedGroup ? (
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => {
+                      setSelectedGroupInfo(selectedGroupData);
+                      setShowGroupInfo(true);
+                    }}
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="icon">
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                )}
               </div>
+
+              {showGroupInfo && selectedGroupInfo && (
+                <GroupInfoDialog
+                  open={showGroupInfo}
+                  onOpenChange={setShowGroupInfo}
+                  conversationId={selectedGroupInfo.conversation_id}
+                  groupName={selectedGroupInfo.name}
+                  groupDescription={selectedGroupInfo.description}
+                  currentUserId={currentUserId}
+                  isCreator={selectedGroupInfo.created_by === currentUserId}
+                />
+              )}
 
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
@@ -795,7 +1050,10 @@ export default function Messages() {
                         {!isOwn && (
                           <Avatar className="h-8 w-8">
                             <AvatarFallback className="bg-blue-200 text-blue-700 text-xs">
-                              {getInitials(selectedConvData?.name || "U")}
+                              {isSelectedGroup 
+                                ? getInitials(schoolUsers.find(u => u.user_id === msg.sender_id)?.full_name || "U")
+                                : getInitials(selectedConvData?.name || "U")
+                              }
                             </AvatarFallback>
                           </Avatar>
                         )}
@@ -807,6 +1065,11 @@ export default function Messages() {
                               : "bg-white text-foreground rounded-bl-none"
                           )}
                         >
+                          {isSelectedGroup && !isOwn && (
+                            <p className="text-xs font-medium mb-1 opacity-70">
+                              {schoolUsers.find(u => u.user_id === msg.sender_id)?.full_name || "Unknown"}
+                            </p>
+                          )}
                           {msg.file_url && (
                             <div className="mb-2">
                               {msg.file_type?.startsWith("image/") ? (
@@ -851,7 +1114,7 @@ export default function Messages() {
                       </div>
                     );
                   })}
-                  {typingUsers[selectedConversation] && (
+                  {typingUsers[selectedConversation] && !isSelectedGroup && (
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-blue-200 text-blue-700 text-xs">
