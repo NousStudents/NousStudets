@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function TeacherDashboard({ profile }: { profile: any }) {
+  const navigate = useNavigate();
   const [classes, setClasses] = useState<any[]>([]);
   const [teacherId, setTeacherId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -245,26 +247,57 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common teaching tasks</CardDescription>
+              <CardDescription>Access your most common tasks instantly</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Button variant="outline" className="h-auto flex-col gap-2 py-4">
-                  <CheckSquare className="h-6 w-6" />
-                  <span className="text-sm">Mark Attendance</span>
-                </Button>
-                <Button variant="outline" className="h-auto flex-col gap-2 py-4">
-                  <BookOpen className="h-6 w-6" />
-                  <span className="text-sm">Create Assignment</span>
-                </Button>
-                <Button variant="outline" className="h-auto flex-col gap-2 py-4">
-                  <MessageSquare className="h-6 w-6" />
-                  <span className="text-sm">Message Class</span>
-                </Button>
-                <Button variant="outline" className="h-auto flex-col gap-2 py-4">
-                  <BarChart3 className="h-6 w-6" />
-                  <span className="text-sm">View Reports</span>
-                </Button>
+                <button
+                  onClick={() => navigate('/attendance')}
+                  className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-lg hover:scale-[1.02] hover:border-primary/50"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="rounded-full bg-primary/10 p-3 transition-colors group-hover:bg-primary/20">
+                      <CheckSquare className="h-6 w-6 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Mark Attendance</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigate('/assignments')}
+                  className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-lg hover:scale-[1.02] hover:border-secondary/50"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="rounded-full bg-secondary/10 p-3 transition-colors group-hover:bg-secondary/20">
+                      <BookOpen className="h-6 w-6 text-secondary" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Create Assignment</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigate('/messages')}
+                  className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-lg hover:scale-[1.02] hover:border-accent/50"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="rounded-full bg-accent/10 p-3 transition-colors group-hover:bg-accent/20">
+                      <MessageSquare className="h-6 w-6 text-accent" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Message Class</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => navigate('/exams')}
+                  className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-lg hover:scale-[1.02] hover:border-muted-foreground/50"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="rounded-full bg-muted p-3 transition-colors group-hover:bg-muted/80">
+                      <BarChart3 className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">View Reports</span>
+                  </div>
+                </button>
               </div>
             </CardContent>
           </Card>
