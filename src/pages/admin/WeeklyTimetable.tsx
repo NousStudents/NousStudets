@@ -7,6 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 import { BackButton } from '@/components/BackButton';
 import { Calendar, Clock, Plus, Save, Loader2 } from 'lucide-react';
 import { TimetableAutoGenerator } from '@/components/admin/TimetableAutoGenerator';
+import { TimetableConflictDetector } from '@/components/admin/TimetableConflictDetector';
+import { TimetableTemplateManager } from '@/components/admin/TimetableTemplateManager';
 
 interface TimeSlot {
   start_time: string;
@@ -48,6 +50,7 @@ export default function WeeklyTimetable() {
   const [schedule, setSchedule] = useState<WeeklySchedule>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [currentEntries, setCurrentEntries] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -65,6 +68,7 @@ export default function WeeklyTimetable() {
       setClasses(classesRes.data || []);
       setSubjects(subjectsRes.data || []);
       setTeachers(teachersRes.data || []);
+      setCurrentEntries(timetableRes.data || []);
 
       // Build schedule from existing timetable
       const newSchedule: WeeklySchedule = {};
@@ -110,6 +114,26 @@ export default function WeeklyTimetable() {
         }
       }
     }));
+  };
+
+  const loadTemplate = (entries: any[]) => {
+    // Convert entries to schedule format
+    const newSchedule: WeeklySchedule = {};
+    entries.forEach((entry: any) => {
+      if (!newSchedule[entry.class_id]) {
+        newSchedule[entry.class_id] = {};
+      }
+      if (!newSchedule[entry.class_id][entry.day_of_week]) {
+        newSchedule[entry.class_id][entry.day_of_week] = {};
+      }
+      const timeKey = `${entry.start_time}-${entry.end_time}`;
+      newSchedule[entry.class_id][entry.day_of_week][timeKey] = {
+        subject_id: entry.subject_id,
+        teacher_id: entry.teacher_id
+      };
+    });
+    setSchedule(newSchedule);
+    setCurrentEntries(entries);
   };
 
   const saveTimetable = async () => {
@@ -183,13 +207,33 @@ export default function WeeklyTimetable() {
           </div>
         </div>
         <div className="flex gap-2">
-          <TimetableAutoGenerator onGenerated={fetchData} />
+          <TimetableTemplateManager
+            currentTimetable={currentEntries}
+            onLoadTemplate={loadTemplate}
+          />
+          <TimetableAutoGenerator
+            onGenerated={fetchData}
+            currentEntries={currentEntries}
+            classes={classes}
+            subjects={subjects}
+            teachers={teachers}
+          />
           <Button onClick={saveTimetable} disabled={saving} className="gap-2">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save All Changes
           </Button>
         </div>
       </div>
+
+      {/* Conflict Detection */}
+      {currentEntries.length > 0 && (
+        <TimetableConflictDetector
+          entries={currentEntries}
+          classes={classes}
+          subjects={subjects}
+          teachers={teachers}
+        />
+      )}
 
       <div className="space-y-8">
         {classes.map((classItem) => (
