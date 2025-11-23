@@ -140,11 +140,18 @@ export default function BulkUserImport() {
       // Import each user
       for (const row of rows) {
         try {
-          // Create auth user
-          const randomPassword = Math.random().toString(36).slice(-8) + "Aa1!";
+          // Create auth user with default password format: name@143#
+          const name = row.full_name.split(' ')[0].toLowerCase() || row.email.split('@')[0];
+          const defaultPassword = `${name}@143#`;
           const { data: authData, error: authError } = await supabase.auth.signUp({
             email: row.email,
-            password: randomPassword,
+            password: defaultPassword,
+            options: {
+              data: {
+                must_change_password: true,
+                full_name: row.full_name,
+              }
+            }
           });
 
           if (authError) {
