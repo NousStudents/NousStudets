@@ -27,6 +27,8 @@ import TeacherManagement from "./pages/admin/TeacherManagement";
 import ParentManagement from "./pages/admin/ParentManagement";
 import CleanupUtility from "./pages/admin/CleanupUtility";
 import SQLEditor from "./pages/admin/SQLEditor";
+import BulkUsersPage from "./pages/admin/BulkUsersPage";
+import ExamTimetableManagement from "./pages/admin/ExamTimetableManagement";
 import SuperAdmin from "./pages/SuperAdmin";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
 import SuperAdminSignup from "./pages/SuperAdminSignup";
@@ -186,6 +188,22 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <SQLEditor />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/bulk-users"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <BulkUsersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/exam-timetable"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <ExamTimetableManagement />
                 </ProtectedRoute>
               }
             />

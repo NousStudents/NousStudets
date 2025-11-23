@@ -139,11 +139,97 @@ export default function AdminDashboard({ profile }: { profile: any }) {
         </Card>
       </div>
 
-      {/* Quick Actions */}
+      {/* Enhanced Admin Panel - Quick Actions */}
+      <Card className="animate-slide-up">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Enhanced Admin Panel
+          </CardTitle>
+          <CardDescription>Quick access to essential management tools</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Bulk Users Card */}
+            <button
+              onClick={() => navigate('/admin/bulk-users')}
+              className="group relative overflow-hidden rounded-2xl border-2 border-pastel-blue/40 bg-pastel-blue/20 p-6 text-left transition-all hover:border-pastel-blue hover:shadow-lg hover:scale-105"
+            >
+              <div className="flex flex-col items-start gap-3">
+                <div className="rounded-xl bg-pastel-blue/30 p-3">
+                  <Users className="h-8 w-8 text-pastel-blue" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground text-lg">Bulk Users</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Import students, teachers & parents via CSV
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Classes Card */}
+            <button
+              onClick={() => navigate('/admin/classes')}
+              className="group relative overflow-hidden rounded-2xl border-2 border-pastel-mint/40 bg-pastel-mint/20 p-6 text-left transition-all hover:border-pastel-mint hover:shadow-lg hover:scale-105"
+            >
+              <div className="flex flex-col items-start gap-3">
+                <div className="rounded-xl bg-pastel-mint/30 p-3">
+                  <School className="h-8 w-8 text-pastel-mint" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground text-lg">Classes</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create, organize & assign class teachers
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Exam Timetable Card */}
+            <button
+              onClick={() => navigate('/admin/exam-timetable')}
+              className="group relative overflow-hidden rounded-2xl border-2 border-pastel-peach/40 bg-pastel-peach/20 p-6 text-left transition-all hover:border-pastel-peach hover:shadow-lg hover:scale-105"
+            >
+              <div className="flex flex-col items-start gap-3">
+                <div className="rounded-xl bg-pastel-peach/30 p-3">
+                  <FileText className="h-8 w-8 text-pastel-coral" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground text-lg">Exam Timetable</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create & publish exam schedules
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Class Timetable Card */}
+            <button
+              onClick={() => navigate('/admin/weekly-timetable')}
+              className="group relative overflow-hidden rounded-2xl border-2 border-pastel-lavender/40 bg-pastel-lavender/20 p-6 text-left transition-all hover:border-pastel-lavender hover:shadow-lg hover:scale-105"
+            >
+              <div className="flex flex-col items-start gap-3">
+                <div className="rounded-xl bg-pastel-lavender/30 p-3">
+                  <Calendar className="h-8 w-8 text-pastel-lavender" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground text-lg">Class Timetable</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Design weekly schedules & periods
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Standard Quick Actions */}
       <Card className="animate-slide-up">
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common administrative tasks</CardDescription>
+          <CardDescription>Other administrative tasks</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -188,22 +274,6 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               <span className="text-sm font-medium">Users</span>
             </Button>
             <Button 
-              variant="pastelCoral" 
-              className="h-auto flex-col gap-3 py-5 rounded-2xl"
-              onClick={() => navigate('/admin/classes')}
-            >
-              <School className="h-7 w-7" />
-              <span className="text-sm font-medium">Classes</span>
-            </Button>
-            <Button 
-              variant="pastelPurple" 
-              className="h-auto flex-col gap-3 py-5 rounded-2xl"
-              onClick={() => navigate('/admin/timetable')}
-            >
-              <Calendar className="h-7 w-7" />
-              <span className="text-sm font-medium">Timetable</span>
-            </Button>
-            <Button 
               variant="outline" 
               className="h-auto flex-col gap-3 py-5 rounded-2xl border-2 border-pastel-coral/40 hover:bg-pastel-coral/10"
               onClick={() => navigate('/admin/cleanup')}
@@ -222,10 +292,10 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             <Button 
               variant="pastelGreen" 
               className="h-auto flex-col gap-3 py-5 rounded-2xl"
-              onClick={() => navigate('/exams')}
+              onClick={() => navigate('/admin/timetable')}
             >
-              <FileText className="h-7 w-7" />
-              <span className="text-sm font-medium">Exams</span>
+              <Calendar className="h-7 w-7" />
+              <span className="text-sm font-medium">View Timetable</span>
             </Button>
           </div>
         </CardContent>
