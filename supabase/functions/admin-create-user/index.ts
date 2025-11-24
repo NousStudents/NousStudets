@@ -15,9 +15,10 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
     
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+      console.error("Missing Supabase environment variables");
       return new Response(
         JSON.stringify({ error: "Server misconfiguration" }), 
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -32,12 +33,18 @@ serve(async (req) => {
       );
     }
 
-    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+    // Create client with user's JWT for verification
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+    });
 
     // Verify the requesting user
     console.log("Verifying user token...");
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
     
     if (userError || !user) {
       console.error("Auth error:", userError);
@@ -46,6 +53,9 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Create service role client for admin operations
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check if user is super admin or admin
     const { data: superAdmin } = await supabaseClient
