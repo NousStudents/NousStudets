@@ -8,73 +8,73 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Soft Pastel Color Palette - Modern, Calming, Educational */
-    --background: 40 50% 97%;  /* Ultra light warm cream */
-    --foreground: 240 10% 20%;  /* Dark navy-gray text */
+    /* Clean Modern Theme - Pure White Background with Soft Pastels */
+    --background: 0 0% 100%;  /* Pure white */
+    --foreground: 240 10% 15%;  /* Dark text for strong contrast */
 
-    --card: 0 0% 100%;  /* Pure white cards with gradients */
-    --card-foreground: 240 10% 20%;
+    --card: 0 0% 100%;  /* Pure white cards */
+    --card-foreground: 240 10% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 20%;
+    --popover-foreground: 240 10% 15%;
 
     /* Primary: Soft Lavender Purple */
-    --primary: 270 50% 70%;  /* Pastel purple */
+    --primary: 270 55% 75%;  /* Gentle pastel purple */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 270 55% 65%;
+    --primary-hover: 270 60% 70%;
 
     /* Secondary: Soft Sky Blue */
-    --secondary: 200 60% 75%;  /* Pastel blue */
-    --secondary-foreground: 240 10% 20%;
+    --secondary: 200 65% 80%;  /* Gentle pastel blue */
+    --secondary-foreground: 240 10% 15%;
 
     /* Pastel Color Spectrum */
-    --pastel-pink: 340 65% 80%;  /* Soft pink */
-    --pastel-pink-foreground: 340 30% 30%;
+    --pastel-pink: 340 70% 85%;  /* Gentle soft pink */
+    --pastel-pink-foreground: 340 35% 25%;
     
-    --pastel-blue: 200 60% 75%;  /* Soft blue */
-    --pastel-blue-foreground: 200 30% 30%;
+    --pastel-blue: 200 65% 80%;  /* Gentle soft blue */
+    --pastel-blue-foreground: 200 35% 25%;
     
-    --pastel-purple: 270 50% 70%;  /* Soft purple */
+    --pastel-purple: 270 55% 75%;  /* Gentle soft purple */
     --pastel-purple-foreground: 0 0% 100%;
     
-    --pastel-green: 150 45% 70%;  /* Soft mint green */
-    --pastel-green-foreground: 150 30% 30%;
+    --pastel-green: 150 50% 75%;  /* Gentle soft mint green */
+    --pastel-green-foreground: 150 35% 25%;
     
-    --pastel-yellow: 45 75% 75%;  /* Soft yellow */
-    --pastel-yellow-foreground: 45 30% 30%;
+    --pastel-yellow: 45 80% 80%;  /* Gentle soft yellow */
+    --pastel-yellow-foreground: 45 35% 25%;
     
-    --pastel-coral: 15 70% 75%;  /* Soft coral/peach */
-    --pastel-coral-foreground: 15 30% 30%;
+    --pastel-coral: 15 75% 80%;  /* Gentle soft coral/peach */
+    --pastel-coral-foreground: 15 35% 25%;
 
     /* Success: Soft Mint Green */
-    --success: 150 45% 70%;  /* Pastel mint green */
-    --success-foreground: 150 30% 30%;
+    --success: 150 50% 75%;  /* Gentle pastel mint green */
+    --success-foreground: 150 35% 25%;
 
     /* Warning: Soft Peachy Coral */
-    --warning: 30 75% 72%;  /* Soft peach */
-    --warning-foreground: 30 30% 30%;
+    --warning: 30 80% 77%;  /* Gentle soft peach */
+    --warning-foreground: 30 35% 25%;
 
-    --muted: 240 10% 94%;  /* Light gray with purple tint */
-    --muted-foreground: 240 6% 46%;
+    --muted: 240 15% 96%;  /* Very light gray */
+    --muted-foreground: 240 8% 50%;
 
-    --accent: 340 65% 80%;  /* Pastel pink accent */
-    --accent-foreground: 340 30% 30%;
+    --accent: 340 70% 85%;  /* Gentle pastel pink accent */
+    --accent-foreground: 340 35% 25%;
 
-    --destructive: 0 60% 75%;  /* Soft red */
+    --destructive: 0 65% 80%;  /* Gentle soft red */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 15% 88%;  /* Soft gray-purple border */
-    --input: 240 10% 96%;  /* Very light input background */
-    --ring: 270 50% 70%;  /* Pastel purple focus ring */
+    --border: 240 20% 92%;  /* Soft light border */
+    --input: 240 20% 98%;  /* Very light input background */
+    --ring: 270 55% 75%;  /* Gentle pastel purple focus ring */
 
     --radius: 1.5rem;  /* Extra rounded corners for softer look */
 
-    /* Soft Pastel Shadows */
-    --shadow-sm: 0 2px 8px rgba(200, 180, 220, 0.12);
-    --shadow-md: 0 4px 16px rgba(200, 180, 220, 0.16);
-    --shadow-lg: 0 8px 32px rgba(200, 180, 220, 0.2);
-    --shadow-card: 0 6px 20px rgba(200, 180, 220, 0.14);
-    --shadow-hover: 0 12px 40px rgba(200, 180, 220, 0.24);
+    /* Clean Soft Shadows */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
+    --shadow-card: 0 6px 20px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.1);
 
     /* Smooth Animations */
     --transition-smooth: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -83,66 +83,66 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 260 15% 12%;  /* Dark purple-navy */
-    --foreground: 40 40% 95%;  /* Light cream text */
+    --background: 0 0% 5%;  /* Pure black/very dark gray */
+    --foreground: 0 0% 95%;  /* Pure white text */
 
-    --card: 260 12% 18%;  /* Dark purple card */
-    --card-foreground: 40 40% 95%;
+    --card: 0 0% 10%;  /* Very dark card */
+    --card-foreground: 0 0% 95%;
 
-    --popover: 260 12% 18%;
-    --popover-foreground: 40 40% 95%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 270 50% 65%;  /* Lighter pastel purple */
+    --primary: 270 45% 65%;  /* Subtle pastel purple */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 270 55% 70%;
+    --primary-hover: 270 50% 70%;
 
-    --secondary: 200 50% 60%;  /* Muted pastel blue */
+    --secondary: 200 40% 60%;  /* Subtle pastel blue */
     --secondary-foreground: 0 0% 100%;
 
-    /* Dark Mode Pastels */
-    --pastel-pink: 340 50% 60%;
+    /* Dark Mode Subtle Pastels */
+    --pastel-pink: 340 40% 60%;
     --pastel-pink-foreground: 0 0% 100%;
     
-    --pastel-blue: 200 50% 60%;
+    --pastel-blue: 200 40% 60%;
     --pastel-blue-foreground: 0 0% 100%;
     
-    --pastel-purple: 270 50% 65%;
+    --pastel-purple: 270 45% 65%;
     --pastel-purple-foreground: 0 0% 100%;
     
-    --pastel-green: 150 40% 55%;
+    --pastel-green: 150 35% 55%;
     --pastel-green-foreground: 0 0% 100%;
     
-    --pastel-yellow: 45 60% 60%;
-    --pastel-yellow-foreground: 260 15% 12%;
+    --pastel-yellow: 45 50% 60%;
+    --pastel-yellow-foreground: 0 0% 10%;
     
-    --pastel-coral: 15 60% 60%;
+    --pastel-coral: 15 50% 60%;
     --pastel-coral-foreground: 0 0% 100%;
 
-    --success: 150 40% 55%;  /* Muted mint */
+    --success: 150 35% 55%;  /* Subtle mint */
     --success-foreground: 0 0% 100%;
 
-    --warning: 30 60% 60%;  /* Muted peach */
+    --warning: 30 50% 60%;  /* Subtle peach */
     --warning-foreground: 0 0% 100%;
 
-    --muted: 260 10% 25%;  /* Dark purple-gray */
-    --muted-foreground: 240 5% 65%;
+    --muted: 0 0% 20%;  /* Dark gray */
+    --muted-foreground: 0 0% 70%;
 
-    --accent: 340 50% 60%;  /* Muted pink */
+    --accent: 340 40% 60%;  /* Subtle pink */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 50% 60%;
+    --destructive: 0 45% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 260 15% 25%;
-    --input: 260 12% 20%;
-    --ring: 270 50% 65%;
+    --border: 0 0% 20%;
+    --input: 0 0% 15%;
+    --ring: 270 45% 65%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(270 50% 65%) 0%, hsl(200 50% 60%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(260 15% 12%) 0%, hsl(260 12% 18%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(340 30% 20%) 0%, hsl(200 30% 20%) 100%);
-    --gradient-blue-purple: linear-gradient(135deg, hsl(200 50% 60%) 0%, hsl(270 50% 65%) 100%);
-    --gradient-pink-yellow: linear-gradient(135deg, hsl(340 50% 60%) 0%, hsl(45 60% 60%) 100%);
-    --gradient-green-blue: linear-gradient(135deg, hsl(150 40% 55%) 0%, hsl(200 50% 60%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(270 45% 65%) 0%, hsl(200 40% 60%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(0 0% 5%) 0%, hsl(0 0% 10%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(340 20% 15%) 0%, hsl(200 20% 15%) 100%);
+    --gradient-blue-purple: linear-gradient(135deg, hsl(200 40% 60%) 0%, hsl(270 45% 65%) 100%);
+    --gradient-pink-yellow: linear-gradient(135deg, hsl(340 40% 60%) 0%, hsl(45 50% 60%) 100%);
+    --gradient-green-blue: linear-gradient(135deg, hsl(150 35% 55%) 0%, hsl(200 40% 60%) 100%);
   }
 }
 
