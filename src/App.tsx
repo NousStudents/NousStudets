@@ -30,6 +30,7 @@ import CleanupUtility from "./pages/admin/CleanupUtility";
 import SQLEditor from "./pages/admin/SQLEditor";
 import BulkUsersPage from "./pages/admin/BulkUsersPage";
 import ExamTimetableManagement from "./pages/admin/ExamTimetableManagement";
+import AllowedStudentsManagement from "./pages/admin/AllowedStudentsManagement";
 import SuperAdmin from "./pages/SuperAdmin";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
 import SuperAdminSignup from "./pages/SuperAdminSignup";
@@ -206,6 +207,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <ExamTimetableManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/allowed-students"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <AllowedStudentsManagement />
                 </ProtectedRoute>
               }
             />

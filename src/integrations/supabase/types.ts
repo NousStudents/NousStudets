@@ -153,6 +153,57 @@ export type Database = {
         }
         Relationships: []
       }
+      allowed_students: {
+        Row: {
+          class_id: string | null
+          created_at: string | null
+          created_by: string | null
+          email: string
+          full_name: string
+          id: string
+          roll_no: string | null
+          school_id: string
+          section: string | null
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          email: string
+          full_name: string
+          id?: string
+          roll_no?: string | null
+          school_id: string
+          section?: string | null
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          roll_no?: string | null
+          school_id?: string
+          section?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allowed_students_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "allowed_students_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
       assignments: {
         Row: {
           assignment_id: string

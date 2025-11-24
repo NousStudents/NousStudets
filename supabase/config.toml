@@ -2,3 +2,6 @@ project_id = "davjlszmguixtuavtrxh"
 
 [functions.system-health]
 verify_jwt = false
+
+[functions.student-signup]
+verify_jwt = false
