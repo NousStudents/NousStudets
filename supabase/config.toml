@@ -1,1 +1,4 @@
 project_id = "davjlszmguixtuavtrxh"
+
+[functions.system-health]
+verify_jwt = false
