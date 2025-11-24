@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { RecentActivities } from '@/components/admin/RecentActivities';
 import { 
   Users, 
   UserPlus,
@@ -356,30 +357,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
         <TabsContent value="overview" className="space-y-6">
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Recent Activities */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-primary" />
-                  Recent Activities
-                </CardTitle>
-                <CardDescription>Latest system events</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  { action: 'New student enrolled', user: 'Admin', time: '10 minutes ago' },
-                  { action: 'Timetable updated', user: 'Admin', time: '2 hours ago' },
-                  { action: 'Fee payment received', user: 'System', time: '3 hours ago' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start justify-between p-3 rounded-lg bg-muted/50">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-foreground">{item.action}</h4>
-                      <p className="text-sm text-muted-foreground">By {item.user}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{item.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            <RecentActivities />
 
             {/* System Health */}
             <Card>
