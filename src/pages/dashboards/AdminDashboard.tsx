@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RecentActivities } from '@/components/admin/RecentActivities';
+import { SystemStatus } from '@/components/admin/SystemStatus';
 import { 
   Users, 
   UserPlus,
@@ -359,31 +360,8 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             {/* Recent Activities */}
             <RecentActivities />
 
-            {/* System Health */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-secondary" />
-                  System Status
-                </CardTitle>
-                <CardDescription>Platform health indicators</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  { metric: 'Database', status: 'Operational', color: 'success' },
-                  { metric: 'Authentication', status: 'Operational', color: 'success' },
-                  { metric: 'File Storage', status: 'Operational', color: 'success' },
-                  { metric: 'Notifications', status: 'Operational', color: 'success' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <span className="font-medium text-foreground">{item.metric}</span>
-                    <Badge variant="secondary" className="bg-success/10 text-success">
-                      {item.status}
-                    </Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            {/* System Status */}
+            <SystemStatus />
           </div>
         </TabsContent>
 
