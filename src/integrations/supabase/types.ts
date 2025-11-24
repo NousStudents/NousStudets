@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          activity_id: string
+          activity_type: string
+          actor_id: string | null
+          actor_name: string | null
+          actor_role: string | null
+          created_at: string | null
+          description: string | null
+          metadata: Json | null
+          school_id: string
+          target_class_id: string | null
+          target_subject_id: string | null
+          target_user_id: string | null
+          title: string
+        }
+        Insert: {
+          activity_id?: string
+          activity_type: string
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          created_at?: string | null
+          description?: string | null
+          metadata?: Json | null
+          school_id: string
+          target_class_id?: string | null
+          target_subject_id?: string | null
+          target_user_id?: string | null
+          title: string
+        }
+        Update: {
+          activity_id?: string
+          activity_type?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          created_at?: string | null
+          description?: string | null
+          metadata?: Json | null
+          school_id?: string
+          target_class_id?: string | null
+          target_subject_id?: string | null
+          target_user_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
       admins: {
         Row: {
           admin_id: string
