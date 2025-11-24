@@ -9,6 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BookOpen, GraduationCap, UserCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -19,6 +22,26 @@ const Auth = () => {
   const [loginRole, setLoginRole] = useState<string>('');
   const [loginLoading, setLoginLoading] = useState(false);
 
+  // Signup state for students
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupFullName, setSignupFullName] = useState('');
+  const [signupSchool, setSignupSchool] = useState('');
+  const [signupLoading, setSignupLoading] = useState(false);
+
+  // Fetch schools for student signup
+  const { data: schools } = useQuery({
+    queryKey: ["schools"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("schools")
+        .select("school_id, school_name")
+        .order("school_name");
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +67,46 @@ const Auth = () => {
     setLoginLoading(false);
   };
 
+  const handleStudentSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!signupSchool) {
+      toast.error("Please select your school");
+      return;
+    }
+
+    setSignupLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("student-signup", {
+        body: {
+          email: signupEmail,
+          password: signupPassword,
+          fullName: signupFullName,
+          schoolId: signupSchool,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success(data.message || "Account created successfully! You can now log in.");
+      
+      // Reset form and switch to login tab
+      setSignupEmail('');
+      setSignupPassword('');
+      setSignupFullName('');
+      setSignupSchool('');
+      
+      // Auto-fill login email
+      setLoginEmail(signupEmail);
+      setLoginRole('student');
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create account");
+    } finally {
+      setSignupLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -92,14 +155,14 @@ const Auth = () => {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl">Welcome</CardTitle>
             <CardDescription>
-              Sign in to your account
+              Sign in to your account or create a new one
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signup">Student Signup</TabsTrigger>
               </TabsList>
 
               {/* Login Tab */}
@@ -199,24 +262,88 @@ const Auth = () => {
                 </form>
               </TabsContent>
 
-              {/* Signup Tab - Disabled */}
+              {/* Student Signup Tab */}
               <TabsContent value="signup">
-                <div className="space-y-4 mt-4">
-                  <div className="p-6 bg-primary/5 border border-primary/20 rounded-lg text-center space-y-3">
-                    <div className="text-4xl">🔒</div>
-                    <h3 className="font-semibold text-foreground text-lg">Admin-Only Registration</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Accounts for students, teachers, and parents are created only by an administrator. 
-                      Public signup is disabled for security purposes.
+                <form onSubmit={handleStudentSignup} className="space-y-4 mt-4">
+                  <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                    <p className="text-xs text-muted-foreground">
+                      ⚠️ Your email must be pre-registered by your school admin to sign up
                     </p>
-                    <div className="pt-2 border-t border-border/50">
-                      <p className="text-xs text-muted-foreground">
-                        Please contact your school administrator to receive your login credentials.
-                        You will be required to change your password on first login.
-                      </p>
-                    </div>
                   </div>
-                </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-school">Select Your School *</Label>
+                    <Select 
+                      value={signupSchool} 
+                      onValueChange={setSignupSchool}
+                      disabled={signupLoading}
+                      required
+                    >
+                      <SelectTrigger id="signup-school">
+                        <SelectValue placeholder="Choose your school" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {schools?.map((school) => (
+                          <SelectItem key={school.school_id} value={school.school_id}>
+                            {school.school_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name">Full Name *</Label>
+                    <Input
+                      id="signup-name"
+                      type="text"
+                      placeholder="Your full name"
+                      value={signupFullName}
+                      onChange={(e) => setSignupFullName(e.target.value)}
+                      required
+                      disabled={signupLoading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email *</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="your.email@school.com"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      required
+                      disabled={signupLoading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Password *</Label>
+                    <PasswordInput
+                      id="signup-password"
+                      placeholder="Create a strong password"
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      required
+                      disabled={signupLoading}
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={signupLoading}
+                  >
+                    {signupLoading ? 'Creating Account...' : 'Create Student Account'}
+                  </Button>
+
+                  <div className="pt-2 border-t border-border/50">
+                    <p className="text-xs text-muted-foreground text-center">
+                      Teachers, Parents & Admins: Contact your school administrator for account creation
+                    </p>
+                  </div>
+                </form>
               </TabsContent>
             </Tabs>
           </CardContent>

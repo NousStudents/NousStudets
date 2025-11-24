@@ -22,7 +22,8 @@ import {
   Building2,
   GraduationCap,
   UserCheck,
-  Database
+  Database,
+  Shield
 } from 'lucide-react';
 
 export default function AdminDashboard({ profile }: { profile: any }) {
@@ -165,6 +166,24 @@ export default function AdminDashboard({ profile }: { profile: any }) {
                   <h3 className="font-bold text-foreground text-lg">Bulk Users</h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     Import students, teachers & parents via CSV
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Whitelist Students Card */}
+            <button
+              onClick={() => navigate('/admin/allowed-students')}
+              className="group relative overflow-hidden rounded-2xl border-2 border-pastel-yellow/40 bg-pastel-yellow/20 p-6 text-left transition-all hover:border-pastel-yellow hover:shadow-lg hover:scale-105"
+            >
+              <div className="flex flex-col items-start gap-3">
+                <div className="rounded-xl bg-pastel-yellow/30 p-3">
+                  <Shield className="h-8 w-8 text-pastel-yellow" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground text-lg">Whitelist Students</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Pre-approve students for signup
                   </p>
                 </div>
               </div>
