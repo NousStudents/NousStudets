@@ -16,10 +16,14 @@ interface TimeSlot {
 }
 
 interface GeneratorConfig {
+  selectedClassId: string;
   periodsPerDay: number;
   daysPerWeek: number;
   minPeriodsPerSubject: number;
   maxPeriodsPerSubject: number;
+  breakfastTime: string;
+  lunchTime: string;
+  shortBreakAfterPeriod: number;
 }
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -55,36 +59,47 @@ export function TimetableAutoGenerator({
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [proposedEntries, setProposedEntries] = useState<any[]>([]);
   const [config, setConfig] = useState<GeneratorConfig>({
+    selectedClassId: '',
     periodsPerDay: 6,
     daysPerWeek: 6,
     minPeriodsPerSubject: 2,
     maxPeriodsPerSubject: 5,
+    breakfastTime: '09:30',
+    lunchTime: '12:00',
+    shortBreakAfterPeriod: 3,
   });
 
   const generateTimetable = async () => {
+    if (!config.selectedClassId) {
+      toast({
+        title: 'Error',
+        description: 'Please select a class first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setGenerating(true);
     try {
-      // Fetch all classes with their subjects
-      const { data: classes, error: classesError } = await supabase
+      // Fetch selected class
+      const { data: selectedClass, error: classError } = await supabase
         .from('classes')
-        .select('class_id, class_name, section');
+        .select('class_id, class_name, section')
+        .eq('class_id', config.selectedClassId)
+        .single();
       
-      if (classesError) throw classesError;
+      if (classError) throw classError;
 
       const { data: subjects, error: subjectsError } = await supabase
         .from('subjects')
-        .select('subject_id, subject_name, class_id, teacher_id');
+        .select('subject_id, subject_name, class_id, teacher_id')
+        .eq('class_id', config.selectedClassId);
       
       if (subjectsError) throw subjectsError;
 
-      // Group subjects by class
-      const classBySubjects: Record<string, any[]> = {};
-      subjects?.forEach(subject => {
-        if (!classBySubjects[subject.class_id]) {
-          classBySubjects[subject.class_id] = [];
-        }
-        classBySubjects[subject.class_id].push(subject);
-      });
+      if (!subjects || subjects.length === 0) {
+        throw new Error('No subjects found for this class');
+      }
 
       // Generate timetable entries
       const timetableEntries: any[] = [];
@@ -93,92 +108,131 @@ export function TimetableAutoGenerator({
       const days = DAYS.slice(0, config.daysPerWeek);
       const slots = TIME_SLOTS.slice(0, config.periodsPerDay);
 
-      for (const classItem of classes || []) {
-        const classSubjects = classBySubjects[classItem.class_id] || [];
-        
-        if (classSubjects.length === 0) continue;
+      // Calculate periods needed per subject
+      const totalNonBreakSlots = days.length * (slots.length - 2); // Reserve 2 slots for breaks per day
+      const periodsPerSubject = Math.max(
+        config.minPeriodsPerSubject,
+        Math.min(
+          config.maxPeriodsPerSubject,
+          Math.floor(totalNonBreakSlots / subjects.length)
+        )
+      );
 
-        // Calculate periods needed per subject
-        const totalSlots = days.length * slots.length;
-        const periodsPerSubject = Math.max(
-          config.minPeriodsPerSubject,
-          Math.min(
-            config.maxPeriodsPerSubject,
-            Math.floor(totalSlots / classSubjects.length)
-          )
-        );
-
-        // Create a pool of subjects with required periods
-        const subjectPool: any[] = [];
-        classSubjects.forEach(subject => {
-          for (let i = 0; i < periodsPerSubject; i++) {
-            subjectPool.push(subject);
-          }
-        });
-
-        // Shuffle the pool for random distribution
-        for (let i = subjectPool.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [subjectPool[i], subjectPool[j]] = [subjectPool[j], subjectPool[i]];
+      // Create a pool of subjects with required periods
+      const subjectPool: any[] = [];
+      subjects.forEach(subject => {
+        for (let i = 0; i < periodsPerSubject; i++) {
+          subjectPool.push(subject);
         }
+      });
 
-        let subjectIndex = 0;
+      // Shuffle the pool for random distribution
+      for (let i = subjectPool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [subjectPool[i], subjectPool[j]] = [subjectPool[j], subjectPool[i]];
+      }
 
-        // Assign subjects to time slots
-        for (const day of days) {
-          for (const slot of slots) {
-            if (subjectIndex >= subjectPool.length) break;
+      let subjectIndex = 0;
 
-            const subject = subjectPool[subjectIndex];
-            const timeKey = `${day}-${slot.start_time}-${slot.end_time}`;
+      // Assign subjects to time slots
+      for (const day of days) {
+        let periodCount = 0;
+        for (const slot of slots) {
+          periodCount++;
 
-            // Check if teacher is available at this time
-            if (subject.teacher_id) {
-              const teacherKey = `${subject.teacher_id}-${timeKey}`;
-              if (!teacherSchedule[subject.teacher_id]) {
-                teacherSchedule[subject.teacher_id] = new Set();
-              }
-
-              // If teacher is busy, try to find another subject with available teacher
-              if (teacherSchedule[subject.teacher_id].has(timeKey)) {
-                let foundAlternative = false;
-                for (let i = subjectIndex + 1; i < subjectPool.length; i++) {
-                  const altSubject = subjectPool[i];
-                  if (
-                    !altSubject.teacher_id ||
-                    !teacherSchedule[altSubject.teacher_id]?.has(timeKey)
-                  ) {
-                    // Swap subjects
-                    [subjectPool[subjectIndex], subjectPool[i]] = [subjectPool[i], subjectPool[subjectIndex]];
-                    foundAlternative = true;
-                    break;
-                  }
-                }
-                if (!foundAlternative) {
-                  subjectIndex++;
-                  continue; // Skip this slot if no alternative found
-                }
-              }
-
-              teacherSchedule[subject.teacher_id].add(timeKey);
-            }
-
+          // Insert breakfast break
+          if (slot.start_time === config.breakfastTime) {
             timetableEntries.push({
-              class_id: classItem.class_id,
-              subject_id: subject.subject_id,
-              teacher_id: subject.teacher_id,
+              class_id: selectedClass.class_id,
+              subject_id: subjects[0].subject_id, // Use first subject as placeholder
+              teacher_id: null,
               day_of_week: day,
               start_time: slot.start_time,
               end_time: slot.end_time,
+              is_break: true,
+              period_name: 'Breakfast Break',
             });
-
-            subjectIndex++;
+            continue;
           }
+
+          // Insert lunch break
+          if (slot.start_time === config.lunchTime) {
+            timetableEntries.push({
+              class_id: selectedClass.class_id,
+              subject_id: subjects[0].subject_id, // Use first subject as placeholder
+              teacher_id: null,
+              day_of_week: day,
+              start_time: slot.start_time,
+              end_time: slot.end_time,
+              is_break: true,
+              period_name: 'Lunch Break',
+            });
+            continue;
+          }
+
+          // Insert short break after configured period
+          if (periodCount === config.shortBreakAfterPeriod) {
+            timetableEntries.push({
+              class_id: selectedClass.class_id,
+              subject_id: subjects[0].subject_id, // Use first subject as placeholder
+              teacher_id: null,
+              day_of_week: day,
+              start_time: slot.start_time,
+              end_time: slot.end_time,
+              is_break: true,
+              period_name: 'Short Break',
+            });
+            continue;
+          }
+
+          if (subjectIndex >= subjectPool.length) break;
+
+          const subject = subjectPool[subjectIndex];
+          const timeKey = `${day}-${slot.start_time}-${slot.end_time}`;
+
+          // Check if teacher is available at this time
+          if (subject.teacher_id) {
+            if (!teacherSchedule[subject.teacher_id]) {
+              teacherSchedule[subject.teacher_id] = new Set();
+            }
+
+            // If teacher is busy, try to find another subject with available teacher
+            if (teacherSchedule[subject.teacher_id].has(timeKey)) {
+              let foundAlternative = false;
+              for (let i = subjectIndex + 1; i < subjectPool.length; i++) {
+                const altSubject = subjectPool[i];
+                if (
+                  !altSubject.teacher_id ||
+                  !teacherSchedule[altSubject.teacher_id]?.has(timeKey)
+                ) {
+                  // Swap subjects
+                  [subjectPool[subjectIndex], subjectPool[i]] = [subjectPool[i], subjectPool[subjectIndex]];
+                  foundAlternative = true;
+                  break;
+                }
+              }
+              if (!foundAlternative) {
+                subjectIndex++;
+                continue; // Skip this slot if no alternative found
+              }
+            }
+
+            teacherSchedule[subject.teacher_id].add(timeKey);
+          }
+
+          timetableEntries.push({
+            class_id: selectedClass.class_id,
+            subject_id: subject.subject_id,
+            teacher_id: subject.teacher_id,
+            day_of_week: day,
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            is_break: false,
+          });
+
+          subjectIndex++;
         }
       }
-
-      // Delete existing timetable
-      await supabase.from('timetable').delete().neq('timetable_id', '00000000-0000-0000-0000-000000000000');
 
       // Show comparison dialog instead of directly inserting
       setProposedEntries(timetableEntries);
@@ -210,9 +264,11 @@ export function TimetableAutoGenerator({
         if (insertError) throw insertError;
       }
 
+      const selectedClassName = classesProp.find(c => c.class_id === config.selectedClassId)?.class_name || 'selected class';
+      
       toast({
         title: 'Success',
-        description: `Applied ${proposedEntries.length} timetable entries across all classes`,
+        description: `Applied ${proposedEntries.length} timetable entries for ${selectedClassName}`,
       });
 
       setComparisonOpen(false);
@@ -251,18 +307,39 @@ export function TimetableAutoGenerator({
         <DialogHeader>
           <DialogTitle>Automatic Timetable Generator</DialogTitle>
           <DialogDescription>
-            Automatically create a complete weekly schedule for all classes based on their subjects and teachers
+            Automatically create a complete weekly schedule for selected class with breaks, lunch, and optimized teacher allocation
           </DialogDescription>
         </DialogHeader>
 
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="text-sm">
-            This will <strong>replace the entire existing timetable</strong> with a new auto-generated schedule.
+            This will <strong>replace the existing timetable for the selected class</strong> with an auto-generated schedule including breaks.
           </AlertDescription>
         </Alert>
 
         <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="selectedClass">Select Class *</Label>
+            <Select
+              value={config.selectedClassId}
+              onValueChange={(value) =>
+                setConfig({ ...config, selectedClassId: value })
+              }
+            >
+              <SelectTrigger id="selectedClass">
+                <SelectValue placeholder="Choose a class" />
+              </SelectTrigger>
+              <SelectContent>
+                {classesProp.map((classItem) => (
+                  <SelectItem key={classItem.class_id} value={classItem.class_id}>
+                    {classItem.class_name} {classItem.section && `- ${classItem.section}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="periodsPerDay">Periods per Day</Label>
             <Select
@@ -306,6 +383,51 @@ export function TimetableAutoGenerator({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="breakfastTime">Breakfast Break Time</Label>
+            <Input
+              id="breakfastTime"
+              type="time"
+              value={config.breakfastTime}
+              onChange={(e) =>
+                setConfig({ ...config, breakfastTime: e.target.value })
+              }
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="lunchTime">Lunch Break Time</Label>
+            <Input
+              id="lunchTime"
+              type="time"
+              value={config.lunchTime}
+              onChange={(e) =>
+                setConfig({ ...config, lunchTime: e.target.value })
+              }
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="shortBreak">Short Break After Period</Label>
+            <Select
+              value={config.shortBreakAfterPeriod.toString()}
+              onValueChange={(value) =>
+                setConfig({ ...config, shortBreakAfterPeriod: parseInt(value) })
+              }
+            >
+              <SelectTrigger id="shortBreak">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[2, 3, 4, 5].map((num) => (
+                  <SelectItem key={num} value={num.toString()}>
+                    After {num} periods
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="minPeriods">Min Periods per Subject (weekly)</Label>
             <Input
               id="minPeriods"
@@ -338,7 +460,10 @@ export function TimetableAutoGenerator({
           <Button variant="outline" onClick={() => setOpen(false)} disabled={generating}>
             Cancel
           </Button>
-          <Button onClick={generateTimetable} disabled={generating}>
+          <Button 
+            onClick={generateTimetable} 
+            disabled={generating || !config.selectedClassId}
+          >
             {generating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
