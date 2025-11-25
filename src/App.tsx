@@ -31,6 +31,8 @@ import SQLEditor from "./pages/admin/SQLEditor";
 import BulkUsersPage from "./pages/admin/BulkUsersPage";
 import ExamTimetableManagement from "./pages/admin/ExamTimetableManagement";
 import AllowedStudentsManagement from "./pages/admin/AllowedStudentsManagement";
+import WhitelistedTeachersManagement from "./pages/admin/WhitelistedTeachersManagement";
+import WhitelistedParentsManagement from "./pages/admin/WhitelistedParentsManagement";
 import SuperAdmin from "./pages/SuperAdmin";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
 import SuperAdminSignup from "./pages/SuperAdminSignup";
@@ -215,6 +217,22 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <AllowedStudentsManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/whitelisted-teachers"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <WhitelistedTeachersManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/whitelisted-parents"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <WhitelistedParentsManagement />
                 </ProtectedRoute>
               }
             />

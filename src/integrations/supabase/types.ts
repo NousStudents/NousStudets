@@ -1584,6 +1584,97 @@ export type Database = {
           },
         ]
       }
+      whitelisted_parents: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          relation: string | null
+          school_id: string
+          student_ids: string[]
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          relation?: string | null
+          school_id: string
+          student_ids: string[]
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          relation?: string | null
+          school_id?: string
+          student_ids?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whitelisted_parents_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
+      whitelisted_teachers: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          department: string | null
+          email: string
+          employee_id: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          school_id: string
+          subject_specialization: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          department?: string | null
+          email: string
+          employee_id?: string | null
+          full_name: string
+          id?: string
+          phone?: string | null
+          school_id: string
+          subject_specialization?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          department?: string | null
+          email?: string
+          employee_id?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          school_id?: string
+          subject_specialization?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whitelisted_teachers_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
