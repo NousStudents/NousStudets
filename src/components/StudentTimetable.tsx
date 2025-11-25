@@ -14,7 +14,7 @@ interface TimetableEntry {
   teacher_name?: string;
 }
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
 export default function StudentTimetable({ studentId }: { studentId: string }) {
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);

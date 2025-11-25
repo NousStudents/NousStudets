@@ -1109,6 +1109,27 @@ export type Database = {
           },
         ]
       }
+      period_types: {
+        Row: {
+          color_code: string | null
+          created_at: string | null
+          period_type_id: string
+          type_name: string
+        }
+        Insert: {
+          color_code?: string | null
+          created_at?: string | null
+          period_type_id?: string
+          type_name: string
+        }
+        Update: {
+          color_code?: string | null
+          created_at?: string | null
+          period_type_id?: string
+          type_name?: string
+        }
+        Relationships: []
+      }
       schools: {
         Row: {
           address: string | null
@@ -1374,6 +1395,10 @@ export type Database = {
           created_at: string | null
           day_of_week: string | null
           end_time: string
+          is_break: boolean | null
+          period_name: string | null
+          period_type_id: string | null
+          room_number: string | null
           start_time: string
           subject_id: string
           teacher_id: string | null
@@ -1384,6 +1409,10 @@ export type Database = {
           created_at?: string | null
           day_of_week?: string | null
           end_time: string
+          is_break?: boolean | null
+          period_name?: string | null
+          period_type_id?: string | null
+          room_number?: string | null
           start_time: string
           subject_id: string
           teacher_id?: string | null
@@ -1394,6 +1423,10 @@ export type Database = {
           created_at?: string | null
           day_of_week?: string | null
           end_time?: string
+          is_break?: boolean | null
+          period_name?: string | null
+          period_type_id?: string | null
+          room_number?: string | null
           start_time?: string
           subject_id?: string
           teacher_id?: string | null
@@ -1406,6 +1439,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "classes"
             referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "timetable_period_type_id_fkey"
+            columns: ["period_type_id"]
+            isOneToOne: false
+            referencedRelation: "period_types"
+            referencedColumns: ["period_type_id"]
           },
           {
             foreignKeyName: "timetable_subject_id_fkey"
