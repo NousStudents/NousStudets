@@ -243,92 +243,128 @@ export default function WeeklyTimetable() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 pb-20 md:pb-6">
+      {/* Responsive Header */}
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 sm:gap-4">
           <BackButton />
-          <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-              <Calendar className="h-8 w-8 text-pastel-mint" />
-              Weekly Timetable Management
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2 flex-wrap">
+              <Calendar className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-pastel-mint flex-shrink-0" />
+              <span className="break-words">Weekly Timetable Management</span>
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Manage entire weekly schedule for all classes simultaneously
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Manage entire weekly schedule for all classes
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <TimetableTemplateManager
-            currentTimetable={currentEntries}
-            onLoadTemplate={loadTemplate}
-          />
-          <TimetableAutoGenerator
-            onGenerated={fetchData}
-            currentEntries={currentEntries}
-            classes={classes}
-            subjects={subjects}
-            teachers={teachers}
-          />
-          <Button onClick={saveTimetable} disabled={saving} className="gap-2">
+
+        {/* Action Buttons - Responsive Layout */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="flex-1 sm:flex-initial">
+            <TimetableTemplateManager
+              currentTimetable={currentEntries}
+              onLoadTemplate={loadTemplate}
+            />
+          </div>
+          <div className="flex-1 sm:flex-initial">
+            <TimetableAutoGenerator
+              onGenerated={fetchData}
+              currentEntries={currentEntries}
+              classes={classes}
+              subjects={subjects}
+              teachers={teachers}
+            />
+          </div>
+          <Button 
+            onClick={saveTimetable} 
+            disabled={saving} 
+            className="gap-2 w-full sm:w-auto"
+            size="default"
+          >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save All Changes
+            <span className="hidden xs:inline">Save All Changes</span>
+            <span className="inline xs:hidden">Save</span>
           </Button>
         </div>
       </div>
 
-      {/* Time Slot Manager */}
+      {/* Time Slot Manager - Responsive */}
       <Card className="bg-pastel-peach/10 border-pastel-peach/30">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-pastel-peach" />
-              Manage Time Slots
-            </span>
-            <Button onClick={addTimeSlot} size="sm" className="gap-2">
+        <CardHeader className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Clock className="h-5 w-5 text-pastel-peach flex-shrink-0" />
+              <span>Manage Time Slots</span>
+            </CardTitle>
+            <Button onClick={addTimeSlot} size="sm" className="gap-2 w-full sm:w-auto">
               <Plus className="h-4 w-4" />
               Add Slot
             </Button>
-          </CardTitle>
-          <CardDescription>Edit period times for the entire school</CardDescription>
+          </div>
+          <CardDescription className="text-xs sm:text-sm">
+            Edit period times for the entire school
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             {timeSlots.map((slot, index) => (
-              <div key={index} className="flex items-center gap-2 p-3 bg-background rounded-lg border">
-                <span className="font-medium text-sm min-w-[80px]">Period {index + 1}</span>
+              <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-background rounded-lg border">
+                <span className="font-medium text-sm min-w-[80px] flex-shrink-0">
+                  Period {index + 1}
+                </span>
                 {editingSlot?.index === index ? (
-                  <>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
                     <input
                       type="time"
                       value={slot.start_time}
                       onChange={(e) => updateTimeSlot(index, 'start_time', e.target.value)}
-                      className="px-2 py-1 border rounded text-sm"
+                      className="px-3 py-2 border rounded text-sm bg-background flex-1"
                     />
-                    <span>to</span>
+                    <span className="text-center sm:mx-1">to</span>
                     <input
                       type="time"
                       value={slot.end_time}
                       onChange={(e) => updateTimeSlot(index, 'end_time', e.target.value)}
-                      className="px-2 py-1 border rounded text-sm"
+                      className="px-3 py-2 border rounded text-sm bg-background flex-1"
                     />
-                    <Button size="sm" variant="ghost" onClick={() => setEditingSlot(null)}>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => setEditingSlot(null)}
+                      className="w-full sm:w-auto"
+                    >
                       Done
                     </Button>
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <span className="text-sm">{slot.start_time} - {slot.end_time}</span>
-                    <span className="text-xs text-muted-foreground ml-auto">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1">
+                    <span className="text-sm font-medium flex-1">
+                      {slot.start_time} - {slot.end_time}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
                       ({Math.floor((new Date(`2000-01-01 ${slot.end_time}`).getTime() - 
                         new Date(`2000-01-01 ${slot.start_time}`).getTime()) / 60000)} min)
                     </span>
-                    <Button size="sm" variant="ghost" onClick={() => setEditingSlot({ index })}>
-                      Edit
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => deleteTimeSlot(index)}>
-                      Delete
-                    </Button>
-                  </>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => setEditingSlot({ index })}
+                        className="flex-1 sm:flex-initial"
+                      >
+                        Edit
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => deleteTimeSlot(index)}
+                        className="flex-1 sm:flex-initial"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
             ))}
@@ -347,88 +383,159 @@ export default function WeeklyTimetable() {
         />
       )}
 
-      <div className="space-y-8">
+      {/* Class Timetables - Responsive */}
+      <div className="space-y-6 sm:space-y-8">
         {classes.map((classItem) => (
           <Card key={classItem.class_id} className="bg-pastel-blue/10 border-pastel-blue/30">
-            <CardHeader>
-              <CardTitle className="text-xl text-foreground">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg sm:text-xl text-foreground break-words">
                 {classItem.class_name} {classItem.section && `- ${classItem.section}`}
               </CardTitle>
-              <CardDescription>Configure weekly schedule for this class</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
+                Configure weekly schedule for this class
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-muted/50">
-                      <th className="border border-border p-2 text-left text-sm font-medium">
-                        <Clock className="inline h-4 w-4 mr-1" />
-                        Time
-                      </th>
-                      {DAYS.map(day => (
-                        <th key={day} className="border border-border p-2 text-center text-sm font-medium">
-                          {day}
+            <CardContent className="p-0 sm:p-6">
+              {/* Mobile: Stacked Day Cards */}
+              <div className="sm:hidden space-y-4 p-4">
+                {DAYS.map(day => (
+                  <div key={day} className="border border-border rounded-lg p-3 bg-background">
+                    <h3 className="font-semibold text-sm mb-3 text-foreground flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      {day}
+                    </h3>
+                    <div className="space-y-3">
+                      {timeSlots.map((slot) => {
+                        const timeKey = `${slot.start_time}-${slot.end_time}`;
+                        const cell = schedule[classItem.class_id]?.[day]?.[timeKey];
+                        
+                        return (
+                          <div key={timeKey} className="p-3 bg-muted/30 rounded-md space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              {slot.start_time} - {slot.end_time}
+                            </div>
+                            <Select
+                              value={cell?.subject_id || ''}
+                              onValueChange={(value) => updateCell(classItem.class_id, day, slot, 'subject_id', value)}
+                            >
+                              <SelectTrigger className="h-9 text-xs w-full">
+                                <SelectValue placeholder="Select Subject" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="break">Break/Free Period</SelectItem>
+                                {subjects
+                                  .filter(s => s.class_id === classItem.class_id)
+                                  .map(subject => (
+                                    <SelectItem key={subject.subject_id} value={subject.subject_id}>
+                                      {subject.subject_name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                            
+                            {cell?.subject_id && cell.subject_id !== 'break' && (
+                              <Select
+                                value={cell?.teacher_id || ''}
+                                onValueChange={(value) => updateCell(classItem.class_id, day, slot, 'teacher_id', value)}
+                              >
+                                <SelectTrigger className="h-9 text-xs w-full">
+                                  <SelectValue placeholder="Select Teacher" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {teachers.map(teacher => (
+                                    <SelectItem key={teacher.teacher_id} value={teacher.teacher_id}>
+                                      {teacher.full_name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop/Tablet: Table View */}
+              <div className="hidden sm:block overflow-x-auto -mx-6 sm:mx-0">
+                <div className="inline-block min-w-full align-middle">
+                  <table className="min-w-full border-collapse">
+                    <thead>
+                      <tr className="bg-muted/50">
+                        <th className="border border-border p-2 text-left text-xs sm:text-sm font-medium min-w-[120px] sticky left-0 bg-muted/50 z-10">
+                          <Clock className="inline h-4 w-4 mr-1" />
+                          Time
                         </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {timeSlots.map((slot) => (
-                      <tr key={`${slot.start_time}-${slot.end_time}`}>
-                        <td className="border border-border p-2 text-sm font-medium bg-muted/30">
-                          {slot.start_time} - {slot.end_time}
-                        </td>
-                        {DAYS.map(day => {
-                          const timeKey = `${slot.start_time}-${slot.end_time}`;
-                          const cell = schedule[classItem.class_id]?.[day]?.[timeKey];
-                          
-                          return (
-                            <td key={day} className="border border-border p-2">
-                              <div className="space-y-2">
-                                <Select
-                                  value={cell?.subject_id || ''}
-                                  onValueChange={(value) => updateCell(classItem.class_id, day, slot, 'subject_id', value)}
-                                >
-                                  <SelectTrigger className="h-8 text-xs">
-                                    <SelectValue placeholder="Subject" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="break">Break/Free Period</SelectItem>
-                                    {subjects
-                                      .filter(s => s.class_id === classItem.class_id)
-                                      .map(subject => (
-                                        <SelectItem key={subject.subject_id} value={subject.subject_id}>
-                                          {subject.subject_name}
-                                        </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
-                                
-                                {cell?.subject_id && cell.subject_id !== 'break' && (
+                        {DAYS.map(day => (
+                          <th key={day} className="border border-border p-2 text-center text-xs sm:text-sm font-medium min-w-[180px]">
+                            {day}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {timeSlots.map((slot) => (
+                        <tr key={`${slot.start_time}-${slot.end_time}`}>
+                          <td className="border border-border p-2 text-xs sm:text-sm font-medium bg-muted/30 sticky left-0 z-10">
+                            <div className="whitespace-nowrap">
+                              {slot.start_time} - {slot.end_time}
+                            </div>
+                          </td>
+                          {DAYS.map(day => {
+                            const timeKey = `${slot.start_time}-${slot.end_time}`;
+                            const cell = schedule[classItem.class_id]?.[day]?.[timeKey];
+                            
+                            return (
+                              <td key={day} className="border border-border p-2 min-w-[180px]">
+                                <div className="space-y-2">
                                   <Select
-                                    value={cell?.teacher_id || ''}
-                                    onValueChange={(value) => updateCell(classItem.class_id, day, slot, 'teacher_id', value)}
+                                    value={cell?.subject_id || ''}
+                                    onValueChange={(value) => updateCell(classItem.class_id, day, slot, 'subject_id', value)}
                                   >
-                                    <SelectTrigger className="h-8 text-xs">
-                                      <SelectValue placeholder="Teacher" />
+                                    <SelectTrigger className="h-8 text-xs w-full">
+                                      <SelectValue placeholder="Subject" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {teachers.map(teacher => (
-                                        <SelectItem key={teacher.teacher_id} value={teacher.teacher_id}>
-                                          {teacher.full_name}
-                                        </SelectItem>
-                                      ))}
+                                      <SelectItem value="break">Break/Free Period</SelectItem>
+                                      {subjects
+                                        .filter(s => s.class_id === classItem.class_id)
+                                        .map(subject => (
+                                          <SelectItem key={subject.subject_id} value={subject.subject_id}>
+                                            {subject.subject_name}
+                                          </SelectItem>
+                                        ))}
                                     </SelectContent>
                                   </Select>
-                                )}
-                              </div>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                                  
+                                  {cell?.subject_id && cell.subject_id !== 'break' && (
+                                    <Select
+                                      value={cell?.teacher_id || ''}
+                                      onValueChange={(value) => updateCell(classItem.class_id, day, slot, 'teacher_id', value)}
+                                    >
+                                      <SelectTrigger className="h-8 text-xs w-full">
+                                        <SelectValue placeholder="Teacher" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {teachers.map(teacher => (
+                                          <SelectItem key={teacher.teacher_id} value={teacher.teacher_id}>
+                                            {teacher.full_name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </CardContent>
           </Card>
