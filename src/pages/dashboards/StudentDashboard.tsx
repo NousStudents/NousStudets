@@ -136,24 +136,24 @@ export default function StudentDashboard({ profile }: { profile: any }) {
       </div>
 
       <div className="space-y-4">
-        <div className="hidden md:flex gap-2 bg-card border border-border p-2 rounded-lg">
-          <Button variant="secondary" size="sm" className="flex-1">
+        <div className="hidden md:flex gap-2 bg-card border border-border p-2 rounded-lg flex-wrap">
+          <Button variant="secondary" size="sm" className="flex-1 min-w-[100px]">
             Overview
           </Button>
-          <Button variant="ghost" size="sm" className="flex-1" onClick={() => navigate('/timetable')}>
-            My Timetable
+          <Button variant="ghost" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/student/academic')}>
+            Academic
           </Button>
-          <Button variant="ghost" size="sm" className="flex-1" onClick={() => navigate('/assignments')}>
+          <Button variant="ghost" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/student/financial')}>
+            Financial
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/timetable')}>
+            Timetable
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/assignments')}>
             Assignments
           </Button>
-          <Button variant="ghost" size="sm" className="flex-1" onClick={() => navigate('/exams')}>
+          <Button variant="ghost" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/exams')}>
             Exams
-          </Button>
-          <Button variant="ghost" size="sm" className="flex-1" onClick={() => navigate('/attendance')}>
-            Attendance
-          </Button>
-          <Button variant="ghost" size="sm" className="flex-1" onClick={() => navigate('/fees')}>
-            Fees
           </Button>
         </div>
 
