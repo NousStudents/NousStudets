@@ -30,7 +30,7 @@ interface WeeklySchedule {
   };
 }
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 const TIME_SLOTS: TimeSlot[] = [
   { start_time: '08:00', end_time: '09:00' },
   { start_time: '09:00', end_time: '10:00' },
@@ -155,7 +155,11 @@ export default function WeeklyTimetable() {
                 teacher_id: cell.teacher_id,
                 day_of_week: day,
                 start_time,
-                end_time
+                end_time,
+                period_type_id: null,
+                is_break: false,
+                period_name: null,
+                room_number: null
               });
             }
           });

@@ -16,16 +16,21 @@ interface TimetableEntry {
   timetable_id: string;
   class_id: string;
   subject_id: string;
-  teacher_id: string;
+  teacher_id: string | null;
   day_of_week: string;
   start_time: string;
   end_time: string;
+  period_type_id?: string | null;
+  period_name?: string | null;
+  is_break?: boolean;
+  room_number?: string | null;
   classes?: { class_name: string; section: string | null };
   subjects?: { subject_name: string };
   teacher_name?: string;
+  period_type?: { type_name: string; color_code: string | null };
 }
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
 export default function TimetableManagement() {
   const { toast } = useToast();
@@ -33,6 +38,7 @@ export default function TimetableManagement() {
   const [classes, setClasses] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
+  const [periodTypes, setPeriodTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
@@ -43,7 +49,11 @@ export default function TimetableManagement() {
     teacher_id: '',
     day_of_week: '',
     start_time: '',
-    end_time: ''
+    end_time: '',
+    period_type_id: '',
+    period_name: '',
+    is_break: false,
+    room_number: ''
   });
 
   useEffect(() => {
@@ -52,19 +62,21 @@ export default function TimetableManagement() {
 
   const fetchData = async () => {
     try {
-      const [timetableRes, classesRes, subjectsRes, teachersRes] = await Promise.all([
+      const [timetableRes, classesRes, subjectsRes, teachersRes, periodTypesRes] = await Promise.all([
         supabase
           .from('timetable')
           .select(`
             *,
             classes(class_name, section),
-            subjects(subject_name)
+            subjects(subject_name),
+            period_types(type_name, color_code)
           `)
           .order('day_of_week')
           .order('start_time'),
         supabase.from('classes').select('*').order('class_name'),
         supabase.from('subjects').select('*').order('subject_name'),
-        supabase.from('teachers').select('teacher_id, full_name')
+        supabase.from('teachers').select('teacher_id, full_name'),
+        supabase.from('period_types').select('*').order('type_name')
       ]);
 
       // Enrich timetable with teacher names
@@ -86,6 +98,7 @@ export default function TimetableManagement() {
 
       setClasses(classesRes.data || []);
       setSubjects(subjectsRes.data || []);
+      setPeriodTypes(periodTypesRes.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -102,10 +115,24 @@ export default function TimetableManagement() {
     e.preventDefault();
 
     try {
+      // Prepare data for submission
+      const submitData: any = {
+        class_id: formData.class_id || null,
+        subject_id: formData.subject_id || null,
+        teacher_id: formData.teacher_id || null,
+        day_of_week: formData.day_of_week,
+        start_time: formData.start_time,
+        end_time: formData.end_time,
+        period_type_id: formData.period_type_id || null,
+        period_name: formData.period_name || null,
+        is_break: formData.is_break || false,
+        room_number: formData.room_number || null
+      };
+
       if (editingEntry) {
         const { error } = await supabase
           .from('timetable')
-          .update(formData)
+          .update(submitData)
           .eq('timetable_id', editingEntry.timetable_id);
 
         if (error) throw error;
@@ -117,7 +144,7 @@ export default function TimetableManagement() {
       } else {
         const { error } = await supabase
           .from('timetable')
-          .insert([formData]);
+          .insert([submitData]);
 
         if (error) throw error;
 
@@ -171,10 +198,14 @@ export default function TimetableManagement() {
     setFormData({
       class_id: entry.class_id,
       subject_id: entry.subject_id,
-      teacher_id: entry.teacher_id,
+      teacher_id: entry.teacher_id || '',
       day_of_week: entry.day_of_week,
       start_time: entry.start_time,
-      end_time: entry.end_time
+      end_time: entry.end_time,
+      period_type_id: entry.period_type_id || '',
+      period_name: entry.period_name || '',
+      is_break: entry.is_break || false,
+      room_number: entry.room_number || ''
     });
     setDialogOpen(true);
   };
@@ -186,7 +217,11 @@ export default function TimetableManagement() {
       teacher_id: '',
       day_of_week: '',
       start_time: '',
-      end_time: ''
+      end_time: '',
+      period_type_id: '',
+      period_name: '',
+      is_break: false,
+      room_number: ''
     });
     setEditingEntry(null);
   };
@@ -233,71 +268,139 @@ export default function TimetableManagement() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="class_id">Class *</Label>
-                  <Select
-                    value={formData.class_id}
-                    onValueChange={(value) => {
-                      setFormData({ ...formData, class_id: value, subject_id: '' });
-                    }}
-                    required
-                  >
-                    <SelectTrigger id="class_id">
-                      <SelectValue placeholder="Select class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classes.map((cls) => (
-                        <SelectItem key={cls.class_id} value={cls.class_id}>
-                          {cls.class_name} {cls.section ? `- ${cls.section}` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="subject_id">Subject *</Label>
-                  <Select
-                    value={formData.subject_id}
-                    onValueChange={(value) => setFormData({ ...formData, subject_id: value })}
-                    required
-                    disabled={!formData.class_id}
-                  >
-                    <SelectTrigger id="subject_id">
-                      <SelectValue placeholder="Select subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subjects.map((subject) => (
-                        <SelectItem key={subject.subject_id} value={subject.subject_id}>
-                          {subject.subject_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="period_type_id">Period Type</Label>
+                <Select
+                  value={formData.period_type_id}
+                  onValueChange={(value) => {
+                    const selectedType = periodTypes.find(pt => pt.period_type_id === value);
+                    const isBreak = selectedType?.type_name?.toLowerCase().includes('break') || 
+                                  selectedType?.type_name?.toLowerCase().includes('breakfast') ||
+                                  selectedType?.type_name?.toLowerCase().includes('lunch');
+                    setFormData({ 
+                      ...formData, 
+                      period_type_id: value,
+                      is_break: isBreak,
+                      class_id: isBreak ? '' : formData.class_id,
+                      subject_id: isBreak ? '' : formData.subject_id,
+                      teacher_id: isBreak ? '' : formData.teacher_id
+                    });
+                  }}
+                >
+                  <SelectTrigger id="period_type_id">
+                    <SelectValue placeholder="Select period type (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {periodTypes.map((type) => (
+                      <SelectItem key={type.period_type_id} value={type.period_type_id}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: type.color_code || '#6b7280' }}
+                          />
+                          {type.type_name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {formData.is_break && (
                 <div className="space-y-2">
-                  <Label htmlFor="teacher_id">Teacher</Label>
-                  <Select
-                    value={formData.teacher_id}
-                    onValueChange={(value) => setFormData({ ...formData, teacher_id: value })}
-                  >
-                    <SelectTrigger id="teacher_id">
-                      <SelectValue placeholder="Select teacher (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teachers.map((teacher) => (
-                        <SelectItem key={teacher.teacher_id} value={teacher.teacher_id}>
-                          {teacher.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="period_name">Period Name</Label>
+                  <Input
+                    id="period_name"
+                    placeholder="e.g., Morning Break, Lunch"
+                    value={formData.period_name}
+                    onChange={(e) => setFormData({ ...formData, period_name: e.target.value })}
+                  />
                 </div>
+              )}
 
+              {!formData.is_break && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="class_id">Class {!formData.is_break && '*'}</Label>
+                      <Select
+                        value={formData.class_id}
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, class_id: value, subject_id: '' });
+                        }}
+                        required={!formData.is_break}
+                      >
+                        <SelectTrigger id="class_id">
+                          <SelectValue placeholder="Select class" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classes.map((cls) => (
+                            <SelectItem key={cls.class_id} value={cls.class_id}>
+                              {cls.class_name} {cls.section ? `- ${cls.section}` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="subject_id">Subject {!formData.is_break && '*'}</Label>
+                      <Select
+                        value={formData.subject_id}
+                        onValueChange={(value) => setFormData({ ...formData, subject_id: value })}
+                        required={!formData.is_break}
+                        disabled={!formData.class_id}
+                      >
+                        <SelectTrigger id="subject_id">
+                          <SelectValue placeholder="Select subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subjects
+                            .filter(s => s.class_id === formData.class_id)
+                            .map((subject) => (
+                              <SelectItem key={subject.subject_id} value={subject.subject_id}>
+                                {subject.subject_name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="teacher_id">Teacher</Label>
+                      <Select
+                        value={formData.teacher_id}
+                        onValueChange={(value) => setFormData({ ...formData, teacher_id: value })}
+                      >
+                        <SelectTrigger id="teacher_id">
+                          <SelectValue placeholder="Select teacher (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {teachers.map((teacher) => (
+                            <SelectItem key={teacher.teacher_id} value={teacher.teacher_id}>
+                              {teacher.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="room_number">Room Number</Label>
+                      <Input
+                        id="room_number"
+                        placeholder="e.g., Room 101, Lab A"
+                        value={formData.room_number}
+                        onChange={(e) => setFormData({ ...formData, room_number: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="day_of_week">Day of Week *</Label>
                   <Select
@@ -309,13 +412,9 @@ export default function TimetableManagement() {
                       <SelectValue placeholder="Select day" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Monday">Monday</SelectItem>
-                      <SelectItem value="Tuesday">Tuesday</SelectItem>
-                      <SelectItem value="Wednesday">Wednesday</SelectItem>
-                      <SelectItem value="Thursday">Thursday</SelectItem>
-                      <SelectItem value="Friday">Friday</SelectItem>
-                      <SelectItem value="Saturday">Saturday</SelectItem>
-                      <SelectItem value="Sunday">Sunday</SelectItem>
+                      {DAYS.map(day => (
+                        <SelectItem key={day} value={day}>{day}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -397,10 +496,39 @@ export default function TimetableManagement() {
                 {timetableEntries.map((entry) => (
                   <TableRow key={entry.timetable_id}>
                     <TableCell className="font-medium">
-                      {entry.classes?.class_name} - {entry.classes?.section || 'A'}
+                      {entry.is_break ? (
+                        <Badge 
+                          variant="outline" 
+                          style={{ 
+                            borderColor: entry.period_type?.color_code || '#6b7280',
+                            color: entry.period_type?.color_code || '#6b7280'
+                          }}
+                        >
+                          {entry.period_name || entry.period_type?.type_name || 'Break'}
+                        </Badge>
+                      ) : (
+                        <>
+                          {entry.classes?.class_name} - {entry.classes?.section || 'A'}
+                          {entry.room_number && (
+                            <span className="text-xs text-muted-foreground ml-2">({entry.room_number})</span>
+                          )}
+                        </>
+                      )}
                     </TableCell>
-                    <TableCell>{entry.subjects?.subject_name}</TableCell>
-                    <TableCell>{entry.teacher_name || 'N/A'}</TableCell>
+                    <TableCell>
+                      {entry.is_break ? (
+                        <span className="text-muted-foreground italic">—</span>
+                      ) : (
+                        entry.subjects?.subject_name || 'N/A'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {entry.is_break ? (
+                        <span className="text-muted-foreground italic">—</span>
+                      ) : (
+                        entry.teacher_name || 'N/A'
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">{entry.day_of_week}</Badge>
                     </TableCell>
