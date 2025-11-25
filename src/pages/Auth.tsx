@@ -67,6 +67,8 @@ const Auth = () => {
     setLoginLoading(false);
   };
 
+  const [signupRole, setSignupRole] = useState<'student' | 'teacher' | 'parent'>('student');
+
   const handleStudentSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -78,7 +80,11 @@ const Auth = () => {
     setSignupLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("student-signup", {
+      const functionName = signupRole === 'student' ? 'student-signup' 
+        : signupRole === 'teacher' ? 'teacher-signup' 
+        : 'parent-signup';
+
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: {
           email: signupEmail,
           password: signupPassword,
@@ -92,15 +98,15 @@ const Auth = () => {
 
       toast.success(data.message || "Account created successfully! You can now log in.");
       
-      // Reset form and switch to login tab
+      // Reset form
       setSignupEmail('');
       setSignupPassword('');
       setSignupFullName('');
       setSignupSchool('');
       
-      // Auto-fill login email
+      // Auto-fill login email and role
       setLoginEmail(signupEmail);
-      setLoginRole('student');
+      setLoginRole(signupRole);
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
     } finally {
@@ -262,88 +268,221 @@ const Auth = () => {
                 </form>
               </TabsContent>
 
-              {/* Student Signup Tab */}
+              {/* Signup Tab with Role Selection */}
               <TabsContent value="signup">
-                <form onSubmit={handleStudentSignup} className="space-y-4 mt-4">
+                <div className="space-y-4 mt-4">
                   <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
                     <p className="text-xs text-muted-foreground">
                       ⚠️ Your email must be pre-registered by your school admin to sign up
                     </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-school">Select Your School *</Label>
-                    <Select 
-                      value={signupSchool} 
-                      onValueChange={setSignupSchool}
-                      disabled={signupLoading}
-                      required
-                    >
-                      <SelectTrigger id="signup-school">
-                        <SelectValue placeholder="Choose your school" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {schools?.map((school) => (
-                          <SelectItem key={school.school_id} value={school.school_id}>
-                            {school.school_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Tabs defaultValue="student" className="w-full" onValueChange={(value) => setSignupRole(value as 'student' | 'teacher' | 'parent')}>
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="student">Student</TabsTrigger>
+                      <TabsTrigger value="teacher">Teacher</TabsTrigger>
+                      <TabsTrigger value="parent">Parent</TabsTrigger>
+                    </TabsList>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name *</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="Your full name"
-                      value={signupFullName}
-                      onChange={(e) => setSignupFullName(e.target.value)}
-                      required
-                      disabled={signupLoading}
-                    />
-                  </div>
+                    {/* Student Signup */}
+                    <TabsContent value="student">
+                      <form onSubmit={handleStudentSignup} className="space-y-4 mt-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="student-school">Select Your School *</Label>
+                          <Select 
+                            value={signupSchool} 
+                            onValueChange={setSignupSchool}
+                            disabled={signupLoading}
+                            required
+                          >
+                            <SelectTrigger id="student-school">
+                              <SelectValue placeholder="Choose your school" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {schools?.map((school) => (
+                                <SelectItem key={school.school_id} value={school.school_id}>
+                                  {school.school_name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="student-name">Full Name *</Label>
+                          <Input
+                            id="student-name"
+                            type="text"
+                            placeholder="Your full name"
+                            value={signupFullName}
+                            onChange={(e) => setSignupFullName(e.target.value)}
+                            required
+                            disabled={signupLoading}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="student-email">Email *</Label>
+                          <Input
+                            id="student-email"
+                            type="email"
+                            placeholder="your.email@school.com"
+                            value={signupEmail}
+                            onChange={(e) => setSignupEmail(e.target.value)}
+                            required
+                            disabled={signupLoading}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="student-password">Password *</Label>
+                          <PasswordInput
+                            id="student-password"
+                            placeholder="Create a strong password"
+                            value={signupPassword}
+                            onChange={(e) => setSignupPassword(e.target.value)}
+                            required
+                            disabled={signupLoading}
+                          />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={signupLoading}>
+                          {signupLoading ? 'Creating Account...' : 'Create Student Account'}
+                        </Button>
+                      </form>
+                    </TabsContent>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email *</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="your.email@school.com"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      required
-                      disabled={signupLoading}
-                    />
-                  </div>
+                    {/* Teacher Signup */}
+                    <TabsContent value="teacher">
+                      <form onSubmit={handleStudentSignup} className="space-y-4 mt-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="teacher-school">Select Your School *</Label>
+                          <Select 
+                            value={signupSchool} 
+                            onValueChange={setSignupSchool}
+                            disabled={signupLoading}
+                            required
+                          >
+                            <SelectTrigger id="teacher-school">
+                              <SelectValue placeholder="Choose your school" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {schools?.map((school) => (
+                                <SelectItem key={school.school_id} value={school.school_id}>
+                                  {school.school_name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="teacher-name">Full Name *</Label>
+                          <Input
+                            id="teacher-name"
+                            type="text"
+                            placeholder="Your full name"
+                            value={signupFullName}
+                            onChange={(e) => setSignupFullName(e.target.value)}
+                            required
+                            disabled={signupLoading}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="teacher-email">Email *</Label>
+                          <Input
+                            id="teacher-email"
+                            type="email"
+                            placeholder="your.email@school.com"
+                            value={signupEmail}
+                            onChange={(e) => setSignupEmail(e.target.value)}
+                            required
+                            disabled={signupLoading}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="teacher-password">Password *</Label>
+                          <PasswordInput
+                            id="teacher-password"
+                            placeholder="Create a strong password"
+                            value={signupPassword}
+                            onChange={(e) => setSignupPassword(e.target.value)}
+                            required
+                            disabled={signupLoading}
+                          />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={signupLoading}>
+                          {signupLoading ? 'Creating Account...' : 'Create Teacher Account'}
+                        </Button>
+                      </form>
+                    </TabsContent>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password *</Label>
-                    <PasswordInput
-                      id="signup-password"
-                      placeholder="Create a strong password"
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      required
-                      disabled={signupLoading}
-                    />
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={signupLoading}
-                  >
-                    {signupLoading ? 'Creating Account...' : 'Create Student Account'}
-                  </Button>
+                    {/* Parent Signup */}
+                    <TabsContent value="parent">
+                      <form onSubmit={handleStudentSignup} className="space-y-4 mt-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="parent-school">Select Your School *</Label>
+                          <Select 
+                            value={signupSchool} 
+                            onValueChange={setSignupSchool}
+                            disabled={signupLoading}
+                            required
+                          >
+                            <SelectTrigger id="parent-school">
+                              <SelectValue placeholder="Choose your school" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {schools?.map((school) => (
+                                <SelectItem key={school.school_id} value={school.school_id}>
+                                  {school.school_name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="parent-name">Full Name *</Label>
+                          <Input
+                            id="parent-name"
+                            type="text"
+                            placeholder="Your full name"
+                            value={signupFullName}
+                            onChange={(e) => setSignupFullName(e.target.value)}
+                            required
+                            disabled={signupLoading}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="parent-email">Email *</Label>
+                          <Input
+                            id="parent-email"
+                            type="email"
+                            placeholder="your.email@school.com"
+                            value={signupEmail}
+                            onChange={(e) => setSignupEmail(e.target.value)}
+                            required
+                            disabled={signupLoading}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="parent-password">Password *</Label>
+                          <PasswordInput
+                            id="parent-password"
+                            placeholder="Create a strong password"
+                            value={signupPassword}
+                            onChange={(e) => setSignupPassword(e.target.value)}
+                            required
+                            disabled={signupLoading}
+                          />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={signupLoading}>
+                          {signupLoading ? 'Creating Account...' : 'Create Parent Account'}
+                        </Button>
+                      </form>
+                    </TabsContent>
+                  </Tabs>
 
                   <div className="pt-2 border-t border-border/50">
                     <p className="text-xs text-muted-foreground text-center">
-                      Teachers, Parents & Admins: Contact your school administrator for account creation
+                      Admins: Contact super admin for account creation
                     </p>
                   </div>
-                </form>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.student-signup]
 verify_jwt = false
+
+[functions.teacher-signup]
+verify_jwt = false
+
+[functions.parent-signup]
+verify_jwt = false

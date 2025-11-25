@@ -189,6 +189,42 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               </div>
             </button>
 
+            {/* Whitelist Teachers Card */}
+            <button
+              onClick={() => navigate('/admin/whitelisted-teachers')}
+              className="group relative overflow-hidden rounded-2xl border-2 border-blue-500/40 bg-blue-500/20 p-6 text-left transition-all hover:border-blue-500 hover:shadow-lg hover:scale-105"
+            >
+              <div className="flex flex-col items-start gap-3">
+                <div className="rounded-xl bg-blue-500/30 p-3">
+                  <BookOpen className="h-8 w-8 text-blue-500" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground text-lg">Whitelist Teachers</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Pre-approve teachers for signup
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Whitelist Parents Card */}
+            <button
+              onClick={() => navigate('/admin/whitelisted-parents')}
+              className="group relative overflow-hidden rounded-2xl border-2 border-purple-500/40 bg-purple-500/20 p-6 text-left transition-all hover:border-purple-500 hover:shadow-lg hover:scale-105"
+            >
+              <div className="flex flex-col items-start gap-3">
+                <div className="rounded-xl bg-purple-500/30 p-3">
+                  <Users className="h-8 w-8 text-purple-500" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground text-lg">Whitelist Parents</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Pre-approve parents for signup
+                  </p>
+                </div>
+              </div>
+            </button>
+
             {/* Classes Card */}
             <button
               onClick={() => navigate('/admin/classes')}
