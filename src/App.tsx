@@ -37,6 +37,12 @@ import SuperAdmin from "./pages/SuperAdmin";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
 import SuperAdminSignup from "./pages/SuperAdminSignup";
 import NotFound from "./pages/NotFound";
+import StudentAcademicPage from "./pages/academic/StudentAcademic";
+import StudentFinancialPage from "./pages/financial/StudentFinancial";
+import TeacherAcademicPage from "./pages/academic/TeacherAcademic";
+import ParentAcademicPage from "./pages/academic/ParentAcademic";
+import AdminFinancialPage from "./pages/financial/AdminFinancial";
+import AdminReportsPage from "./pages/reports/AdminReports";
 
 const queryClient = new QueryClient();
 
@@ -233,6 +239,62 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["admin"]}>
                   <WhitelistedParentsManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/academic"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <TeacherAcademicPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/financial"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <AdminFinancialPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/reports"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <AdminReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/academic"
+              element={
+                <ProtectedRoute roles={["student"]}>
+                  <StudentAcademicPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/financial"
+              element={
+                <ProtectedRoute roles={["student"]}>
+                  <StudentFinancialPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/teacher/academic"
+              element={
+                <ProtectedRoute roles={["teacher"]}>
+                  <TeacherAcademicPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/parent/academic"
+              element={
+                <ProtectedRoute roles={["parent"]}>
+                  <ParentAcademicPage />
                 </ProtectedRoute>
               }
             />

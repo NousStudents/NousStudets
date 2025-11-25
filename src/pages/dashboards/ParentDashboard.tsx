@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function ParentDashboard({ profile }: { profile: any }) {
+  const navigate = useNavigate();
   const [children, setChildren] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -109,13 +111,23 @@ export default function ParentDashboard({ profile }: { profile: any }) {
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6 pb-20 md:pb-6">
         {/* Desktop Navigation */}
-        <TabsList className="hidden md:flex bg-card border border-border">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="attendance">Attendance</TabsTrigger>
-          <TabsTrigger value="performance">Academic Performance</TabsTrigger>
-          <TabsTrigger value="fees">Fees</TabsTrigger>
-          <TabsTrigger value="communication">Communication</TabsTrigger>
-        </TabsList>
+        <div className="hidden md:flex gap-2 bg-card border border-border p-2 rounded-lg flex-wrap">
+          <Button variant="secondary" size="sm" className="flex-1 min-w-[120px]">
+            Overview
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-1 min-w-[120px]" onClick={() => navigate('/parent/academic')}>
+            Academic
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-1 min-w-[120px]" onClick={() => navigate('/attendance')}>
+            Attendance
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-1 min-w-[120px]" onClick={() => navigate('/fees')}>
+            Fees
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-1 min-w-[120px]" onClick={() => navigate('/messages')}>
+            Messages
+          </Button>
+        </div>
 
         {/* Mobile Bottom Navigation */}
         <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-t border-gray-700 shadow-2xl">
