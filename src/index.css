@@ -148,36 +148,84 @@ All colors MUST be HSL.
 
 @layer base {
   * {
-    @apply border-border transition-colors duration-300;
+    @apply border-border;
+    transition: colors 0.2s ease-in-out;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Hide scrollbars globally while keeping scroll functionality */
   * {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: thin; /* Firefox - keep thin scrollbar for usability */
+    scrollbar-color: hsl(var(--border)) transparent;
   }
 
   *::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+    width: 6px;
+    height: 6px;
   }
 
-  /* Smooth scroll behavior */
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 10px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+
+  /* Smooth scroll behavior with GPU acceleration */
   html {
     scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Enhanced interactive elements */
+  /* Enhanced interactive elements with proper touch targets */
   button, a, [role="button"] {
-    @apply transition-all duration-300 ease-in-out;
+    @apply transition-all duration-200 ease-in-out;
+    min-height: 44px; /* iOS/Android recommended touch target */
+    min-width: 44px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
   }
 
-  /* Card hover effects */
+  button:active, a:active, [role="button"]:active {
+    transform: scale(0.98);
+  }
+
+  button:disabled, [role="button"]:disabled {
+    pointer-events: none;
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Ensure all interactive elements are above content */
+  button, a, [role="button"], input, select, textarea {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Card hover effects with GPU acceleration */
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-hover hover:-translate-y-1;
+    @apply transition-all duration-300;
+    transform: translateZ(0);
+    will-change: transform, box-shadow;
+  }
+
+  .card-hover:hover {
+    @apply shadow-hover;
+    transform: translateY(-4px) translateZ(0);
   }
 
   /* Pastel gradient overlays */
@@ -197,5 +245,116 @@ All colors MUST be HSL.
 
   .gradient-overlay:hover::before {
     opacity: 0.7;
+  }
+
+  /* Global layout improvements */
+  main {
+    min-height: 100vh;
+    padding-bottom: 80px; /* Space for mobile navigation */
+  }
+
+  @media (min-width: 768px) {
+    main {
+      padding-bottom: 2rem;
+    }
+  }
+
+  /* Ensure proper spacing and no overflow */
+  .container {
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .container {
+      max-width: 1280px;
+    }
+  }
+
+  /* Fix for modal/dialog z-index hierarchy */
+  [role="dialog"],
+  [data-radix-dialog-content],
+  [data-radix-alert-dialog-content] {
+    z-index: 100 !important;
+  }
+
+  [data-radix-dialog-overlay],
+  [data-radix-alert-dialog-overlay] {
+    z-index: 99 !important;
+  }
+
+  /* Ensure dropdowns and popovers are above dialogs when nested */
+  [data-radix-popover-content],
+  [data-radix-dropdown-menu-content],
+  [data-radix-select-content] {
+    z-index: 150 !important;
+  }
+
+  /* Fix for scroll behavior in modals */
+  [data-radix-dialog-content],
+  [data-radix-alert-dialog-content] {
+    max-height: 90vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* Mobile-specific fixes */
+  @media (max-width: 767px) {
+    [data-radix-dialog-content],
+    [data-radix-alert-dialog-content] {
+      max-height: 85vh;
+      margin: 1rem;
+      max-width: calc(100vw - 2rem);
+    }
+  }
+
+  /* Prevent body scroll when modal is open */
+  body:has([data-radix-dialog-content]),
+  body:has([data-radix-alert-dialog-content]) {
+    overflow: hidden;
+  }
+
+  /* Fix for input focus on mobile */
+  input, textarea, select {
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+
+  /* Smooth animations with GPU acceleration */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px) translateZ(0);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) translateZ(0);
+    }
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%) translateZ(0);
+    }
+    to {
+      transform: translateX(0) translateZ(0);
+    }
+  }
+
+  /* Ensure proper touch scrolling on mobile */
+  .overflow-auto,
+  .overflow-y-auto,
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 }
