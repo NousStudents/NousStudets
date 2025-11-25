@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TeacherTimetable from '@/components/TeacherTimetable';
+import TeacherRecentSubmissions from '@/components/TeacherRecentSubmissions';
 import { 
   Users, 
   Calendar, 
@@ -39,14 +40,32 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
 
       if (teacherInfo) {
         setTeacherId(teacherInfo.teacher_id);
-      }
+        
+        // Get classes from timetable assignments
+        const { data: timetableData } = await supabase
+          .from('timetable')
+          .select(`
+            class_id,
+            classes (
+              class_id,
+              class_name,
+              section
+            )
+          `)
+          .eq('teacher_id', teacherInfo.teacher_id);
 
-      const { data: classesData } = await supabase
-        .from('classes')
-        .select('*')
-        .limit(5);
-      
-      setClasses(classesData || []);
+        if (timetableData) {
+          // Get unique classes
+          const uniqueClasses = Array.from(
+            new Map(
+              timetableData
+                .filter(t => t.classes)
+                .map(t => [t.classes.class_id, t.classes])
+            ).values()
+          );
+          setClasses(uniqueClasses);
+        }
+      }
     } catch (error) {
       console.error('Error fetching teacher data:', error);
     } finally {
@@ -216,31 +235,7 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
             </Card>
 
             {/* Recent Submissions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-secondary" />
-                  Recent Submissions
-                </CardTitle>
-                <CardDescription>Pending review</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  { student: 'Priya Sharma', assignment: 'Algebra Worksheet 5', submitted: '2 hours ago' },
-                  { student: 'Rahul Kumar', assignment: 'Geometry Problems', submitted: '4 hours ago' },
-                  { student: 'Anita Patel', assignment: 'Calculus Assignment', submitted: '1 day ago' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start justify-between p-3 rounded-lg bg-muted/50">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-foreground">{item.student}</h4>
-                      <p className="text-sm text-muted-foreground">{item.assignment}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{item.submitted}</p>
-                    </div>
-                    <Badge variant="secondary">Grade</Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            {teacherId && <TeacherRecentSubmissions teacherId={teacherId} />}
           </div>
 
           {/* Quick Actions */}

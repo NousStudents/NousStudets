@@ -67,7 +67,20 @@ export default function Assignments() {
           .single();
 
         if (teacherData?.teacher_id) {
-          query = query.eq("teacher_id", teacherData.teacher_id);
+          // Get classes and subjects from timetable assignments
+          const { data: timetableClasses } = await supabase
+            .from("timetable")
+            .select("class_id, subject_id")
+            .eq("teacher_id", teacherData.teacher_id);
+
+          if (timetableClasses && timetableClasses.length > 0) {
+            const classIds = [...new Set(timetableClasses.map(t => t.class_id))];
+            const subjectIds = [...new Set(timetableClasses.map(t => t.subject_id))];
+            
+            query = query
+              .in("class_id", classIds)
+              .in("subject_id", subjectIds);
+          }
         }
       }
 

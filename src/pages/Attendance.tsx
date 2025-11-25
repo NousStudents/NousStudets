@@ -14,7 +14,9 @@ interface AttendanceRecord {
   attendance_id: string;
   date: string;
   status: string;
+  student_id?: string;
   classes: { class_name: string };
+  students?: { full_name: string };
 }
 
 export default function Attendance() {
@@ -74,6 +76,51 @@ export default function Attendance() {
         const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
 
         setStats({ present, absent, late, total, percentage });
+      } else if (role === "teacher") {
+        const { data: teacherData } = await supabase
+          .from("teachers")
+          .select("teacher_id")
+          .eq("auth_user_id", user?.id)
+          .single();
+
+        if (!teacherData) return;
+
+        // Get classes from timetable assignments
+        const { data: timetableClasses } = await supabase
+          .from("timetable")
+          .select("class_id, classes(class_name)")
+          .eq("teacher_id", teacherData.teacher_id);
+
+        if (timetableClasses && timetableClasses.length > 0) {
+          const classIds = [...new Set(timetableClasses.map(t => t.class_id))];
+          
+          const { data, error } = await supabase
+            .from("attendance")
+            .select(`
+              attendance_id,
+              date,
+              status,
+              student_id,
+              classes (class_name),
+              students (full_name)
+            `)
+            .in("class_id", classIds)
+            .order("date", { ascending: false })
+            .limit(100);
+
+          if (error) throw error;
+
+          const records = data || [];
+          setAttendance(records);
+
+          const total = records.length;
+          const present = records.filter(r => r.status === "present").length;
+          const absent = records.filter(r => r.status === "absent").length;
+          const late = records.filter(r => r.status === "late").length;
+          const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+
+          setStats({ present, absent, late, total, percentage });
+        }
       }
     } catch (error) {
       console.error("Error fetching attendance:", error);
@@ -209,6 +256,9 @@ export default function Attendance() {
                           </p>
                           <p className="text-sm text-muted-foreground">
                             {record.classes?.class_name}
+                            {role === "teacher" && record.students?.full_name && (
+                              <> • {record.students.full_name}</>
+                            )}
                           </p>
                         </div>
                       </div>
