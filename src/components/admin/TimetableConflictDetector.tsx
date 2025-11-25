@@ -31,6 +31,7 @@ interface TimetableConflictDetectorProps {
   classes: any[];
   subjects: any[];
   teachers: any[];
+  onQuickFix?: () => void;
 }
 
 export function TimetableConflictDetector({
@@ -38,6 +39,7 @@ export function TimetableConflictDetector({
   classes,
   subjects,
   teachers,
+  onQuickFix,
 }: TimetableConflictDetectorProps) {
   const conflicts = useMemo(() => {
     const detectedConflicts: Conflict[] = [];
@@ -107,28 +109,50 @@ export function TimetableConflictDetector({
       classSchedule[entry.class_id].get(entry.day_of_week)!.push(entry);
     });
 
-    // Check for no breaks
+    // Check for no breaks and missing lunch
     Object.entries(classSchedule).forEach(([classId, schedule]) => {
       schedule.forEach((dayEntries, day) => {
         // Sort by start time
         const sorted = dayEntries.sort((a, b) => a.start_time.localeCompare(b.start_time));
 
+        // Check for missing lunch break (12:00-13:00)
+        const hasLunchBreak = sorted.some(entry => {
+          const startHour = parseInt(entry.start_time.split(':')[0]);
+          const endHour = parseInt(entry.end_time.split(':')[0]);
+          return startHour === 12 && endHour === 13;
+        });
+
+        if (!hasLunchBreak && sorted.length > 0) {
+          detectedConflicts.push({
+            type: 'no_break',
+            severity: 'high',
+            day,
+            time: '12:00 - 13:00',
+            details: `${sorted[0].class_name} has no lunch break scheduled`,
+            affectedClasses: [sorted[0].class_name || 'Unknown'],
+          });
+        }
+
         let consecutiveCount = 1;
+        let consecutiveStart = 0;
         for (let i = 1; i < sorted.length; i++) {
           const prev = sorted[i - 1];
           const current = sorted[i];
 
           // Check if current period starts exactly when previous ends
           if (prev.end_time === current.start_time) {
+            if (consecutiveCount === 1) {
+              consecutiveStart = i - 1;
+            }
             consecutiveCount++;
             
-            // If 4 or more consecutive periods without break
-            if (consecutiveCount >= 4) {
+            // If 3 or more consecutive periods without break (configurable)
+            if (consecutiveCount >= 3) {
               detectedConflicts.push({
                 type: 'no_break',
                 severity: 'medium',
                 day,
-                time: `${sorted[i - consecutiveCount + 1].start_time} - ${current.end_time}`,
+                time: `${sorted[consecutiveStart].start_time} - ${current.end_time}`,
                 details: `${sorted[0].class_name} has ${consecutiveCount} consecutive periods without a break`,
                 affectedClasses: [sorted[0].class_name || 'Unknown'],
               });
