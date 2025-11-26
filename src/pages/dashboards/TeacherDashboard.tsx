@@ -24,6 +24,7 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
   const [classes, setClasses] = useState<any[]>([]);
   const [teacherId, setTeacherId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isClassTeacher, setIsClassTeacher] = useState(false);
 
   useEffect(() => {
     fetchTeacherData();
@@ -40,6 +41,15 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
 
       if (teacherInfo) {
         setTeacherId(teacherInfo.teacher_id);
+        
+        // Check if teacher is a class teacher
+        const { data: classTeacherData } = await supabase
+          .from('classes')
+          .select('class_id')
+          .eq('class_teacher_id', teacherInfo.teacher_id)
+          .limit(1);
+        
+        setIsClassTeacher((classTeacherData?.length || 0) > 0);
         
         // Get classes from timetable assignments
         const { data: timetableData } = await supabase
@@ -217,6 +227,30 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
         </div>
 
         <TabsContent value="overview" className="space-y-6">
+          {/* Class Teacher Dashboard Link */}
+          {isClassTeacher && (
+            <Card className="bg-gradient-to-r from-pastel-blue/20 to-pastel-mint/20 border-pastel-blue">
+              <CardContent className="py-6">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-primary/10 rounded-lg">
+                      <Users className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">Class Teacher Dashboard</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Manage attendance, leave requests, marks, and announcements for your class
+                      </p>
+                    </div>
+                  </div>
+                  <Button onClick={() => navigate('/class-teacher')}>
+                    Open Dashboard
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Today's Schedule */}
             <Card>

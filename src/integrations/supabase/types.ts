@@ -365,6 +365,58 @@ export type Database = {
           },
         ]
       }
+      class_announcements: {
+        Row: {
+          announcement_id: string
+          class_id: string
+          content: string
+          created_at: string | null
+          school_id: string
+          teacher_id: string
+          title: string
+        }
+        Insert: {
+          announcement_id?: string
+          class_id: string
+          content: string
+          created_at?: string | null
+          school_id: string
+          teacher_id: string
+          title: string
+        }
+        Update: {
+          announcement_id?: string
+          class_id?: string
+          content?: string
+          created_at?: string | null
+          school_id?: string
+          teacher_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_announcements_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "class_announcements_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+          {
+            foreignKeyName: "class_announcements_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["teacher_id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           class_id: string
@@ -747,6 +799,77 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "schools"
             referencedColumns: ["school_id"]
+          },
+        ]
+      }
+      leave_requests: {
+        Row: {
+          class_id: string
+          created_at: string | null
+          end_date: string
+          leave_request_id: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          school_id: string
+          start_date: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string | null
+          end_date: string
+          leave_request_id?: string
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school_id: string
+          start_date: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string | null
+          end_date?: string
+          leave_request_id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school_id?: string
+          start_date?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "leave_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["teacher_id"]
+          },
+          {
+            foreignKeyName: "leave_requests_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+          {
+            foreignKeyName: "leave_requests_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
           },
         ]
       }

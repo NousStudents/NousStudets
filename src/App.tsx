@@ -43,6 +43,7 @@ import TeacherAcademicPage from "./pages/academic/TeacherAcademic";
 import ParentAcademicPage from "./pages/academic/ParentAcademic";
 import AdminFinancialPage from "./pages/financial/AdminFinancial";
 import AdminReportsPage from "./pages/reports/AdminReports";
+import ClassTeacherDashboard from "./pages/dashboards/ClassTeacherDashboard";
 
 const queryClient = new QueryClient();
 
@@ -295,6 +296,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["parent"]}>
                   <ParentAcademicPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/class-teacher"
+              element={
+                <ProtectedRoute roles={["teacher"]}>
+                  <ClassTeacherDashboard />
                 </ProtectedRoute>
               }
             />
