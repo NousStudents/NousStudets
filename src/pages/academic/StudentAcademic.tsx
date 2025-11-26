@@ -1,10 +1,84 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, FileText, Trophy, Calendar, TrendingUp } from 'lucide-react';
+import { BookOpen, FileText, Trophy, Calendar, TrendingUp, CheckCircle, ClipboardList } from 'lucide-react';
 import { BackButton } from '@/components/BackButton';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+
+interface Assignment {
+  assignment_id: string;
+  title: string;
+  due_date: string;
+  subjects: { subject_name: string };
+  submissions: { submission_id: string }[];
+}
 
 export default function StudentAcademic() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchAssignments();
+    }
+  }, [user]);
+
+  const fetchAssignments = async () => {
+    try {
+      const { data: studentData } = await supabase
+        .from("students")
+        .select("class_id, student_id")
+        .eq("auth_user_id", user?.id)
+        .single();
+
+      if (!studentData) return;
+
+      const { data: assignmentsData, error } = await supabase
+        .from("assignments")
+        .select(`
+          assignment_id,
+          title,
+          due_date,
+          subjects (subject_name)
+        `)
+        .eq("class_id", studentData.class_id)
+        .order("due_date", { ascending: true })
+        .limit(5);
+
+      if (error) throw error;
+
+      const assignmentsWithSubmissions = await Promise.all(
+        (assignmentsData || []).map(async (assignment) => {
+          const { data: submissionData } = await supabase
+            .from("submissions")
+            .select("submission_id")
+            .eq("assignment_id", assignment.assignment_id)
+            .eq("student_id", studentData.student_id);
+
+          return {
+            ...assignment,
+            submissions: submissionData || []
+          };
+        })
+      );
+
+      setAssignments(assignmentsWithSubmissions);
+    } catch (error) {
+      console.error("Error fetching assignments:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isOverdue = (dueDate: string) => {
+    return new Date(dueDate) < new Date();
+  };
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 space-y-6">
       <div className="flex items-center gap-4">
@@ -37,8 +111,10 @@ export default function StudentAcademic() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">3 pending</p>
+            <div className="text-3xl font-bold">{assignments.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {assignments.filter(a => a.submissions.length === 0).length} pending
+            </p>
           </CardContent>
         </Card>
 
@@ -96,27 +172,64 @@ export default function StudentAcademic() {
       {/* Recent Assignments */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Assignments</CardTitle>
-          <CardDescription>Track your submission status</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                Recent Assignments
+              </CardTitle>
+              <CardDescription>Your latest assignments and submissions</CardDescription>
+            </div>
+            <Button variant="outline" onClick={() => navigate("/assignments")}>
+              View All
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {[
-              { title: 'Calculus Problem Set', subject: 'Mathematics', due: 'Nov 15', status: 'pending' },
-              { title: 'Lab Report - Circuits', subject: 'Physics', due: 'Nov 18', status: 'submitted' },
-              { title: 'Essay on Shakespeare', subject: 'English', due: 'Nov 20', status: 'graded' }
-            ].map((assignment, i) => (
-              <div key={i} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                <div>
-                  <h4 className="font-semibold">{assignment.title}</h4>
-                  <p className="text-sm text-muted-foreground">{assignment.subject} • Due: {assignment.due}</p>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading assignments...</div>
+          ) : assignments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No assignments yet</div>
+          ) : (
+            <div className="space-y-3">
+              {assignments.map((assignment) => (
+                <div
+                  key={assignment.assignment_id}
+                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                >
+                  <div className="flex-1">
+                    <h4 className="font-semibold">{assignment.title}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {assignment.subjects?.subject_name}
+                    </p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <p className="text-xs text-muted-foreground">
+                        Due: {format(new Date(assignment.due_date), "PP")}
+                      </p>
+                      {assignment.submissions.length > 0 ? (
+                        <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/20">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Submitted
+                        </Badge>
+                      ) : isOverdue(assignment.due_date) ? (
+                        <Badge variant="destructive">Overdue</Badge>
+                      ) : (
+                        <Badge variant="secondary">Pending</Badge>
+                      )}
+                    </div>
+                  </div>
+                  {assignment.submissions.length === 0 && (
+                    <Button
+                      size="sm"
+                      onClick={() => navigate("/assignments")}
+                    >
+                      Submit
+                    </Button>
+                  )}
                 </div>
-                <Badge variant={assignment.status === 'pending' ? 'destructive' : assignment.status === 'submitted' ? 'secondary' : 'default'}>
-                  {assignment.status}
-                </Badge>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -5,10 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Calendar, BookOpen } from "lucide-react";
+import { ArrowLeft, Loader2, Calendar, BookOpen, Plus, FileText, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRole } from "@/hooks/useRole";
 import { format } from "date-fns";
+import { CreateAssignmentDialog } from "@/components/assignments/CreateAssignmentDialog";
+import { SubmitAssignmentDialog } from "@/components/assignments/SubmitAssignmentDialog";
 
 interface Assignment {
   assignment_id: string;
@@ -16,8 +18,10 @@ interface Assignment {
   description: string;
   due_date: string;
   max_marks: number;
+  file_url: string | null;
   subjects: { subject_name: string };
   classes: { class_name: string };
+  submissions?: { submission_id: string }[];
 }
 
 export default function Assignments() {
@@ -27,12 +31,36 @@ export default function Assignments() {
   const { toast } = useToast();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<string>("");
+  const [teacherId, setTeacherId] = useState<string>("");
+  const [studentId, setStudentId] = useState<string>("");
 
   useEffect(() => {
     if (user && !roleLoading) {
+      fetchUserIds();
       fetchAssignments();
     }
   }, [user, roleLoading]);
+
+  const fetchUserIds = async () => {
+    if (role === "teacher") {
+      const { data } = await supabase
+        .from("teachers")
+        .select("teacher_id")
+        .eq("auth_user_id", user?.id)
+        .single();
+      if (data) setTeacherId(data.teacher_id);
+    } else if (role === "student") {
+      const { data } = await supabase
+        .from("students")
+        .select("student_id")
+        .eq("auth_user_id", user?.id)
+        .single();
+      if (data) setStudentId(data.student_id);
+    }
+  };
 
   const fetchAssignments = async () => {
     try {
@@ -44,20 +72,46 @@ export default function Assignments() {
           description,
           due_date,
           max_marks,
+          file_url,
           subjects (subject_name),
-          classes (class_name)
+          classes (class_name),
+          submissions (submission_id)
         `)
         .order("due_date", { ascending: true });
 
       if (role === "student") {
         const { data: studentData } = await supabase
           .from("students")
-          .select("class_id")
+          .select("class_id, student_id")
           .eq("auth_user_id", user?.id)
           .single();
 
         if (studentData?.class_id) {
           query = query.eq("class_id", studentData.class_id);
+          
+          // Filter submissions to only show current student's submissions
+          const { data: assignmentsData, error: assignmentsError } = await query;
+          if (assignmentsError) throw assignmentsError;
+          
+          // For each assignment, filter submissions by student
+          const assignmentsWithFilteredSubmissions = await Promise.all(
+            (assignmentsData || []).map(async (assignment) => {
+              const { data: submissionData } = await supabase
+                .from("submissions")
+                .select("submission_id")
+                .eq("assignment_id", assignment.assignment_id)
+                .eq("student_id", studentData.student_id);
+              
+              return {
+                ...assignment,
+                submissions: submissionData || []
+              };
+            })
+          );
+          
+          setAssignments(assignmentsWithFilteredSubmissions);
+          setLoading(false);
+          return;
         }
       } else if (role === "teacher") {
         const { data: teacherData } = await supabase
@@ -112,6 +166,11 @@ export default function Assignments() {
     );
   }
 
+  const openSubmitDialog = (assignmentId: string) => {
+    setSelectedAssignment(assignmentId);
+    setSubmitDialogOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8 pb-24 md:pb-8">
       <div className="max-w-7xl mx-auto">
@@ -125,11 +184,19 @@ export default function Assignments() {
         </Button>
 
         <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">Assignments</h1>
-            <p className="text-muted-foreground mt-2">
-              {role === "teacher" ? "Manage your class assignments" : "View and complete your assignments"}
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Assignments</h1>
+              <p className="text-muted-foreground mt-2">
+                {role === "teacher" ? "Manage your class assignments" : "View and complete your assignments"}
+              </p>
+            </div>
+            {role === "teacher" && teacherId && (
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Assignment
+              </Button>
+            )}
           </div>
 
           {assignments.length === 0 ? (
@@ -164,7 +231,7 @@ export default function Assignments() {
                     {assignment.description && (
                       <p className="text-sm text-muted-foreground">{assignment.description}</p>
                     )}
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center justify-between flex-wrap gap-2 text-sm">
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Calendar className="h-4 w-4" />
                         Due: {format(new Date(assignment.due_date), "PPP")}
@@ -175,6 +242,38 @@ export default function Assignments() {
                         </span>
                       )}
                     </div>
+                    {assignment.file_url && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(assignment.file_url!, "_blank")}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        View Attachment
+                      </Button>
+                    )}
+                    {role === "student" && studentId && (
+                      <div className="flex items-center gap-2 pt-2">
+                        {assignment.submissions && assignment.submissions.length > 0 ? (
+                          <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/20">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Submitted
+                          </Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => openSubmitDialog(assignment.assignment_id)}
+                          >
+                            Submit Assignment
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {role === "teacher" && assignment.submissions && (
+                      <p className="text-xs text-muted-foreground pt-2">
+                        {assignment.submissions.length} submission(s)
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -182,6 +281,24 @@ export default function Assignments() {
           )}
         </div>
       </div>
+
+      {role === "teacher" && teacherId && (
+        <CreateAssignmentDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          teacherId={teacherId}
+        />
+      )}
+
+      {role === "student" && studentId && (
+        <SubmitAssignmentDialog
+          open={submitDialogOpen}
+          onOpenChange={setSubmitDialogOpen}
+          assignmentId={selectedAssignment}
+          studentId={studentId}
+          onSubmitSuccess={fetchAssignments}
+        />
+      )}
     </div>
   );
 }

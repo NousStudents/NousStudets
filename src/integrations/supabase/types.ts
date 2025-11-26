@@ -204,6 +204,42 @@ export type Database = {
           },
         ]
       }
+      assignment_students: {
+        Row: {
+          assignment_id: string
+          created_at: string | null
+          id: string
+          student_id: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string | null
+          id?: string
+          student_id: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string | null
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_students_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["assignment_id"]
+          },
+          {
+            foreignKeyName: "assignment_students_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       assignments: {
         Row: {
           assignment_id: string
@@ -211,6 +247,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           due_date: string | null
+          file_url: string | null
           max_marks: number | null
           subject_id: string
           teacher_id: string
@@ -222,6 +259,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           due_date?: string | null
+          file_url?: string | null
           max_marks?: number | null
           subject_id: string
           teacher_id: string
@@ -233,6 +271,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           due_date?: string | null
+          file_url?: string | null
           max_marks?: number | null
           subject_id?: string
           teacher_id?: string
