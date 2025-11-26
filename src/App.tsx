@@ -37,10 +37,16 @@ import SuperAdmin from "./pages/SuperAdmin";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
 import SuperAdminSignup from "./pages/SuperAdminSignup";
 import NotFound from "./pages/NotFound";
+import StudentOverview from "./pages/student/StudentOverview";
 import StudentAcademicPage from "./pages/academic/StudentAcademic";
 import StudentFinancialPage from "./pages/financial/StudentFinancial";
+import TeacherOverview from "./pages/teacher/TeacherOverview";
 import TeacherAcademicPage from "./pages/academic/TeacherAcademic";
+import TeacherClasses from "./pages/teacher/TeacherClasses";
+import TeacherStudents from "./pages/teacher/TeacherStudents";
+import ParentOverview from "./pages/parent/ParentOverview";
 import ParentAcademicPage from "./pages/academic/ParentAcademic";
+import AdminOverview from "./pages/admin/AdminOverview";
 import AdminFinancialPage from "./pages/financial/AdminFinancial";
 import AdminReportsPage from "./pages/reports/AdminReports";
 import ClassTeacherDashboard from "./pages/dashboards/ClassTeacherDashboard";
@@ -123,6 +129,19 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route path="/student/overview" element={<ProtectedRoute roles={["student"]}><StudentOverview /></ProtectedRoute>} />
+            <Route path="/student/academic" element={<ProtectedRoute roles={["student"]}><StudentAcademicPage /></ProtectedRoute>} />
+            <Route path="/student/financial" element={<ProtectedRoute roles={["student"]}><StudentFinancialPage /></ProtectedRoute>} />
+            <Route path="/teacher/overview" element={<ProtectedRoute roles={["teacher"]}><TeacherOverview /></ProtectedRoute>} />
+            <Route path="/teacher/academic" element={<ProtectedRoute roles={["teacher"]}><TeacherAcademicPage /></ProtectedRoute>} />
+            <Route path="/teacher/classes" element={<ProtectedRoute roles={["teacher"]}><TeacherClasses /></ProtectedRoute>} />
+            <Route path="/teacher/students" element={<ProtectedRoute roles={["teacher"]}><TeacherStudents /></ProtectedRoute>} />
+            <Route path="/parent/overview" element={<ProtectedRoute roles={["parent"]}><ParentOverview /></ProtectedRoute>} />
+            <Route path="/parent/academic" element={<ProtectedRoute roles={["parent"]}><ParentAcademicPage /></ProtectedRoute>} />
+            <Route path="/admin/overview" element={<ProtectedRoute roles={["admin"]}><AdminOverview /></ProtectedRoute>} />
+            <Route path="/admin/financial" element={<ProtectedRoute roles={["admin"]}><AdminFinancialPage /></ProtectedRoute>} />
+            <Route path="/admin/reports" element={<ProtectedRoute roles={["admin"]}><AdminReportsPage /></ProtectedRoute>} />
+            <Route path="/admin/academic" element={<ProtectedRoute roles={["admin"]}><div className="p-8 text-center">Admin Academic Page - Coming Soon</div></ProtectedRoute>} />
             <Route
               path="/admin/users"
               element={
