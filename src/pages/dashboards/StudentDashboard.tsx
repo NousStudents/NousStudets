@@ -137,7 +137,7 @@ export default function StudentDashboard({ profile }: { profile: any }) {
 
       <div className="space-y-4">
         <div className="hidden md:flex gap-2 bg-card border border-border p-2 rounded-lg flex-wrap">
-          <Button variant="secondary" size="sm" className="flex-1 min-w-[100px]">
+          <Button variant="secondary" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/student/overview')}>
             Overview
           </Button>
           <Button variant="ghost" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/student/academic')}>
@@ -155,44 +155,53 @@ export default function StudentDashboard({ profile }: { profile: any }) {
           <Button variant="ghost" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/exams')}>
             Exams
           </Button>
+          <Button variant="ghost" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/attendance')}>
+            Attendance
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/fees')}>
+            Fees
+          </Button>
         </div>
 
         <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card border-t border-border">
           <div className="grid grid-cols-6 gap-0">
-            <button className="flex flex-col items-center justify-center gap-1 h-16 bg-primary/10">
+            <button 
+              className="flex flex-col items-center justify-center gap-1 h-16 hover:bg-accent transition-colors"
+              onClick={() => navigate('/student/overview')}
+            >
               <BookOpen className="h-5 w-5" />
               <span className="text-xs">Overview</span>
             </button>
             <button 
-              className="flex flex-col items-center justify-center gap-1 h-16 hover:bg-accent"
+              className="flex flex-col items-center justify-center gap-1 h-16 hover:bg-accent transition-colors"
               onClick={() => navigate('/timetable')}
             >
               <Calendar className="h-5 w-5" />
               <span className="text-xs">Timetable</span>
             </button>
             <button 
-              className="flex flex-col items-center justify-center gap-1 h-16 hover:bg-accent"
+              className="flex flex-col items-center justify-center gap-1 h-16 hover:bg-accent transition-colors"
               onClick={() => navigate('/assignments')}
             >
               <FileText className="h-5 w-5" />
               <span className="text-xs">Assignments</span>
             </button>
             <button 
-              className="flex flex-col items-center justify-center gap-1 h-16 hover:bg-accent"
+              className="flex flex-col items-center justify-center gap-1 h-16 hover:bg-accent transition-colors"
               onClick={() => navigate('/exams')}
             >
               <Trophy className="h-5 w-5" />
               <span className="text-xs">Exams</span>
             </button>
             <button 
-              className="flex flex-col items-center justify-center gap-1 h-16 hover:bg-accent"
+              className="flex flex-col items-center justify-center gap-1 h-16 hover:bg-accent transition-colors"
               onClick={() => navigate('/attendance')}
             >
               <CheckCircle2 className="h-5 w-5" />
               <span className="text-xs">Attendance</span>
             </button>
             <button 
-              className="flex flex-col items-center justify-center gap-1 h-16 hover:bg-accent"
+              className="flex flex-col items-center justify-center gap-1 h-16 hover:bg-accent transition-colors"
               onClick={() => navigate('/fees')}
             >
               <CreditCard className="h-5 w-5" />
