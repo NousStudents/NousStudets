@@ -29,18 +29,37 @@ export default function TeacherStudents() {
         .single();
 
       if (teacherInfo) {
+        // Fetch class IDs from timetable
         const { data: timetableData } = await supabase
           .from('timetable')
           .select('class_id')
           .eq('teacher_id', teacherInfo.teacher_id);
 
-        if (timetableData && timetableData.length > 0) {
-          const classIds = [...new Set(timetableData.map(t => t.class_id))];
-          
+        // Also fetch class IDs from subjects where teacher is assigned
+        const { data: subjectsData } = await supabase
+          .from('subjects')
+          .select('class_id')
+          .eq('teacher_id', teacherInfo.teacher_id);
+
+        // Combine and deduplicate class IDs
+        const classIdsSet = new Set<string>();
+        
+        if (timetableData) {
+          timetableData.forEach(t => classIdsSet.add(t.class_id));
+        }
+        
+        if (subjectsData) {
+          subjectsData.forEach(s => classIdsSet.add(s.class_id));
+        }
+
+        const classIds = Array.from(classIdsSet);
+
+        if (classIds.length > 0) {
           const { data: studentsData } = await supabase
             .from('students')
             .select('*')
-            .in('class_id', classIds);
+            .in('class_id', classIds)
+            .order('full_name');
 
           setStudents(studentsData || []);
         }
