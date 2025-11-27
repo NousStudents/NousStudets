@@ -26,48 +26,58 @@ export default function TeacherClasses() {
         .single();
 
       if (teacherInfo) {
-        // Fetch from timetable
-        const { data: timetableData } = await supabase
-          .from('timetable')
-          .select(`
-            class_id,
-            classes (
+        // Fetch from three sources: timetable, subjects, and class_teacher assignments
+        const [timetableData, subjectsData, classTeacherData] = await Promise.all([
+          supabase
+            .from('timetable')
+            .select(`
               class_id,
-              class_name,
-              section
-            )
-          `)
-          .eq('teacher_id', teacherInfo.teacher_id);
-
-        // Also fetch from subjects table
-        const { data: subjectsData } = await supabase
-          .from('subjects')
-          .select(`
-            class_id,
-            classes (
+              classes (
+                class_id,
+                class_name,
+                section
+              )
+            `)
+            .eq('teacher_id', teacherInfo.teacher_id),
+          supabase
+            .from('subjects')
+            .select(`
               class_id,
-              class_name,
-              section
-            )
-          `)
-          .eq('teacher_id', teacherInfo.teacher_id);
+              classes (
+                class_id,
+                class_name,
+                section
+              )
+            `)
+            .eq('teacher_id', teacherInfo.teacher_id),
+          supabase
+            .from('classes')
+            .select('class_id, class_name, section')
+            .eq('class_teacher_id', teacherInfo.teacher_id)
+        ]);
 
         // Combine and deduplicate classes
         const classesMap = new Map();
         
-        if (timetableData) {
-          timetableData.forEach(t => {
+        if (timetableData.data) {
+          timetableData.data.forEach(t => {
             if (t.classes) {
               classesMap.set(t.classes.class_id, t.classes);
             }
           });
         }
 
-        if (subjectsData) {
-          subjectsData.forEach(s => {
+        if (subjectsData.data) {
+          subjectsData.data.forEach(s => {
             if (s.classes) {
               classesMap.set(s.classes.class_id, s.classes);
             }
+          });
+        }
+
+        if (classTeacherData.data) {
+          classTeacherData.data.forEach(c => {
+            classesMap.set(c.class_id, c);
           });
         }
 

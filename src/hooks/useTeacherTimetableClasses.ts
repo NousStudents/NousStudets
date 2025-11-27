@@ -41,46 +41,50 @@ export function useTeacherTimetableClasses(teacherId: string | null): TeacherTim
 
     const fetchTimetableAssignments = async () => {
       try {
-        // Fetch from timetable table
-        const { data: timetableData } = await supabase
-          .from('timetable')
-          .select(`
-            class_id,
-            subject_id,
-            classes (
+        // Fetch from three sources: timetable, subjects, and class_teacher assignments
+        const [timetableData, subjectsData, classTeacherData] = await Promise.all([
+          supabase
+            .from('timetable')
+            .select(`
               class_id,
-              class_name,
-              section
-            ),
-            subjects (
               subject_id,
-              subject_name
-            )
-          `)
-          .eq('teacher_id', teacherId);
-
-        // Also fetch from subjects table where teacher is directly assigned
-        const { data: subjectsData } = await supabase
-          .from('subjects')
-          .select(`
-            subject_id,
-            subject_name,
-            class_id,
-            classes (
+              classes (
+                class_id,
+                class_name,
+                section
+              ),
+              subjects (
+                subject_id,
+                subject_name
+              )
+            `)
+            .eq('teacher_id', teacherId),
+          supabase
+            .from('subjects')
+            .select(`
+              subject_id,
+              subject_name,
               class_id,
-              class_name,
-              section
-            )
-          `)
-          .eq('teacher_id', teacherId);
+              classes (
+                class_id,
+                class_name,
+                section
+              )
+            `)
+            .eq('teacher_id', teacherId),
+          supabase
+            .from('classes')
+            .select('class_id, class_name, section')
+            .eq('class_teacher_id', teacherId)
+        ]);
 
-        // Combine data from both sources
+        // Combine data from all sources
         const classesMap = new Map<string, TimetableClass>();
         const subjectsMap = new Map<string, TimetableSubject>();
 
         // Add classes and subjects from timetable
-        if (timetableData) {
-          timetableData.forEach(t => {
+        if (timetableData.data) {
+          timetableData.data.forEach(t => {
             if (t.classes) {
               classesMap.set(t.classes.class_id, t.classes as TimetableClass);
             }
@@ -91,8 +95,8 @@ export function useTeacherTimetableClasses(teacherId: string | null): TeacherTim
         }
 
         // Add classes and subjects from direct subject assignments
-        if (subjectsData) {
-          subjectsData.forEach(s => {
+        if (subjectsData.data) {
+          subjectsData.data.forEach(s => {
             if (s.classes) {
               classesMap.set(s.classes.class_id, s.classes as TimetableClass);
             }
@@ -100,6 +104,17 @@ export function useTeacherTimetableClasses(teacherId: string | null): TeacherTim
               subject_id: s.subject_id,
               subject_name: s.subject_name
             });
+          });
+        }
+
+        // Add classes where teacher is class teacher
+        if (classTeacherData.data) {
+          classTeacherData.data.forEach(c => {
+            classesMap.set(c.class_id, {
+              class_id: c.class_id,
+              class_name: c.class_name,
+              section: c.section
+            } as TimetableClass);
           });
         }
 

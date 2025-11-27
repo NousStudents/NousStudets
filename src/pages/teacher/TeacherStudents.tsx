@@ -29,27 +29,35 @@ export default function TeacherStudents() {
         .single();
 
       if (teacherInfo) {
-        // Fetch class IDs from timetable
-        const { data: timetableData } = await supabase
-          .from('timetable')
-          .select('class_id')
-          .eq('teacher_id', teacherInfo.teacher_id);
-
-        // Also fetch class IDs from subjects where teacher is assigned
-        const { data: subjectsData } = await supabase
-          .from('subjects')
-          .select('class_id')
-          .eq('teacher_id', teacherInfo.teacher_id);
+        // Get all class IDs this teacher is associated with from three sources
+        const [timetableData, subjectsData, classTeacherData] = await Promise.all([
+          supabase
+            .from('timetable')
+            .select('class_id')
+            .eq('teacher_id', teacherInfo.teacher_id),
+          supabase
+            .from('subjects')
+            .select('class_id')
+            .eq('teacher_id', teacherInfo.teacher_id),
+          supabase
+            .from('classes')
+            .select('class_id')
+            .eq('class_teacher_id', teacherInfo.teacher_id)
+        ]);
 
         // Combine and deduplicate class IDs
         const classIdsSet = new Set<string>();
         
-        if (timetableData) {
-          timetableData.forEach(t => classIdsSet.add(t.class_id));
+        if (timetableData.data) {
+          timetableData.data.forEach(t => classIdsSet.add(t.class_id));
         }
         
-        if (subjectsData) {
-          subjectsData.forEach(s => classIdsSet.add(s.class_id));
+        if (subjectsData.data) {
+          subjectsData.data.forEach(s => classIdsSet.add(s.class_id));
+        }
+
+        if (classTeacherData.data) {
+          classTeacherData.data.forEach(c => classIdsSet.add(c.class_id));
         }
 
         const classIds = Array.from(classIdsSet);
