@@ -132,7 +132,6 @@ serve(async (req) => {
           email,
           full_name: fullName,
           school_id: schoolId,
-          department: whitelistEntry.department,
           subject_specialization: whitelistEntry.subject_specialization,
           phone: whitelistEntry.phone,
           status: "active",
