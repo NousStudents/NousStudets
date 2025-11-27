@@ -35,3 +35,24 @@ verify_jwt = true
 
 [functions.ai-report-writer]
 verify_jwt = true
+
+[functions.admin-ai-insights]
+verify_jwt = true
+
+[functions.admin-timetable-generator]
+verify_jwt = true
+
+[functions.admin-fee-predictions]
+verify_jwt = true
+
+[functions.admin-teacher-performance]
+verify_jwt = true
+
+[functions.admin-ai-chatbot]
+verify_jwt = true
+
+[functions.admin-voice-assistant]
+verify_jwt = true
+
+[functions.admin-smart-notifications]
+verify_jwt = true

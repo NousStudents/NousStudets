@@ -70,6 +70,50 @@ export type Database = {
           },
         ]
       }
+      admin_ai_insights: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          generated_by: string | null
+          insight_data: Json
+          insight_id: string
+          insight_type: string
+          predictions: Json | null
+          recommendations: string | null
+          school_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          generated_by?: string | null
+          insight_data: Json
+          insight_id?: string
+          insight_type: string
+          predictions?: Json | null
+          recommendations?: string | null
+          school_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          generated_by?: string | null
+          insight_data?: Json
+          insight_id?: string
+          insight_type?: string
+          predictions?: Json | null
+          recommendations?: string | null
+          school_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_ai_insights_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
       admins: {
         Row: {
           admin_id: string
@@ -171,6 +215,47 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teachers"
             referencedColumns: ["teacher_id"]
+          },
+        ]
+      }
+      ai_chatbot_conversations: {
+        Row: {
+          context: Json | null
+          conversation_id: string
+          created_at: string | null
+          messages: Json
+          school_id: string
+          updated_at: string | null
+          user_id: string
+          user_type: string
+        }
+        Insert: {
+          context?: Json | null
+          conversation_id?: string
+          created_at?: string | null
+          messages?: Json
+          school_id: string
+          updated_at?: string | null
+          user_id: string
+          user_type: string
+        }
+        Update: {
+          context?: Json | null
+          conversation_id?: string
+          created_at?: string | null
+          messages?: Json
+          school_id?: string
+          updated_at?: string | null
+          user_id?: string
+          user_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_chatbot_conversations_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
           },
         ]
       }
@@ -1271,6 +1356,53 @@ export type Database = {
           },
         ]
       }
+      fee_predictions: {
+        Row: {
+          created_at: string | null
+          prediction_date: string | null
+          prediction_id: string
+          predictions: Json | null
+          recommendations: string | null
+          school_id: string
+          total_collected: number | null
+          total_expected: number | null
+          total_pending: number | null
+          unusual_activities: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          prediction_date?: string | null
+          prediction_id?: string
+          predictions?: Json | null
+          recommendations?: string | null
+          school_id: string
+          total_collected?: number | null
+          total_expected?: number | null
+          total_pending?: number | null
+          unusual_activities?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          prediction_date?: string | null
+          prediction_id?: string
+          predictions?: Json | null
+          recommendations?: string | null
+          school_id?: string
+          total_collected?: number | null
+          total_expected?: number | null
+          total_pending?: number | null
+          unusual_activities?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_predictions_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
       fees: {
         Row: {
           amount: number
@@ -1850,6 +1982,62 @@ export type Database = {
         }
         Relationships: []
       }
+      smart_notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string | null
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          notification_id: string
+          notification_type: string
+          priority: string | null
+          read_at: string | null
+          recipient_id: string
+          recipient_type: string
+          school_id: string
+          title: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string | null
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          notification_id?: string
+          notification_type: string
+          priority?: string | null
+          read_at?: string | null
+          recipient_id: string
+          recipient_type: string
+          school_id: string
+          title: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string | null
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          notification_id?: string
+          notification_type?: string
+          priority?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          recipient_type?: string
+          school_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_notifications_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
       students: {
         Row: {
           admission_date: string | null
@@ -2013,6 +2201,69 @@ export type Database = {
           super_admin_id?: string
         }
         Relationships: []
+      }
+      teacher_performance_analytics: {
+        Row: {
+          analysis_period: string | null
+          analytics_id: string
+          areas_for_improvement: string[] | null
+          assignment_completion_rate: number | null
+          attendance_rate: number | null
+          class_results_avg: number | null
+          created_at: string | null
+          feedback_score: number | null
+          recommendations: string | null
+          school_id: string
+          strengths: string[] | null
+          student_improvement_rate: number | null
+          teacher_id: string
+        }
+        Insert: {
+          analysis_period?: string | null
+          analytics_id?: string
+          areas_for_improvement?: string[] | null
+          assignment_completion_rate?: number | null
+          attendance_rate?: number | null
+          class_results_avg?: number | null
+          created_at?: string | null
+          feedback_score?: number | null
+          recommendations?: string | null
+          school_id: string
+          strengths?: string[] | null
+          student_improvement_rate?: number | null
+          teacher_id: string
+        }
+        Update: {
+          analysis_period?: string | null
+          analytics_id?: string
+          areas_for_improvement?: string[] | null
+          assignment_completion_rate?: number | null
+          attendance_rate?: number | null
+          class_results_avg?: number | null
+          created_at?: string | null
+          feedback_score?: number | null
+          recommendations?: string | null
+          school_id?: string
+          strengths?: string[] | null
+          student_improvement_rate?: number | null
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_performance_analytics_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+          {
+            foreignKeyName: "teacher_performance_analytics_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["teacher_id"]
+          },
+        ]
       }
       teachers: {
         Row: {
@@ -2295,6 +2546,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "users_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
+      voice_commands: {
+        Row: {
+          command_id: string
+          command_text: string
+          command_type: string | null
+          created_at: string | null
+          response: string | null
+          school_id: string
+          success: boolean | null
+          user_id: string
+          user_type: string
+        }
+        Insert: {
+          command_id?: string
+          command_text: string
+          command_type?: string | null
+          created_at?: string | null
+          response?: string | null
+          school_id: string
+          success?: boolean | null
+          user_id: string
+          user_type: string
+        }
+        Update: {
+          command_id?: string
+          command_text?: string
+          command_type?: string | null
+          created_at?: string | null
+          response?: string | null
+          school_id?: string
+          success?: boolean | null
+          user_id?: string
+          user_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_commands_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
