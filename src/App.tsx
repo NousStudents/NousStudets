@@ -49,6 +49,7 @@ import TeacherAIAssistant from "./pages/teacher/TeacherAIAssistant";
 import ParentOverview from "./pages/parent/ParentOverview";
 import ParentAcademicPage from "./pages/academic/ParentAcademic";
 import AdminOverview from './pages/admin/AdminOverview';
+import AdminAIModule from "./pages/admin/AdminAIModule";
 import StudentsList from './pages/admin/StudentsList';
 import TeachersList from './pages/admin/TeachersList';
 import ParentsList from './pages/admin/ParentsList';

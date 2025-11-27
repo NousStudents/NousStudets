@@ -23,7 +23,8 @@ import {
   GraduationCap,
   UserCheck,
   Database,
-  Shield
+  Shield,
+  Brain
 } from 'lucide-react';
 
 export default function AdminDashboard({ profile }: { profile: any }) {
