@@ -275,12 +275,14 @@ export default function ClassManagement() {
   const handleDialogClose = () => {
     setDialogOpen(false);
     setEditingClass(null);
-    setFormData({ class_name: "", section: "", class_teacher_id: "none" });
+    setFormData({ class_name: "", section: "", class_teacher_id: "" });
   };
 
   const handleManageSubjects = async (classData: Class) => {
     setSelectedClass(classData);
     setSubjectsDialogOpen(true);
+    // Re-fetch teachers to ensure fresh data
+    await fetchData();
     await fetchSubjects(classData.class_id);
   };
 
@@ -406,7 +408,7 @@ export default function ClassManagement() {
   const handleSubjectDialogClose = () => {
     setSubjectDialogOpen(false);
     setEditingSubject(null);
-    setSubjectFormData({ subject_name: "", teacher_id: "none" });
+    setSubjectFormData({ subject_name: "", teacher_id: "" });
   };
 
   if (loading) {
@@ -518,19 +520,33 @@ export default function ClassManagement() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="class_teacher_id">Class Teacher</Label>
-              <Select value={formData.class_teacher_id} onValueChange={(v) => setFormData({ ...formData, class_teacher_id: v })}>
+              <Select 
+                value={formData.class_teacher_id || "none"} 
+                onValueChange={(v) => setFormData({ ...formData, class_teacher_id: v })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Teacher" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-50">
                   <SelectItem value="none">None</SelectItem>
-                  {teachers.map((t) => (
-                    <SelectItem key={t.teacher_id} value={t.teacher_id}>
-                      {t.full_name}
+                  {teachers.length === 0 ? (
+                    <SelectItem value="no-teachers" disabled>
+                      No active teachers available
                     </SelectItem>
-                  ))}
+                  ) : (
+                    teachers.map((t) => (
+                      <SelectItem key={t.teacher_id} value={t.teacher_id}>
+                        {t.full_name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
+              {teachers.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No active teachers found. Please add teachers first.
+                </p>
+              )}
             </div>
             <Button type="submit">{editingClass ? "Update" : "Create"}</Button>
           </form>
@@ -630,19 +646,33 @@ export default function ClassManagement() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="teacher_id">Teacher</Label>
-              <Select value={subjectFormData.teacher_id} onValueChange={(v) => setSubjectFormData({ ...subjectFormData, teacher_id: v })}>
+              <Select 
+                value={subjectFormData.teacher_id || "none"} 
+                onValueChange={(v) => setSubjectFormData({ ...subjectFormData, teacher_id: v })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Teacher" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-50">
                   <SelectItem value="none">None</SelectItem>
-                  {teachers.map((t) => (
-                    <SelectItem key={t.teacher_id} value={t.teacher_id}>
-                      {t.full_name}
+                  {teachers.length === 0 ? (
+                    <SelectItem value="no-teachers" disabled>
+                      No active teachers available
                     </SelectItem>
-                  ))}
+                  ) : (
+                    teachers.map((t) => (
+                      <SelectItem key={t.teacher_id} value={t.teacher_id}>
+                        {t.full_name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
+              {teachers.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No active teachers found. Please add teachers first.
+                </p>
+              )}
             </div>
             <Button type="submit">{editingSubject ? "Update" : "Create"}</Button>
           </form>
