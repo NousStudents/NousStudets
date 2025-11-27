@@ -18,21 +18,13 @@ import {
 } from 'lucide-react';
 
 interface StudentData {
-  attendance_percentage: number;
-  pending_assignments: number;
-  upcoming_exams: number;
-  average_grade: string;
   student_id?: string;
+  class_id?: string;
 }
 
 export default function StudentDashboard({ profile }: { profile: any }) {
   const navigate = useNavigate();
-  const [studentData, setStudentData] = useState<StudentData>({
-    attendance_percentage: 95,
-    pending_assignments: 3,
-    upcoming_exams: 2,
-    average_grade: 'A-'
-  });
+  const [studentData, setStudentData] = useState<StudentData>({});
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,21 +36,23 @@ export default function StudentDashboard({ profile }: { profile: any }) {
     try {
       const { data: studentInfo } = await supabase
         .from('students')
-        .select('student_id')
+        .select('student_id, class_id')
         .eq('auth_user_id', profile.auth_user_id)
         .single();
 
       if (studentInfo) {
-        setStudentData(prev => ({ ...prev, student_id: studentInfo.student_id }));
+        setStudentData(studentInfo);
+        
+        // Fetch assignments for student's class
+        const { data: assignmentsData } = await supabase
+          .from('assignments')
+          .select('*')
+          .eq('class_id', studentInfo.class_id)
+          .order('due_date', { ascending: true })
+          .limit(5);
+        
+        setAssignments(assignmentsData || []);
       }
-
-      const { data: assignmentsData } = await supabase
-        .from('assignments')
-        .select('*')
-        .order('due_date', { ascending: true })
-        .limit(5);
-      
-      setAssignments(assignmentsData || []);
     } catch (error) {
       console.error('Error fetching student data:', error);
     } finally {
@@ -82,55 +76,16 @@ export default function StudentDashboard({ profile }: { profile: any }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-pastel-green border-pastel-green/30 animate-fade-in">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-pastel-green-foreground flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Attendance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-pastel-green-foreground">{studentData.attendance_percentage}%</div>
-            <p className="text-xs text-pastel-green-foreground/80 mt-2 font-medium">+2% from last month</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-pastel-coral border-pastel-coral/30 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+        <Card className="bg-pastel-coral border-pastel-coral/30 animate-fade-in">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-pastel-coral-foreground flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Pending Assignments
+              Assignments
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-pastel-coral-foreground">{studentData.pending_assignments}</div>
-            <p className="text-xs text-pastel-coral-foreground/80 mt-2">Due this week</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-pastel-purple border-pastel-purple/30 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-pastel-purple-foreground flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Upcoming Exams
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-pastel-purple-foreground">{studentData.upcoming_exams}</div>
-            <p className="text-xs text-pastel-purple-foreground/80 mt-2">Next 2 weeks</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-pastel-yellow border-pastel-yellow/30 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-pastel-yellow-foreground flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Average Grade
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold text-pastel-yellow-foreground">{studentData.average_grade}</div>
-            <p className="text-xs text-pastel-yellow-foreground/80 mt-2 font-medium">+5% from last term</p>
+            <div className="text-4xl font-bold text-pastel-coral-foreground">{assignments.length}</div>
+            <p className="text-xs text-pastel-coral-foreground/80 mt-2">Available assignments</p>
           </CardContent>
         </Card>
       </div>
@@ -212,33 +167,7 @@ export default function StudentDashboard({ profile }: { profile: any }) {
       </div>
 
       <div className="space-y-6 pb-20 md:pb-6">
-        <div className="grid lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                Today's Timetable
-              </CardTitle>
-              <CardDescription>Monday, November 9, 2025</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { time: '09:00 - 10:00', subject: 'Mathematics', teacher: 'Mr. Smith', room: 'Room 101' },
-                { time: '10:15 - 11:15', subject: 'Physics', teacher: 'Dr. Johnson', room: 'Lab 2' },
-                { time: '11:30 - 12:30', subject: 'English', teacher: 'Ms. Williams', room: 'Room 203' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-4 p-3 rounded-lg bg-muted/50">
-                  <div className="text-sm font-medium text-muted-foreground w-24">{item.time}</div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-foreground">{item.subject}</h4>
-                    <p className="text-sm text-muted-foreground">{item.teacher} • {item.room}</p>
-                  </div>
-                  <Badge variant="outline">Join</Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
+        <div className="grid lg:grid-cols-1 gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

@@ -159,42 +159,6 @@ export default function ClassTeacherDashboard() {
             <div className="text-3xl font-bold">{currentClass?.student_count || 0}</div>
           </CardContent>
         </Card>
-
-        <Card className="bg-pastel-mint/30 border-pastel-mint/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <UserCheck className="h-4 w-4" />
-              Attendance Rate
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">92%</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-pastel-peach/30 border-pastel-peach/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <ClipboardCheck className="h-4 w-4" />
-              Pending Leave Requests
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">3</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-pastel-yellow/30 border-pastel-yellow/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Avg Class Score
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">85%</div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Main Content Tabs */}
