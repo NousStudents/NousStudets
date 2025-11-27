@@ -123,6 +123,248 @@ export type Database = {
           },
         ]
       }
+      ai_homework_help: {
+        Row: {
+          ai_feedback: string | null
+          created_at: string | null
+          help_id: string
+          help_type: string
+          homework_content: string | null
+          student_id: string
+          subject_id: string | null
+        }
+        Insert: {
+          ai_feedback?: string | null
+          created_at?: string | null
+          help_id?: string
+          help_type: string
+          homework_content?: string | null
+          student_id: string
+          subject_id?: string | null
+        }
+        Update: {
+          ai_feedback?: string | null
+          created_at?: string | null
+          help_id?: string
+          help_type?: string
+          homework_content?: string | null
+          student_id?: string
+          subject_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_homework_help_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["subject_id"]
+          },
+          {
+            foreignKeyName: "fk_student_homework"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      ai_learning_paths: {
+        Row: {
+          created_at: string | null
+          current_level: string | null
+          milestones: Json | null
+          path_id: string
+          progress_percentage: number | null
+          student_id: string
+          subject_id: string | null
+          target_level: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_level?: string | null
+          milestones?: Json | null
+          path_id?: string
+          progress_percentage?: number | null
+          student_id: string
+          subject_id?: string | null
+          target_level?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_level?: string | null
+          milestones?: Json | null
+          path_id?: string
+          progress_percentage?: number | null
+          student_id?: string
+          subject_id?: string | null
+          target_level?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_learning_paths_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["subject_id"]
+          },
+          {
+            foreignKeyName: "fk_student_learning"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      ai_performance_predictions: {
+        Row: {
+          assignment_score: number | null
+          attendance_score: number | null
+          behavior_score: number | null
+          created_at: string | null
+          marks_score: number | null
+          overall_risk_level: string | null
+          prediction_date: string | null
+          prediction_id: string
+          recommendations: string | null
+          student_id: string
+          weak_subjects: Json | null
+        }
+        Insert: {
+          assignment_score?: number | null
+          attendance_score?: number | null
+          behavior_score?: number | null
+          created_at?: string | null
+          marks_score?: number | null
+          overall_risk_level?: string | null
+          prediction_date?: string | null
+          prediction_id?: string
+          recommendations?: string | null
+          student_id: string
+          weak_subjects?: Json | null
+        }
+        Update: {
+          assignment_score?: number | null
+          attendance_score?: number | null
+          behavior_score?: number | null
+          created_at?: string | null
+          marks_score?: number | null
+          overall_risk_level?: string | null
+          prediction_date?: string | null
+          prediction_id?: string
+          recommendations?: string | null
+          student_id?: string
+          weak_subjects?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_student_prediction"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      ai_study_schedules: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          duration_minutes: number | null
+          priority_level: string | null
+          reminder_sent: boolean | null
+          schedule_id: string
+          scheduled_time: string | null
+          student_id: string
+          subject_id: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          priority_level?: string | null
+          reminder_sent?: boolean | null
+          schedule_id?: string
+          scheduled_time?: string | null
+          student_id: string
+          subject_id?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          priority_level?: string | null
+          reminder_sent?: boolean | null
+          schedule_id?: string
+          scheduled_time?: string | null
+          student_id?: string
+          subject_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_study_schedules_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["subject_id"]
+          },
+          {
+            foreignKeyName: "fk_student_schedule"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      ai_study_sessions: {
+        Row: {
+          ai_response: string | null
+          created_at: string | null
+          input_content: string | null
+          session_id: string
+          session_type: string
+          student_id: string
+          subject_id: string | null
+        }
+        Insert: {
+          ai_response?: string | null
+          created_at?: string | null
+          input_content?: string | null
+          session_id?: string
+          session_type: string
+          student_id: string
+          subject_id?: string | null
+        }
+        Update: {
+          ai_response?: string | null
+          created_at?: string | null
+          input_content?: string | null
+          session_id?: string
+          session_type?: string
+          student_id?: string
+          subject_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_study_sessions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["subject_id"]
+          },
+          {
+            foreignKeyName: "fk_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       ai_tools: {
         Row: {
           ai_id: string
