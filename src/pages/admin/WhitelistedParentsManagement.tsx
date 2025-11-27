@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Users } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
-import { useTenant } from "@/contexts/TenantContext";
 import {
   Select,
   SelectContent,
@@ -19,7 +18,24 @@ import {
 export default function WhitelistedParentsManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { schoolId: currentSchoolId } = useTenant();
+  
+  // Fetch school_id for current admin
+  const { data: adminData } = useQuery({
+    queryKey: ["currentAdmin"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      
+      const { data, error } = await supabase
+        .from("admins")
+        .select("school_id")
+        .eq("auth_user_id", user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
   
   const [newParent, setNewParent] = useState({
     email: "",
@@ -32,40 +48,40 @@ export default function WhitelistedParentsManagement() {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
 
   const { data: students } = useQuery({
-    queryKey: ["students-for-parent-link", currentSchoolId],
+    queryKey: ["students-for-parent-link", adminData?.school_id],
     queryFn: async () => {
-      if (!currentSchoolId) return [];
+      if (!adminData?.school_id) return [];
       const { data, error } = await supabase
         .from("students")
         .select("student_id, full_name, email, class_id, classes(class_name, section)")
-        .eq("classes.school_id", currentSchoolId)
+        .eq("classes.school_id", adminData.school_id)
         .order("full_name");
       
       if (error) throw error;
       return data;
     },
-    enabled: !!currentSchoolId,
+    enabled: !!adminData?.school_id,
   });
 
   const { data: whitelistedParents, isLoading } = useQuery({
-    queryKey: ["whitelisted-parents", currentSchoolId],
+    queryKey: ["whitelisted-parents", adminData?.school_id],
     queryFn: async () => {
-      if (!currentSchoolId) return [];
+      if (!adminData?.school_id) return [];
       const { data, error } = await supabase
         .from("whitelisted_parents")
         .select("*")
-        .eq("school_id", currentSchoolId)
+        .eq("school_id", adminData.school_id)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
       return data;
     },
-    enabled: !!currentSchoolId,
+    enabled: !!adminData?.school_id,
   });
 
   const addMutation = useMutation({
     mutationFn: async (parent: typeof newParent) => {
-      if (!currentSchoolId) throw new Error("No school selected");
+      if (!adminData?.school_id) throw new Error("No school selected");
       if (selectedStudents.length === 0) {
         throw new Error("Please select at least one student");
       }
@@ -75,7 +91,7 @@ export default function WhitelistedParentsManagement() {
         .insert([{ 
           ...parent,
           student_ids: selectedStudents,
-          school_id: currentSchoolId,
+          school_id: adminData.school_id,
         }]);
       
       if (error) throw error;

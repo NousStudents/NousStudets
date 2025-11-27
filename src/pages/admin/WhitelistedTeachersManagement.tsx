@@ -7,12 +7,28 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, BookOpen } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
-import { useTenant } from "@/contexts/TenantContext";
 
 export default function WhitelistedTeachersManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { schoolId: currentSchoolId } = useTenant();
+  
+  // Fetch school_id for current admin
+  const { data: adminData } = useQuery({
+    queryKey: ["currentAdmin"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      
+      const { data, error } = await supabase
+        .from("admins")
+        .select("school_id")
+        .eq("auth_user_id", user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
   
   const [newTeacher, setNewTeacher] = useState({
     email: "",
@@ -24,30 +40,30 @@ export default function WhitelistedTeachersManagement() {
   });
 
   const { data: whitelistedTeachers, isLoading } = useQuery({
-    queryKey: ["whitelisted-teachers", currentSchoolId],
+    queryKey: ["whitelisted-teachers", adminData?.school_id],
     queryFn: async () => {
-      if (!currentSchoolId) return [];
+      if (!adminData?.school_id) return [];
       const { data, error } = await supabase
         .from("whitelisted_teachers")
         .select("*")
-        .eq("school_id", currentSchoolId)
+        .eq("school_id", adminData.school_id)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
       return data;
     },
-    enabled: !!currentSchoolId,
+    enabled: !!adminData?.school_id,
   });
 
   const addMutation = useMutation({
     mutationFn: async (teacher: typeof newTeacher) => {
-      if (!currentSchoolId) throw new Error("No school selected");
+      if (!adminData?.school_id) throw new Error("No school selected");
       
       const { error } = await supabase
         .from("whitelisted_teachers")
         .insert([{ 
           ...teacher, 
-          school_id: currentSchoolId,
+          school_id: adminData.school_id,
         }]);
       
       if (error) throw error;
