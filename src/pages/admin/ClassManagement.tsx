@@ -67,68 +67,59 @@ export default function ClassManagement() {
 
   const fetchData = async () => {
     try {
-      console.log("Fetching user data for:", user?.id);
-      
       const { data: adminData, error: adminError } = await supabase
         .from("admins")
         .select("school_id, admin_id")
         .eq("auth_user_id", user?.id)
         .single();
 
-      console.log("Admin data:", adminData);
-      console.log("Admin error:", adminError);
-
-      if (!adminData?.school_id) {
-        console.error("No school_id found for user");
+      if (adminError) {
+        console.error("Admin error:", adminError);
         toast.error("Unable to find your school information");
         setLoading(false);
         return;
       }
 
-      // Fetch classes without the problematic join first
-      console.log("Fetching classes for school_id:", adminData.school_id);
-      const { data: classesData, error: classesError } = await supabase
-        .from("classes")
-        .select("class_id, class_name, section, class_teacher_id, school_id")
-        .eq("school_id", adminData.school_id);
-
-      console.log("Classes data:", classesData);
-      console.log("Classes error:", classesError);
-
-      if (classesError) {
-        console.error("Error fetching classes:", classesError);
-        toast.error(`Failed to load classes: ${classesError.message}`);
+      if (!adminData?.school_id) {
+        toast.error("Unable to find your school information");
+        setLoading(false);
+        return;
       }
 
-      // Fetch teachers separately
-      console.log("Fetching teachers for school_id:", adminData.school_id);
-      
-      // Get all teachers for the school directly from teachers table
-      const { data: allTeachersData, error: teachersError2 } = await supabase
-        .from("teachers")
-        .select("teacher_id, full_name, email")
-        .eq("school_id", adminData.school_id);
+      // Fetch all data in parallel
+      const [classesRes, teachersRes] = await Promise.all([
+        supabase
+          .from("classes")
+          .select("class_id, class_name, section, class_teacher_id, school_id")
+          .eq("school_id", adminData.school_id),
+        supabase
+          .from("teachers")
+          .select("teacher_id, full_name, email, status")
+          .eq("school_id", adminData.school_id)
+          .eq("status", "active")
+      ]);
 
-      console.log("Teachers data:", allTeachersData);
-      console.log("Teachers error:", teachersError2);
+      if (classesRes.error) {
+        console.error("Error fetching classes:", classesRes.error);
+        toast.error(`Failed to load classes: ${classesRes.error.message}`);
+      }
 
-      if (teachersError2) {
-        console.error("Error fetching teachers:", teachersError2);
+      if (teachersRes.error) {
+        console.error("Error fetching teachers:", teachersRes.error);
+        toast.error(`Failed to load teachers: ${teachersRes.error.message}`);
       }
 
       // Create a map of teacher_id to teacher name
       const teacherMap = new Map<string, string>();
-      if (allTeachersData) {
-        allTeachersData.forEach((teacher: any) => {
+      if (teachersRes.data) {
+        teachersRes.data.forEach((teacher: any) => {
           teacherMap.set(teacher.teacher_id, teacher.full_name);
         });
       }
 
-      console.log("Teacher map:", Object.fromEntries(teacherMap));
-
       // Format classes with teacher names
-      if (classesData) {
-        const formattedClasses = classesData.map((c: any) => ({
+      if (classesRes.data) {
+        const formattedClasses = classesRes.data.map((c: any) => ({
           class_id: c.class_id,
           class_name: c.class_name,
           section: c.section || "",
@@ -137,22 +128,21 @@ export default function ClassManagement() {
             ? (teacherMap.get(c.class_teacher_id) || "Not Assigned")
             : "Not Assigned",
         }));
-        console.log("Formatted classes:", formattedClasses);
         setClasses(formattedClasses);
       } else {
         setClasses([]);
       }
 
       // Format teachers for dropdown
-      if (allTeachersData) {
-        const formattedTeachers = allTeachersData.map((teacher: any) => ({
+      if (teachersRes.data) {
+        const formattedTeachers = teachersRes.data.map((teacher: any) => ({
           teacher_id: teacher.teacher_id,
           full_name: teacher.full_name,
         }));
-        console.log("Formatted teachers:", formattedTeachers);
         setTeachers(formattedTeachers);
       } else {
         setTeachers([]);
+        console.warn("No active teachers found for school");
       }
     } catch (error) {
       console.error("Error fetching data:", error);

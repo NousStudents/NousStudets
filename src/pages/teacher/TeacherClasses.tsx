@@ -26,6 +26,7 @@ export default function TeacherClasses() {
         .single();
 
       if (teacherInfo) {
+        // Fetch from timetable
         const { data: timetableData } = await supabase
           .from('timetable')
           .select(`
@@ -38,16 +39,40 @@ export default function TeacherClasses() {
           `)
           .eq('teacher_id', teacherInfo.teacher_id);
 
+        // Also fetch from subjects table
+        const { data: subjectsData } = await supabase
+          .from('subjects')
+          .select(`
+            class_id,
+            classes (
+              class_id,
+              class_name,
+              section
+            )
+          `)
+          .eq('teacher_id', teacherInfo.teacher_id);
+
+        // Combine and deduplicate classes
+        const classesMap = new Map();
+        
         if (timetableData) {
-          const uniqueClasses = Array.from(
-            new Map(
-              timetableData
-                .filter(t => t.classes)
-                .map(t => [t.classes.class_id, t.classes])
-            ).values()
-          );
-          setClasses(uniqueClasses);
+          timetableData.forEach(t => {
+            if (t.classes) {
+              classesMap.set(t.classes.class_id, t.classes);
+            }
+          });
         }
+
+        if (subjectsData) {
+          subjectsData.forEach(s => {
+            if (s.classes) {
+              classesMap.set(s.classes.class_id, s.classes);
+            }
+          });
+        }
+
+        const uniqueClasses = Array.from(classesMap.values());
+        setClasses(uniqueClasses);
       }
     } catch (error) {
       console.error('Error fetching classes:', error);
@@ -79,8 +104,8 @@ export default function TeacherClasses() {
             <div className="text-center py-12 text-muted-foreground">Loading...</div>
           ) : classes.length > 0 ? (
             <div className="space-y-4">
-              {classes.map((cls) => (
-                <div key={cls.class_id} className="flex items-center justify-between p-4 border rounded-lg">
+              {classes.map((cls: any) => (
+                <div key={cls.class_id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                   <div>
                     <h4 className="font-semibold text-foreground">{cls.class_name}</h4>
                     <p className="text-sm text-muted-foreground">Section: {cls.section || 'A'}</p>
