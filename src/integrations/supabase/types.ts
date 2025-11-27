@@ -123,6 +123,124 @@ export type Database = {
           },
         ]
       }
+      ai_attendance_analysis: {
+        Row: {
+          analysis_date: string | null
+          analysis_id: string
+          class_id: string
+          created_at: string | null
+          frequent_absentees: Json | null
+          insights: string | null
+          predicted_dropouts: Json | null
+          recommendations: string | null
+          teacher_id: string
+        }
+        Insert: {
+          analysis_date?: string | null
+          analysis_id?: string
+          class_id: string
+          created_at?: string | null
+          frequent_absentees?: Json | null
+          insights?: string | null
+          predicted_dropouts?: Json | null
+          recommendations?: string | null
+          teacher_id: string
+        }
+        Update: {
+          analysis_date?: string | null
+          analysis_id?: string
+          class_id?: string
+          created_at?: string | null
+          frequent_absentees?: Json | null
+          insights?: string | null
+          predicted_dropouts?: Json | null
+          recommendations?: string | null
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_attendance_analysis_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "ai_attendance_analysis_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["teacher_id"]
+          },
+        ]
+      }
+      ai_generated_assignments: {
+        Row: {
+          answer_key: Json | null
+          assignment_type: string
+          auto_gradable: boolean | null
+          class_id: string | null
+          created_at: string | null
+          difficulty_level: string | null
+          generated_id: string
+          max_marks: number | null
+          questions: Json
+          subject_id: string | null
+          teacher_id: string
+          topic: string
+        }
+        Insert: {
+          answer_key?: Json | null
+          assignment_type: string
+          auto_gradable?: boolean | null
+          class_id?: string | null
+          created_at?: string | null
+          difficulty_level?: string | null
+          generated_id?: string
+          max_marks?: number | null
+          questions: Json
+          subject_id?: string | null
+          teacher_id: string
+          topic: string
+        }
+        Update: {
+          answer_key?: Json | null
+          assignment_type?: string
+          auto_gradable?: boolean | null
+          class_id?: string | null
+          created_at?: string | null
+          difficulty_level?: string | null
+          generated_id?: string
+          max_marks?: number | null
+          questions?: Json
+          subject_id?: string | null
+          teacher_id?: string
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generated_assignments_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "ai_generated_assignments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["subject_id"]
+          },
+          {
+            foreignKeyName: "ai_generated_assignments_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["teacher_id"]
+          },
+        ]
+      }
       ai_homework_help: {
         Row: {
           ai_feedback: string | null
@@ -219,6 +337,85 @@ export type Database = {
           },
         ]
       }
+      ai_lesson_plans: {
+        Row: {
+          activities: Json | null
+          class_id: string | null
+          created_at: string | null
+          duration_minutes: number | null
+          examples: Json | null
+          grade_level: string | null
+          is_edited: boolean | null
+          learning_outcomes: Json | null
+          lesson_content: Json
+          plan_id: string
+          resources: string[] | null
+          subject_id: string | null
+          teacher_id: string
+          teaching_steps: Json | null
+          topic: string
+          updated_at: string | null
+        }
+        Insert: {
+          activities?: Json | null
+          class_id?: string | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          examples?: Json | null
+          grade_level?: string | null
+          is_edited?: boolean | null
+          learning_outcomes?: Json | null
+          lesson_content: Json
+          plan_id?: string
+          resources?: string[] | null
+          subject_id?: string | null
+          teacher_id: string
+          teaching_steps?: Json | null
+          topic: string
+          updated_at?: string | null
+        }
+        Update: {
+          activities?: Json | null
+          class_id?: string | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          examples?: Json | null
+          grade_level?: string | null
+          is_edited?: boolean | null
+          learning_outcomes?: Json | null
+          lesson_content?: Json
+          plan_id?: string
+          resources?: string[] | null
+          subject_id?: string | null
+          teacher_id?: string
+          teaching_steps?: Json | null
+          topic?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_lesson_plans_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["class_id"]
+          },
+          {
+            foreignKeyName: "ai_lesson_plans_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["subject_id"]
+          },
+          {
+            foreignKeyName: "ai_lesson_plans_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["teacher_id"]
+          },
+        ]
+      }
       ai_performance_predictions: {
         Row: {
           assignment_score: number | null
@@ -266,6 +463,83 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      ai_report_comments: {
+        Row: {
+          areas_for_improvement: string[] | null
+          attendance_remarks: string | null
+          behavior_remarks: string | null
+          comment_id: string
+          comment_text: string
+          created_at: string | null
+          exam_id: string | null
+          is_edited: boolean | null
+          performance_summary: string | null
+          strengths: string[] | null
+          student_id: string
+          subject_id: string | null
+          teacher_id: string
+        }
+        Insert: {
+          areas_for_improvement?: string[] | null
+          attendance_remarks?: string | null
+          behavior_remarks?: string | null
+          comment_id?: string
+          comment_text: string
+          created_at?: string | null
+          exam_id?: string | null
+          is_edited?: boolean | null
+          performance_summary?: string | null
+          strengths?: string[] | null
+          student_id: string
+          subject_id?: string | null
+          teacher_id: string
+        }
+        Update: {
+          areas_for_improvement?: string[] | null
+          attendance_remarks?: string | null
+          behavior_remarks?: string | null
+          comment_id?: string
+          comment_text?: string
+          created_at?: string | null
+          exam_id?: string | null
+          is_edited?: boolean | null
+          performance_summary?: string | null
+          strengths?: string[] | null
+          student_id?: string
+          subject_id?: string | null
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_report_comments_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["exam_id"]
+          },
+          {
+            foreignKeyName: "ai_report_comments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "ai_report_comments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["subject_id"]
+          },
+          {
+            foreignKeyName: "ai_report_comments_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["teacher_id"]
           },
         ]
       }

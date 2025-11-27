@@ -16,7 +16,8 @@ import {
   MessageSquare,
   ClipboardList,
   BarChart3,
-  Settings
+  Settings,
+  Sparkles
 } from 'lucide-react';
 
 export default function TeacherDashboard({ profile }: { profile: any }) {
@@ -261,6 +262,18 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <button
+                  onClick={() => navigate('/teacher/ai-assistant')}
+                  className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-primary/10 to-primary/5 p-6 transition-all hover:shadow-lg hover:scale-[1.02] hover:border-primary/50"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="rounded-full bg-primary/20 p-3 transition-colors group-hover:bg-primary/30">
+                      <Sparkles className="h-6 w-6 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">AI Assistant</span>
+                  </div>
+                </button>
+
+                <button
                   onClick={() => navigate('/attendance')}
                   className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-lg hover:scale-[1.02] hover:border-primary/50"
                 >
@@ -293,18 +306,6 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
                       <MessageSquare className="h-6 w-6 text-accent" />
                     </div>
                     <span className="text-sm font-medium text-foreground">Message Class</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => navigate('/exams')}
-                  className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-lg hover:scale-[1.02] hover:border-muted-foreground/50"
-                >
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="rounded-full bg-muted p-3 transition-colors group-hover:bg-muted/80">
-                      <BarChart3 className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <span className="text-sm font-medium text-foreground">View Reports</span>
                   </div>
                 </button>
               </div>

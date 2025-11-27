@@ -11,3 +11,27 @@ verify_jwt = false
 
 [functions.parent-signup]
 verify_jwt = false
+
+[functions.ai-study-assistant]
+verify_jwt = true
+
+[functions.ai-homework-helper]
+verify_jwt = true
+
+[functions.ai-timetable-manager]
+verify_jwt = true
+
+[functions.ai-performance-predictor]
+verify_jwt = true
+
+[functions.ai-lesson-planner]
+verify_jwt = true
+
+[functions.ai-assignment-generator]
+verify_jwt = true
+
+[functions.ai-attendance-analyzer]
+verify_jwt = true
+
+[functions.ai-report-writer]
+verify_jwt = true
