@@ -46,7 +46,11 @@ import TeacherClasses from "./pages/teacher/TeacherClasses";
 import TeacherStudents from "./pages/teacher/TeacherStudents";
 import ParentOverview from "./pages/parent/ParentOverview";
 import ParentAcademicPage from "./pages/academic/ParentAcademic";
-import AdminOverview from "./pages/admin/AdminOverview";
+import AdminOverview from './pages/admin/AdminOverview';
+import StudentsList from './pages/admin/StudentsList';
+import TeachersList from './pages/admin/TeachersList';
+import ParentsList from './pages/admin/ParentsList';
+import UsersList from './pages/admin/UsersList';
 import AdminFinancialPage from "./pages/financial/AdminFinancial";
 import AdminReportsPage from "./pages/reports/AdminReports";
 import ClassTeacherDashboard from "./pages/dashboards/ClassTeacherDashboard";
@@ -139,6 +143,10 @@ const App = () => (
             <Route path="/parent/overview" element={<ProtectedRoute roles={["parent"]}><ParentOverview /></ProtectedRoute>} />
             <Route path="/parent/academic" element={<ProtectedRoute roles={["parent"]}><ParentAcademicPage /></ProtectedRoute>} />
             <Route path="/admin/overview" element={<ProtectedRoute roles={["admin"]}><AdminOverview /></ProtectedRoute>} />
+            <Route path="/admin/students-list" element={<ProtectedRoute roles={["admin"]}><StudentsList /></ProtectedRoute>} />
+            <Route path="/admin/teachers-list" element={<ProtectedRoute roles={["admin"]}><TeachersList /></ProtectedRoute>} />
+            <Route path="/admin/parents-list" element={<ProtectedRoute roles={["admin"]}><ParentsList /></ProtectedRoute>} />
+            <Route path="/admin/users-list" element={<ProtectedRoute roles={["admin"]}><UsersList /></ProtectedRoute>} />
             <Route path="/admin/financial" element={<ProtectedRoute roles={["admin"]}><AdminFinancialPage /></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute roles={["admin"]}><AdminReportsPage /></ProtectedRoute>} />
             <Route path="/admin/academic" element={<ProtectedRoute roles={["admin"]}><div className="p-8 text-center">Admin Academic Page - Coming Soon</div></ProtectedRoute>} />

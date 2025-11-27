@@ -1,17 +1,88 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, User, TrendingUp, Calendar, Trophy, FileText } from 'lucide-react';
+import { BookOpen, User, TrendingUp, Calendar, Trophy, FileText, DollarSign, Receipt, AlertCircle } from 'lucide-react';
 import { BackButton } from '@/components/BackButton';
+import { format } from 'date-fns';
+
+interface FeeRecord {
+  fee_id: string;
+  amount: number;
+  due_date: string | null;
+  payment_date: string | null;
+  status: string | null;
+  students: {
+    full_name: string;
+  };
+}
 
 export default function ParentAcademic() {
+  const { user } = useAuth();
+  const [fees, setFees] = useState<FeeRecord[]>([]);
+  const [feeStats, setFeeStats] = useState({
+    totalDue: 0,
+    totalPaid: 0,
+    pending: 0
+  });
+
+  useEffect(() => {
+    if (user) {
+      fetchChildrenFees();
+    }
+  }, [user]);
+
+  const fetchChildrenFees = async () => {
+    try {
+      const { data: parentData } = await supabase
+        .from('parents')
+        .select('parent_id')
+        .eq('auth_user_id', user?.id)
+        .single();
+
+      if (!parentData) return;
+
+      const { data: studentsData } = await supabase
+        .from('students')
+        .select('student_id')
+        .eq('parent_id', parentData.parent_id);
+
+      if (!studentsData || studentsData.length === 0) return;
+
+      const studentIds = studentsData.map(s => s.student_id);
+
+      const { data: feesData } = await supabase
+        .from('fees')
+        .select(`
+          *,
+          students (
+            full_name
+          )
+        `)
+        .in('student_id', studentIds)
+        .order('created_at', { ascending: false });
+
+      setFees(feesData || []);
+
+      const totalDue = feesData?.reduce((sum, fee) => sum + fee.amount, 0) || 0;
+      const totalPaid = feesData?.filter(f => f.status === 'paid').reduce((sum, fee) => sum + fee.amount, 0) || 0;
+      const pending = feesData?.filter(f => f.status === 'pending').reduce((sum, fee) => sum + fee.amount, 0) || 0;
+
+      setFeeStats({ totalDue, totalPaid, pending });
+    } catch (error) {
+      console.error('Error fetching fees:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 space-y-6">
       <div className="flex items-center gap-4">
         <BackButton />
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Academic Overview</h1>
-          <p className="text-muted-foreground">Monitor your children's academic progress</p>
+          <h1 className="text-3xl font-bold text-foreground">Academic & Financial Overview</h1>
+          <p className="text-muted-foreground">Monitor your children's progress and fees</p>
         </div>
       </div>
 
@@ -188,6 +259,82 @@ export default function ParentAcademic() {
             <TrendingUp className="h-16 w-16 mx-auto mb-4 opacity-50" />
             <p>Progress charts and analytics coming soon</p>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Financial Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-pastel-blue/30 border-pastel-blue/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Receipt className="h-4 w-4" />
+              Total Due
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">₹{feeStats.totalDue.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-pastel-mint/30 border-pastel-mint/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Total Paid
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-success">₹{feeStats.totalPaid.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-pastel-yellow/30 border-pastel-yellow/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              Pending
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">₹{feeStats.pending.toLocaleString()}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Fee Records */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Receipt className="h-5 w-5" />
+            Children's Fee Records
+          </CardTitle>
+          <CardDescription>Payment history and upcoming dues</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {fees.length === 0 ? (
+            <div className="text-center py-12">
+              <Receipt className="h-16 w-16 mx-auto mb-4 opacity-50 text-muted-foreground" />
+              <p className="text-muted-foreground">No fee records found</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {fees.map((fee) => (
+                <div key={fee.fee_id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                  <div>
+                    <h4 className="font-semibold">₹{fee.amount.toLocaleString()}</h4>
+                    <p className="text-sm text-muted-foreground">{fee.students.full_name}</p>
+                    <div className="flex gap-4 text-xs text-muted-foreground mt-1">
+                      {fee.due_date && <span>Due: {format(new Date(fee.due_date), 'dd MMM yyyy')}</span>}
+                      {fee.payment_date && <span>Paid: {format(new Date(fee.payment_date), 'dd MMM yyyy')}</span>}
+                    </div>
+                  </div>
+                  <Badge variant={fee.status === 'paid' ? 'default' : 'secondary'}>
+                    {fee.status || 'pending'}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -30,6 +30,7 @@ export default function AdminOverview() {
     totalStudents: 0,
     totalTeachers: 0,
     totalClasses: 0,
+    totalParents: 0,
     activeUsers: 0
   });
   const [loading, setLoading] = useState(true);
@@ -57,6 +58,7 @@ export default function AdminOverview() {
         totalStudents: studentsRes.count || 0,
         totalTeachers: teachersRes.count || 0,
         totalClasses: classesRes.count || 0,
+        totalParents: parentsRes.count || 0,
         activeUsers: totalUsers
       });
     } catch (error) {
@@ -79,8 +81,11 @@ export default function AdminOverview() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-pastel-blue/30 border-pastel-blue/50">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <Card 
+          className="bg-pastel-blue/30 border-pastel-blue/50 cursor-pointer hover:shadow-lg transition-all"
+          onClick={() => navigate('/admin/students-list')}
+        >
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
               <Users className="h-5 w-5 text-pastel-blue" />
@@ -93,7 +98,10 @@ export default function AdminOverview() {
           </CardContent>
         </Card>
 
-        <Card className="bg-pastel-peach/30 border-pastel-peach/50">
+        <Card 
+          className="bg-pastel-peach/30 border-pastel-peach/50 cursor-pointer hover:shadow-lg transition-all"
+          onClick={() => navigate('/admin/teachers-list')}
+        >
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-pastel-coral" />
@@ -106,7 +114,10 @@ export default function AdminOverview() {
           </CardContent>
         </Card>
 
-        <Card className="bg-pastel-mint/30 border-pastel-mint/50">
+        <Card 
+          className="bg-pastel-mint/30 border-pastel-mint/50 cursor-pointer hover:shadow-lg transition-all"
+          onClick={() => navigate('/admin/classes')}
+        >
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
               <School className="h-5 w-5 text-pastel-mint" />
@@ -119,7 +130,26 @@ export default function AdminOverview() {
           </CardContent>
         </Card>
 
-        <Card className="bg-pastel-lavender/30 border-pastel-lavender/50">
+        <Card 
+          className="bg-pastel-yellow/30 border-pastel-yellow/50 cursor-pointer hover:shadow-lg transition-all"
+          onClick={() => navigate('/admin/parents-list')}
+        >
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Users className="h-5 w-5 text-pastel-yellow" />
+              Total Parents
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold text-foreground">{stats.totalParents}</div>
+            <p className="text-xs text-muted-foreground mt-2">Registered guardians</p>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="bg-pastel-lavender/30 border-pastel-lavender/50 cursor-pointer hover:shadow-lg transition-all"
+          onClick={() => navigate('/admin/users-list')}
+        >
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
               <UserCheck className="h-5 w-5 text-pastel-lavender" />
@@ -127,7 +157,7 @@ export default function AdminOverview() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-pastel-yellow">{stats.activeUsers}</div>
+            <div className="text-4xl font-bold text-foreground">{stats.activeUsers}</div>
             <p className="text-xs text-muted-foreground mt-2">Total system users</p>
           </CardContent>
         </Card>

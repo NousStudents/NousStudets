@@ -1,10 +1,63 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DollarSign, TrendingUp, Users, CreditCard, Receipt, AlertCircle, BarChart3 } from 'lucide-react';
 import { BackButton } from '@/components/BackButton';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminFinancial() {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    pendingFees: 0,
+    collectionRate: 0,
+    defaultersCount: 0
+  });
+
+  useEffect(() => {
+    fetchFinancialData();
+  }, []);
+
+  const fetchFinancialData = async () => {
+    try {
+      // Fetch all fees
+      const { data: feesData, error: feesError } = await supabase
+        .from('fees')
+        .select('*');
+
+      if (feesError) throw feesError;
+
+      const totalRevenue = feesData?.filter(f => f.status === 'paid').reduce((sum, fee) => sum + fee.amount, 0) || 0;
+      const pendingFees = feesData?.filter(f => f.status === 'pending').reduce((sum, fee) => sum + fee.amount, 0) || 0;
+      const totalDue = feesData?.reduce((sum, fee) => sum + fee.amount, 0) || 0;
+      const collectionRate = totalDue > 0 ? Math.round((totalRevenue / totalDue) * 100) : 0;
+      const defaultersCount = feesData?.filter(f => {
+        if (f.status === 'paid' || !f.due_date) return false;
+        const daysDiff = Math.floor((new Date().getTime() - new Date(f.due_date).getTime()) / (1000 * 60 * 60 * 24));
+        return daysDiff > 30;
+      }).length || 0;
+
+      setStats({
+        totalRevenue,
+        pendingFees,
+        collectionRate,
+        defaultersCount
+      });
+    } catch (error: any) {
+      console.error('Error fetching financial data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load financial data',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 space-y-6">
       <div className="flex items-center gap-4">
@@ -25,8 +78,8 @@ export default function AdminFinancial() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">₹45.2L</div>
-            <p className="text-xs text-success mt-1">+12% vs last term</p>
+            <div className="text-3xl font-bold">₹{(stats.totalRevenue / 100000).toFixed(1)}L</div>
+            <p className="text-xs text-success mt-1">Collected this term</p>
           </CardContent>
         </Card>
 
@@ -38,8 +91,8 @@ export default function AdminFinancial() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">₹8.5L</div>
-            <p className="text-xs text-muted-foreground">156 students</p>
+            <div className="text-3xl font-bold">₹{(stats.pendingFees / 100000).toFixed(1)}L</div>
+            <p className="text-xs text-muted-foreground">Yet to collect</p>
           </CardContent>
         </Card>
 
@@ -51,7 +104,7 @@ export default function AdminFinancial() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">84%</div>
+            <div className="text-3xl font-bold">{stats.collectionRate}%</div>
             <p className="text-xs text-muted-foreground">This term</p>
           </CardContent>
         </Card>
@@ -64,7 +117,7 @@ export default function AdminFinancial() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">23</div>
+            <div className="text-3xl font-bold">{stats.defaultersCount}</div>
             <p className="text-xs text-muted-foreground">Over 30 days</p>
           </CardContent>
         </Card>
