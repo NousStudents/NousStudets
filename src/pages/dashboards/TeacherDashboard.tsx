@@ -99,57 +99,18 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
         </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Real Data */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-pastel-blue/30 border-pastel-blue/50">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
               <Users className="h-4 w-4 text-pastel-blue" />
-              Total Students
+              My Classes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">156</div>
-            <p className="text-xs text-muted-foreground mt-1">Across 5 classes</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-pastel-mint/30 border-pastel-mint/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-pastel-mint" />
-              Today's Classes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">4</div>
-            <p className="text-xs text-muted-foreground mt-1">Next: Grade 10A at 10:00</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-pastel-peach/30 border-pastel-peach/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-pastel-coral" />
-              Pending Grading
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">12</div>
-            <p className="text-xs text-muted-foreground mt-1">Submissions to review</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-pastel-green/30 border-pastel-green/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CheckSquare className="h-4 w-4" />
-              Avg Attendance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-success">92%</div>
-            <p className="text-xs text-muted-foreground mt-1">This week</p>
+            <div className="text-3xl font-bold text-foreground">{classes.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Assigned classes</p>
           </CardContent>
         </Card>
       </div>
@@ -258,31 +219,32 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
           )}
           
           <div className="grid lg:grid-cols-2 gap-6">
-            {/* Today's Schedule */}
+            {/* My Classes */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Today's Schedule
+                  <Users className="h-5 w-5 text-primary" />
+                  My Classes
                 </CardTitle>
-                <CardDescription>Monday, November 8, 2025</CardDescription>
+                <CardDescription>Classes you're assigned to</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {[
-                  { time: '09:00 - 10:00', class: 'Grade 9B', subject: 'Mathematics', room: 'Room 101' },
-                  { time: '10:15 - 11:15', class: 'Grade 10A', subject: 'Mathematics', room: 'Room 101' },
-                  { time: '11:30 - 12:30', class: 'Grade 8C', subject: 'Mathematics', room: 'Room 101' },
-                  { time: '14:00 - 15:00', class: 'Grade 10B', subject: 'Mathematics', room: 'Room 101' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-4 p-3 rounded-lg bg-muted/50">
-                    <div className="text-sm font-medium text-muted-foreground w-24">{item.time}</div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-foreground">{item.class}</h4>
-                      <p className="text-sm text-muted-foreground">{item.subject} • {item.room}</p>
+                {classes.length > 0 ? (
+                  classes.map((cls) => (
+                    <div key={cls.class_id} className="flex items-start gap-4 p-3 rounded-lg bg-muted/50">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground">{cls.class_name}</h4>
+                        <p className="text-sm text-muted-foreground">Section: {cls.section || 'A'}</p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => navigate('/teacher/classes')}>View</Button>
                     </div>
-                    <Button size="sm" variant="outline">Start</Button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No classes assigned yet</p>
                   </div>
-                ))}
+                )}
               </CardContent>
             </Card>
 
