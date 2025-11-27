@@ -14,7 +14,8 @@ import {
   Video,
   MessageSquare,
   Trophy,
-  CreditCard
+  CreditCard,
+  Brain
 } from 'lucide-react';
 
 interface StudentData {
@@ -207,13 +208,13 @@ export default function StudentDashboard({ profile }: { profile: any }) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Button variant="outline" className="h-auto flex-col gap-2 py-4" onClick={() => navigate('/student/ai-assistant')}>
+                <Brain className="h-6 w-6" />
+                <span className="text-sm">AI Assistant</span>
+              </Button>
               <Button variant="outline" className="h-auto flex-col gap-2 py-4">
                 <Video className="h-6 w-6" />
                 <span className="text-sm">Online Classes</span>
-              </Button>
-              <Button variant="outline" className="h-auto flex-col gap-2 py-4">
-                <MessageSquare className="h-6 w-6" />
-                <span className="text-sm">AI Tutor</span>
               </Button>
               <Button variant="outline" className="h-auto flex-col gap-2 py-4">
                 <Trophy className="h-6 w-6" />

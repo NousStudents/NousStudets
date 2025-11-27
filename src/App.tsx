@@ -37,6 +37,7 @@ import SuperAdmin from "./pages/SuperAdmin";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
 import SuperAdminSignup from "./pages/SuperAdminSignup";
 import NotFound from "./pages/NotFound";
+import AIAssistant from "./pages/AIAssistant";
 import StudentOverview from "./pages/student/StudentOverview";
 import StudentAcademicPage from "./pages/academic/StudentAcademic";
 import StudentFinancialPage from "./pages/financial/StudentFinancial";
@@ -136,6 +137,7 @@ const App = () => (
             <Route path="/student/overview" element={<ProtectedRoute roles={["student"]}><StudentOverview /></ProtectedRoute>} />
             <Route path="/student/academic" element={<ProtectedRoute roles={["student"]}><StudentAcademicPage /></ProtectedRoute>} />
             <Route path="/student/financial" element={<ProtectedRoute roles={["student"]}><StudentFinancialPage /></ProtectedRoute>} />
+            <Route path="/student/ai-assistant" element={<ProtectedRoute roles={["student"]}><AIAssistant /></ProtectedRoute>} />
             <Route path="/teacher/overview" element={<ProtectedRoute roles={["teacher"]}><TeacherOverview /></ProtectedRoute>} />
             <Route path="/teacher/academic" element={<ProtectedRoute roles={["teacher"]}><TeacherAcademicPage /></ProtectedRoute>} />
             <Route path="/teacher/classes" element={<ProtectedRoute roles={["teacher"]}><TeacherClasses /></ProtectedRoute>} />
