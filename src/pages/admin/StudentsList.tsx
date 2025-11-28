@@ -20,7 +20,7 @@ interface Student {
   classes: {
     class_name: string;
     section: string | null;
-  }[] | null;
+  } | null;
 }
 
 export default function StudentsList() {
@@ -111,7 +111,7 @@ export default function StudentsList() {
                     <div>
                       <CardTitle className="text-lg">{student.full_name}</CardTitle>
                       <CardDescription>
-                        {student.classes?.[0]?.class_name || 'No class'} {student.classes?.[0]?.section || student.section || ''}
+                        {student.classes?.class_name || 'No class'} {student.classes?.section || student.section || ''}
                       </CardDescription>
                     </div>
                   </div>

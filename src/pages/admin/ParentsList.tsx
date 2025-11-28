@@ -22,7 +22,7 @@ interface Parent {
     classes: {
       class_name: string;
       section: string | null;
-    }[] | null;
+    } | null;
   }[];
 }
 
@@ -153,9 +153,9 @@ export default function ParentsList() {
                         <div key={student.student_id} className="flex items-center gap-2 text-sm bg-muted/50 p-2 rounded">
                           <User className="h-3 w-3 text-muted-foreground" />
                           <span className="font-medium">{student.full_name}</span>
-                          {student.classes?.[0] && (
+                          {student.classes && (
                             <Badge variant="outline" className="text-xs">
-                              {student.classes[0].class_name} {student.classes[0].section || ''}
+                              {student.classes.class_name} {student.classes.section || ''}
                             </Badge>
                           )}
                         </div>
