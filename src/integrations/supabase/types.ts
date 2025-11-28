@@ -2090,7 +2090,15 @@ export type Database = {
           status?: string | null
           student_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["class_id"]
+          },
+        ]
       }
       subjects: {
         Row: {
