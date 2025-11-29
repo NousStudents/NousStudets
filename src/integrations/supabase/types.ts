@@ -2038,57 +2038,239 @@ export type Database = {
           },
         ]
       }
+      student_profile_history: {
+        Row: {
+          field_name: string
+          history_id: string
+          new_value: string | null
+          old_value: string | null
+          student_id: string
+          updated_at: string | null
+          updated_by: string
+          updated_by_role: string
+        }
+        Insert: {
+          field_name: string
+          history_id?: string
+          new_value?: string | null
+          old_value?: string | null
+          student_id: string
+          updated_at?: string | null
+          updated_by: string
+          updated_by_role: string
+        }
+        Update: {
+          field_name?: string
+          history_id?: string
+          new_value?: string | null
+          old_value?: string | null
+          student_id?: string
+          updated_at?: string | null
+          updated_by?: string
+          updated_by_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_profile_history_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       students: {
         Row: {
+          aadhar_card_url: string | null
+          academic_year: string | null
+          achievements: string | null
           admission_date: string | null
+          admission_number: string | null
+          allergies: string | null
           auth_user_id: string
+          birth_certificate_url: string | null
+          blood_group: string | null
           class_id: string | null
           created_at: string | null
+          date_of_admission: string | null
+          district: string | null
           dob: string | null
+          doctor_contact_number: string | null
+          door_no: string | null
           email: string
+          emergency_contact_mobile: string | null
+          emergency_contact_name: string | null
+          emergency_contact_relationship: string | null
+          family_doctor_name: string | null
+          father_email: string | null
+          father_name: string | null
+          father_occupation: string | null
+          father_phone: string | null
           full_name: string
           gender: string | null
+          guardian_contact: string | null
+          guardian_name: string | null
+          guardian_relationship: string | null
+          height: number | null
+          hobbies: string | null
+          id_card_url: string | null
+          interests: string | null
+          languages_known: string | null
+          medical_conditions: string | null
+          medium_of_instruction: string | null
+          mother_email: string | null
+          mother_name: string | null
+          mother_occupation: string | null
+          mother_phone: string | null
+          mother_tongue: string | null
+          nationality: string | null
+          other_documents_url: string | null
           parent_id: string | null
           phone: string | null
+          previous_school: string | null
           profile_picture: string | null
+          profile_updated_at: string | null
+          religion: string | null
+          report_cards_url: string | null
           roll_no: string | null
           section: string | null
           status: string | null
+          street: string | null
+          student_category: string | null
+          student_email: string | null
           student_id: string
+          student_phone: string | null
+          transfer_certificate_url: string | null
+          village_town: string | null
+          weight: number | null
         }
         Insert: {
+          aadhar_card_url?: string | null
+          academic_year?: string | null
+          achievements?: string | null
           admission_date?: string | null
+          admission_number?: string | null
+          allergies?: string | null
           auth_user_id: string
+          birth_certificate_url?: string | null
+          blood_group?: string | null
           class_id?: string | null
           created_at?: string | null
+          date_of_admission?: string | null
+          district?: string | null
           dob?: string | null
+          doctor_contact_number?: string | null
+          door_no?: string | null
           email: string
+          emergency_contact_mobile?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_relationship?: string | null
+          family_doctor_name?: string | null
+          father_email?: string | null
+          father_name?: string | null
+          father_occupation?: string | null
+          father_phone?: string | null
           full_name: string
           gender?: string | null
+          guardian_contact?: string | null
+          guardian_name?: string | null
+          guardian_relationship?: string | null
+          height?: number | null
+          hobbies?: string | null
+          id_card_url?: string | null
+          interests?: string | null
+          languages_known?: string | null
+          medical_conditions?: string | null
+          medium_of_instruction?: string | null
+          mother_email?: string | null
+          mother_name?: string | null
+          mother_occupation?: string | null
+          mother_phone?: string | null
+          mother_tongue?: string | null
+          nationality?: string | null
+          other_documents_url?: string | null
           parent_id?: string | null
           phone?: string | null
+          previous_school?: string | null
           profile_picture?: string | null
+          profile_updated_at?: string | null
+          religion?: string | null
+          report_cards_url?: string | null
           roll_no?: string | null
           section?: string | null
           status?: string | null
+          street?: string | null
+          student_category?: string | null
+          student_email?: string | null
           student_id?: string
+          student_phone?: string | null
+          transfer_certificate_url?: string | null
+          village_town?: string | null
+          weight?: number | null
         }
         Update: {
+          aadhar_card_url?: string | null
+          academic_year?: string | null
+          achievements?: string | null
           admission_date?: string | null
+          admission_number?: string | null
+          allergies?: string | null
           auth_user_id?: string
+          birth_certificate_url?: string | null
+          blood_group?: string | null
           class_id?: string | null
           created_at?: string | null
+          date_of_admission?: string | null
+          district?: string | null
           dob?: string | null
+          doctor_contact_number?: string | null
+          door_no?: string | null
           email?: string
+          emergency_contact_mobile?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_relationship?: string | null
+          family_doctor_name?: string | null
+          father_email?: string | null
+          father_name?: string | null
+          father_occupation?: string | null
+          father_phone?: string | null
           full_name?: string
           gender?: string | null
+          guardian_contact?: string | null
+          guardian_name?: string | null
+          guardian_relationship?: string | null
+          height?: number | null
+          hobbies?: string | null
+          id_card_url?: string | null
+          interests?: string | null
+          languages_known?: string | null
+          medical_conditions?: string | null
+          medium_of_instruction?: string | null
+          mother_email?: string | null
+          mother_name?: string | null
+          mother_occupation?: string | null
+          mother_phone?: string | null
+          mother_tongue?: string | null
+          nationality?: string | null
+          other_documents_url?: string | null
           parent_id?: string | null
           phone?: string | null
+          previous_school?: string | null
           profile_picture?: string | null
+          profile_updated_at?: string | null
+          religion?: string | null
+          report_cards_url?: string | null
           roll_no?: string | null
           section?: string | null
           status?: string | null
+          street?: string | null
+          student_category?: string | null
+          student_email?: string | null
           student_id?: string
+          student_phone?: string | null
+          transfer_certificate_url?: string | null
+          village_town?: string | null
+          weight?: number | null
         }
         Relationships: [
           {
