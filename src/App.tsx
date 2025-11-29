@@ -39,6 +39,7 @@ import SuperAdminSignup from "./pages/SuperAdminSignup";
 import NotFound from "./pages/NotFound";
 import AIAssistant from "./pages/AIAssistant";
 import StudentOverview from "./pages/student/StudentOverview";
+import StudentProfile from "./pages/student/StudentProfile";
 import StudentAcademicPage from "./pages/academic/StudentAcademic";
 import StudentFinancialPage from "./pages/financial/StudentFinancial";
 import TeacherOverview from "./pages/teacher/TeacherOverview";
@@ -137,6 +138,7 @@ const App = () => (
               } 
             />
             <Route path="/student/overview" element={<ProtectedRoute roles={["student"]}><StudentOverview /></ProtectedRoute>} />
+            <Route path="/student/profile" element={<ProtectedRoute roles={["student"]}><StudentProfile /></ProtectedRoute>} />
             <Route path="/student/academic" element={<ProtectedRoute roles={["student"]}><StudentAcademicPage /></ProtectedRoute>} />
             <Route path="/student/financial" element={<ProtectedRoute roles={["student"]}><StudentFinancialPage /></ProtectedRoute>} />
             <Route path="/student/ai-assistant" element={<ProtectedRoute roles={["student"]}><AIAssistant /></ProtectedRoute>} />
