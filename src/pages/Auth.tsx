@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,11 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BookOpen, GraduationCap, UserCircle } from 'lucide-react';
+import { BookOpen, GraduationCap, UserCircle, Check, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -28,6 +29,43 @@ const Auth = () => {
   const [signupFullName, setSignupFullName] = useState('');
   const [signupSchool, setSignupSchool] = useState('');
   const [signupLoading, setSignupLoading] = useState(false);
+
+  // Password validation state
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [passwordValidation, setPasswordValidation] = useState({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+    hasSpecial: false,
+  });
+
+  // Validate password in real-time
+  useEffect(() => {
+    if (!passwordTouched) return;
+    
+    const password = activeTab === 'login' ? loginPassword : signupPassword;
+    
+    setPasswordValidation({
+      minLength: password.length >= 8,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    });
+  }, [loginPassword, signupPassword, activeTab, passwordTouched]);
+
+  const isPasswordValid = Object.values(passwordValidation).every(Boolean);
+  
+  const handlePasswordChange = (value: string, isLogin: boolean) => {
+    setPasswordTouched(true);
+    if (isLogin) {
+      setLoginPassword(value);
+    } else {
+      setSignupPassword(value);
+    }
+  };
 
   // Fetch schools for student signup
   const { data: schools } = useQuery({
@@ -165,7 +203,10 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs defaultValue="login" className="w-full" onValueChange={(value) => {
+              setActiveTab(value as 'login' | 'signup');
+              setPasswordTouched(false);
+            }}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="signup">Student Signup</TabsTrigger>
@@ -213,16 +254,25 @@ const Auth = () => {
                       id="login-password"
                       placeholder="••••••••"
                       value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
+                      onChange={(e) => handlePasswordChange(e.target.value, true)}
                       required
                       disabled={loginLoading}
                     />
+                    {passwordTouched && (
+                      <div className="mt-2 space-y-1.5 text-sm">
+                        <ValidationRule label="At least 8 characters" isValid={passwordValidation.minLength} />
+                        <ValidationRule label="One uppercase letter (A-Z)" isValid={passwordValidation.hasUppercase} />
+                        <ValidationRule label="One lowercase letter (a-z)" isValid={passwordValidation.hasLowercase} />
+                        <ValidationRule label="One number (0-9)" isValid={passwordValidation.hasNumber} />
+                        <ValidationRule label="One special character (!@#$%^&*)" isValid={passwordValidation.hasSpecial} />
+                      </div>
+                    )}
                   </div>
 
                   <Button 
                     type="submit" 
                     className="w-full"
-                    disabled={loginLoading || !loginRole}
+                    disabled={loginLoading || !loginRole || (passwordTouched && !isPasswordValid)}
                   >
                     {loginLoading ? 'Signing in...' : 'Sign In'}
                   </Button>
@@ -337,12 +387,21 @@ const Auth = () => {
                             id="student-password"
                             placeholder="Create a strong password"
                             value={signupPassword}
-                            onChange={(e) => setSignupPassword(e.target.value)}
+                            onChange={(e) => handlePasswordChange(e.target.value, false)}
                             required
                             disabled={signupLoading}
                           />
+                          {passwordTouched && (
+                            <div className="mt-2 space-y-1.5 text-sm">
+                              <ValidationRule label="At least 8 characters" isValid={passwordValidation.minLength} />
+                              <ValidationRule label="One uppercase letter (A-Z)" isValid={passwordValidation.hasUppercase} />
+                              <ValidationRule label="One lowercase letter (a-z)" isValid={passwordValidation.hasLowercase} />
+                              <ValidationRule label="One number (0-9)" isValid={passwordValidation.hasNumber} />
+                              <ValidationRule label="One special character (!@#$%^&*)" isValid={passwordValidation.hasSpecial} />
+                            </div>
+                          )}
                         </div>
-                        <Button type="submit" className="w-full" disabled={signupLoading}>
+                        <Button type="submit" className="w-full" disabled={signupLoading || (passwordTouched && !isPasswordValid)}>
                           {signupLoading ? 'Creating Account...' : 'Create Student Account'}
                         </Button>
                       </form>
@@ -401,12 +460,21 @@ const Auth = () => {
                             id="teacher-password"
                             placeholder="Create a strong password"
                             value={signupPassword}
-                            onChange={(e) => setSignupPassword(e.target.value)}
+                            onChange={(e) => handlePasswordChange(e.target.value, false)}
                             required
                             disabled={signupLoading}
                           />
+                          {passwordTouched && (
+                            <div className="mt-2 space-y-1.5 text-sm">
+                              <ValidationRule label="At least 8 characters" isValid={passwordValidation.minLength} />
+                              <ValidationRule label="One uppercase letter (A-Z)" isValid={passwordValidation.hasUppercase} />
+                              <ValidationRule label="One lowercase letter (a-z)" isValid={passwordValidation.hasLowercase} />
+                              <ValidationRule label="One number (0-9)" isValid={passwordValidation.hasNumber} />
+                              <ValidationRule label="One special character (!@#$%^&*)" isValid={passwordValidation.hasSpecial} />
+                            </div>
+                          )}
                         </div>
-                        <Button type="submit" className="w-full" disabled={signupLoading}>
+                        <Button type="submit" className="w-full" disabled={signupLoading || (passwordTouched && !isPasswordValid)}>
                           {signupLoading ? 'Creating Account...' : 'Create Teacher Account'}
                         </Button>
                       </form>
@@ -465,12 +533,21 @@ const Auth = () => {
                             id="parent-password"
                             placeholder="Create a strong password"
                             value={signupPassword}
-                            onChange={(e) => setSignupPassword(e.target.value)}
+                            onChange={(e) => handlePasswordChange(e.target.value, false)}
                             required
                             disabled={signupLoading}
                           />
+                          {passwordTouched && (
+                            <div className="mt-2 space-y-1.5 text-sm">
+                              <ValidationRule label="At least 8 characters" isValid={passwordValidation.minLength} />
+                              <ValidationRule label="One uppercase letter (A-Z)" isValid={passwordValidation.hasUppercase} />
+                              <ValidationRule label="One lowercase letter (a-z)" isValid={passwordValidation.hasLowercase} />
+                              <ValidationRule label="One number (0-9)" isValid={passwordValidation.hasNumber} />
+                              <ValidationRule label="One special character (!@#$%^&*)" isValid={passwordValidation.hasSpecial} />
+                            </div>
+                          )}
                         </div>
-                        <Button type="submit" className="w-full" disabled={signupLoading}>
+                        <Button type="submit" className="w-full" disabled={signupLoading || (passwordTouched && !isPasswordValid)}>
                           {signupLoading ? 'Creating Account...' : 'Create Parent Account'}
                         </Button>
                       </form>
@@ -488,6 +565,28 @@ const Auth = () => {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+};
+
+// Validation Rule Component
+interface ValidationRuleProps {
+  label: string;
+  isValid: boolean;
+}
+
+const ValidationRule = ({ label, isValid }: ValidationRuleProps) => {
+  return (
+    <div className={cn(
+      "flex items-center gap-2 transition-colors",
+      isValid ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"
+    )}>
+      {isValid ? (
+        <Check className="h-4 w-4 flex-shrink-0" />
+      ) : (
+        <X className="h-4 w-4 flex-shrink-0" />
+      )}
+      <span className="text-sm">{label}</span>
     </div>
   );
 };
