@@ -70,22 +70,29 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* ========== PUBLIC ROUTES ========== */}
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            
+            {/* ========== SUPER ADMIN ROUTES ========== */}
+            <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+            <Route path="/super-admin/signup" element={<SuperAdminSignup />} />
+            <Route
+              path="/super-admin"
+              element={
+                <SuperAdminProtectedRoute>
+                  <SuperAdmin />
+                </SuperAdminProtectedRoute>
+              }
+            />
+
+            {/* ========== SHARED PROTECTED ROUTES ========== */}
             <Route path="/dashboard" element={<Dashboard />} />
             <Route 
               path="/profile" 
               element={
-                <ProtectedRoute roles={["admin", "teacher", "parent", "student"]}>
+                <ProtectedRoute roles={["admin", "teacher", "parent"]}>
                   <Profile />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute roles={["student"]}>
-                  <StudentProfile />
                 </ProtectedRoute>
               } 
             />
@@ -145,221 +152,52 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+
+            {/* ========== STUDENT ROUTES ========== */}
             <Route path="/student/overview" element={<ProtectedRoute roles={["student"]}><StudentOverview /></ProtectedRoute>} />
             <Route path="/student/profile" element={<ProtectedRoute roles={["student"]}><StudentProfile /></ProtectedRoute>} />
             <Route path="/student/academic" element={<ProtectedRoute roles={["student"]}><StudentAcademicPage /></ProtectedRoute>} />
             <Route path="/student/financial" element={<ProtectedRoute roles={["student"]}><StudentFinancialPage /></ProtectedRoute>} />
             <Route path="/student/ai-assistant" element={<ProtectedRoute roles={["student"]}><AIAssistant /></ProtectedRoute>} />
+
+            {/* ========== TEACHER ROUTES ========== */}
             <Route path="/teacher/overview" element={<ProtectedRoute roles={["teacher"]}><TeacherOverview /></ProtectedRoute>} />
             <Route path="/teacher/academic" element={<ProtectedRoute roles={["teacher"]}><TeacherAcademicPage /></ProtectedRoute>} />
             <Route path="/teacher/classes" element={<ProtectedRoute roles={["teacher"]}><TeacherClasses /></ProtectedRoute>} />
             <Route path="/teacher/students" element={<ProtectedRoute roles={["teacher"]}><TeacherStudents /></ProtectedRoute>} />
             <Route path="/teacher/ai-assistant" element={<ProtectedRoute roles={["teacher"]}><TeacherAIAssistant /></ProtectedRoute>} />
+            <Route path="/class-teacher" element={<ProtectedRoute roles={["teacher"]}><ClassTeacherDashboard /></ProtectedRoute>} />
+
+            {/* ========== PARENT ROUTES ========== */}
             <Route path="/parent/overview" element={<ProtectedRoute roles={["parent"]}><ParentOverview /></ProtectedRoute>} />
             <Route path="/parent/academic" element={<ProtectedRoute roles={["parent"]}><ParentAcademicPage /></ProtectedRoute>} />
+
+            {/* ========== ADMIN ROUTES ========== */}
             <Route path="/admin/overview" element={<ProtectedRoute roles={["admin"]}><AdminOverview /></ProtectedRoute>} />
+            <Route path="/admin/ai-module" element={<ProtectedRoute roles={["admin"]}><AdminAIModule /></ProtectedRoute>} />
             <Route path="/admin/students-list" element={<ProtectedRoute roles={["admin"]}><StudentsList /></ProtectedRoute>} />
             <Route path="/admin/teachers-list" element={<ProtectedRoute roles={["admin"]}><TeachersList /></ProtectedRoute>} />
             <Route path="/admin/parents-list" element={<ProtectedRoute roles={["admin"]}><ParentsList /></ProtectedRoute>} />
             <Route path="/admin/users-list" element={<ProtectedRoute roles={["admin"]}><UsersList /></ProtectedRoute>} />
             <Route path="/admin/financial" element={<ProtectedRoute roles={["admin"]}><AdminFinancialPage /></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute roles={["admin"]}><AdminReportsPage /></ProtectedRoute>} />
-            <Route path="/admin/academic" element={<ProtectedRoute roles={["admin"]}><div className="p-8 text-center">Admin Academic Page - Coming Soon</div></ProtectedRoute>} />
-            <Route
-              path="/admin/users"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <UserManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/timetable"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <TimetableManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/weekly-timetable"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <WeeklyTimetable />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/school"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <SchoolManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/students"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <StudentManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/classes"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <ClassManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/teachers"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <TeacherManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/parents"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <ParentManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/cleanup"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <CleanupUtility />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/sql-editor"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <SQLEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/bulk-users"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <BulkUsersPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/exam-timetable"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <ExamTimetableManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/allowed-students"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <AllowedStudentsManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/whitelisted-teachers"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <WhitelistedTeachersManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/whitelisted-parents"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <WhitelistedParentsManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/academic"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <TeacherAcademicPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/financial"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <AdminFinancialPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/reports"
-              element={
-                <ProtectedRoute roles={["admin"]}>
-                  <AdminReportsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/student/academic"
-              element={
-                <ProtectedRoute roles={["student"]}>
-                  <StudentAcademicPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/student/financial"
-              element={
-                <ProtectedRoute roles={["student"]}>
-                  <StudentFinancialPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/teacher/academic"
-              element={
-                <ProtectedRoute roles={["teacher"]}>
-                  <TeacherAcademicPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/parent/academic"
-              element={
-                <ProtectedRoute roles={["parent"]}>
-                  <ParentAcademicPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/class-teacher"
-              element={
-                <ProtectedRoute roles={["teacher"]}>
-                  <ClassTeacherDashboard />
-                </ProtectedRoute>
-              }
-            />
-          <Route path="/super-admin/login" element={<SuperAdminLogin />} />
-          <Route path="/super-admin/signup" element={<SuperAdminSignup />} />
-          <Route
-            path="/super-admin"
-            element={
-              <SuperAdminProtectedRoute>
-                <SuperAdmin />
-              </SuperAdminProtectedRoute>
-            }
-          />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/admin/users" element={<ProtectedRoute roles={["admin"]}><UserManagement /></ProtectedRoute>} />
+            <Route path="/admin/timetable" element={<ProtectedRoute roles={["admin"]}><TimetableManagement /></ProtectedRoute>} />
+            <Route path="/admin/weekly-timetable" element={<ProtectedRoute roles={["admin"]}><WeeklyTimetable /></ProtectedRoute>} />
+            <Route path="/admin/school" element={<ProtectedRoute roles={["admin"]}><SchoolManagement /></ProtectedRoute>} />
+            <Route path="/admin/students" element={<ProtectedRoute roles={["admin"]}><StudentManagement /></ProtectedRoute>} />
+            <Route path="/admin/classes" element={<ProtectedRoute roles={["admin"]}><ClassManagement /></ProtectedRoute>} />
+            <Route path="/admin/teachers" element={<ProtectedRoute roles={["admin"]}><TeacherManagement /></ProtectedRoute>} />
+            <Route path="/admin/parents" element={<ProtectedRoute roles={["admin"]}><ParentManagement /></ProtectedRoute>} />
+            <Route path="/admin/cleanup" element={<ProtectedRoute roles={["admin"]}><CleanupUtility /></ProtectedRoute>} />
+            <Route path="/admin/sql-editor" element={<ProtectedRoute roles={["admin"]}><SQLEditor /></ProtectedRoute>} />
+            <Route path="/admin/bulk-users" element={<ProtectedRoute roles={["admin"]}><BulkUsersPage /></ProtectedRoute>} />
+            <Route path="/admin/exam-timetable" element={<ProtectedRoute roles={["admin"]}><ExamTimetableManagement /></ProtectedRoute>} />
+            <Route path="/admin/allowed-students" element={<ProtectedRoute roles={["admin"]}><AllowedStudentsManagement /></ProtectedRoute>} />
+            <Route path="/admin/whitelisted-teachers" element={<ProtectedRoute roles={["admin"]}><WhitelistedTeachersManagement /></ProtectedRoute>} />
+            <Route path="/admin/whitelisted-parents" element={<ProtectedRoute roles={["admin"]}><WhitelistedParentsManagement /></ProtectedRoute>} />
+
+            {/* ========== 404 CATCH-ALL ========== */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
