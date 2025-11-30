@@ -8,9 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { BackButton } from "@/components/BackButton";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Loader2, User, Phone, Mail, MapPin, Heart, GraduationCap, 
-  Stethoscope, Trophy, Users, FileText, Calendar, BookOpen 
+  Stethoscope, Trophy, Users, FileText, Calendar, Edit2, Save, X
 } from "lucide-react";
 
 interface StudentProfile {
@@ -100,6 +103,9 @@ export default function StudentProfile() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [editedProfile, setEditedProfile] = useState<Partial<StudentProfile>>({});
 
   useEffect(() => {
     if (user) {
@@ -123,6 +129,7 @@ export default function StudentProfile() {
 
       if (error) throw error;
       setProfile(data as unknown as StudentProfile);
+      setEditedProfile(data as unknown as StudentProfile);
     } catch (error) {
       console.error("Error fetching profile:", error);
       toast({
@@ -132,6 +139,60 @@ export default function StudentProfile() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditedProfile({ ...profile });
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditedProfile({ ...profile });
+  };
+
+  const handleSave = async () => {
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from("students")
+        .update({
+          dob: editedProfile.dob,
+          height: editedProfile.height,
+          weight: editedProfile.weight,
+          hobbies: editedProfile.hobbies,
+          interests: editedProfile.interests,
+          achievements: editedProfile.achievements,
+          languages_known: editedProfile.languages_known,
+          blood_group: editedProfile.blood_group,
+          allergies: editedProfile.allergies,
+          medical_conditions: editedProfile.medical_conditions,
+          profile_updated_at: new Date().toISOString()
+        })
+        .eq("auth_user_id", user?.id);
+
+      if (error) throw error;
+
+      setProfile({ ...profile, ...editedProfile });
+      setIsEditing(false);
+      
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+
+      // Refresh profile data
+      fetchProfile();
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -194,7 +255,26 @@ export default function StudentProfile() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <BackButton />
+      <div className="flex items-center justify-between">
+        <BackButton />
+        {!isEditing ? (
+          <Button onClick={handleEdit} variant="outline">
+            <Edit2 className="h-4 w-4 mr-2" />
+            Edit Profile
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button onClick={handleSave} disabled={updating}>
+              {updating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              Save Changes
+            </Button>
+            <Button onClick={handleCancel} variant="outline" disabled={updating}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+          </div>
+        )}
+      </div>
       
       {/* Header with Profile Picture */}
       <Card>
@@ -234,11 +314,37 @@ export default function StudentProfile() {
               Personal Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <InfoRow label="Blood Group" value={profile.blood_group} important />
-            <InfoRow label="Nationality" value={profile.nationality} />
-            <InfoRow label="Mother Tongue" value={profile.mother_tongue} />
-            <InfoRow label="Religion" value={profile.religion} />
+          <CardContent className="space-y-4">
+            {isEditing ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="dob">Date of Birth</Label>
+                  <Input
+                    id="dob"
+                    type="date"
+                    value={editedProfile.dob || ''}
+                    onChange={(e) => setEditedProfile({ ...editedProfile, dob: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="blood_group">Blood Group</Label>
+                  <Input
+                    id="blood_group"
+                    value={editedProfile.blood_group || ''}
+                    onChange={(e) => setEditedProfile({ ...editedProfile, blood_group: e.target.value })}
+                    placeholder="e.g., A+, B+, O+, AB+"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <InfoRow label="Date of Birth" value={profile.dob ? new Date(profile.dob).toLocaleDateString() : 'Not set'} />
+                <InfoRow label="Blood Group" value={profile.blood_group} important />
+                <InfoRow label="Nationality" value={profile.nationality} />
+                <InfoRow label="Mother Tongue" value={profile.mother_tongue} />
+                <InfoRow label="Religion" value={profile.religion} />
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -295,26 +401,75 @@ export default function StudentProfile() {
               Health & Emergency
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <InfoRow label="Height (cm)" value={profile.height} />
-            <InfoRow label="Weight (kg)" value={profile.weight} />
-            <InfoRow label="Allergies" value={profile.allergies} />
-            <InfoRow label="Medical Conditions" value={profile.medical_conditions} />
-            <Separator />
-            <div className="space-y-2 bg-muted/50 p-3 rounded-lg">
-              <p className="text-sm font-semibold text-foreground">Emergency Contact</p>
-              <InfoRow label="Name" value={profile.emergency_contact_name} compact />
-              <InfoRow label="Relationship" value={profile.emergency_contact_relationship} compact />
-              <InfoRow label="Mobile" value={profile.emergency_contact_mobile} compact />
-            </div>
-            <div className="space-y-2 bg-muted/50 p-3 rounded-lg">
-              <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Stethoscope className="h-4 w-4" />
-                Family Doctor
-              </p>
-              <InfoRow label="Name" value={profile.family_doctor_name} compact />
-              <InfoRow label="Contact" value={profile.doctor_contact_number} compact />
-            </div>
+          <CardContent className="space-y-4">
+            {isEditing ? (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="height">Height (cm)</Label>
+                    <Input
+                      id="height"
+                      type="number"
+                      value={editedProfile.height || ''}
+                      onChange={(e) => setEditedProfile({ ...editedProfile, height: parseFloat(e.target.value) || null })}
+                      placeholder="Enter height"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="weight">Weight (kg)</Label>
+                    <Input
+                      id="weight"
+                      type="number"
+                      value={editedProfile.weight || ''}
+                      onChange={(e) => setEditedProfile({ ...editedProfile, weight: parseFloat(e.target.value) || null })}
+                      placeholder="Enter weight"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="allergies">Allergies</Label>
+                  <Textarea
+                    id="allergies"
+                    value={editedProfile.allergies || ''}
+                    onChange={(e) => setEditedProfile({ ...editedProfile, allergies: e.target.value })}
+                    placeholder="List any allergies (food, medicine, etc.)"
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="medical_conditions">Medical Conditions</Label>
+                  <Textarea
+                    id="medical_conditions"
+                    value={editedProfile.medical_conditions || ''}
+                    onChange={(e) => setEditedProfile({ ...editedProfile, medical_conditions: e.target.value })}
+                    placeholder="Any existing medical conditions"
+                    rows={2}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <InfoRow label="Height (cm)" value={profile.height} />
+                <InfoRow label="Weight (kg)" value={profile.weight} />
+                <InfoRow label="Allergies" value={profile.allergies} />
+                <InfoRow label="Medical Conditions" value={profile.medical_conditions} />
+                <Separator />
+                <div className="space-y-2 bg-muted/50 p-3 rounded-lg">
+                  <p className="text-sm font-semibold text-foreground">Emergency Contact</p>
+                  <InfoRow label="Name" value={profile.emergency_contact_name} compact />
+                  <InfoRow label="Relationship" value={profile.emergency_contact_relationship} compact />
+                  <InfoRow label="Mobile" value={profile.emergency_contact_mobile} compact />
+                </div>
+                <div className="space-y-2 bg-muted/50 p-3 rounded-lg">
+                  <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Stethoscope className="h-4 w-4" />
+                    Family Doctor
+                  </p>
+                  <InfoRow label="Name" value={profile.family_doctor_name} compact />
+                  <InfoRow label="Contact" value={profile.doctor_contact_number} compact />
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -326,11 +481,57 @@ export default function StudentProfile() {
               Interests & Achievements
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <InfoRow label="Hobbies" value={profile.hobbies} />
-            <InfoRow label="Interests/Skills" value={profile.interests} />
-            <InfoRow label="Achievements/Awards" value={profile.achievements} />
-            <InfoRow label="Languages Known" value={profile.languages_known} />
+          <CardContent className="space-y-4">
+            {isEditing ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="hobbies">Hobbies</Label>
+                  <Textarea
+                    id="hobbies"
+                    value={editedProfile.hobbies || ''}
+                    onChange={(e) => setEditedProfile({ ...editedProfile, hobbies: e.target.value })}
+                    placeholder="e.g., Reading, Playing Cricket, Drawing"
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="interests">Interests & Skills</Label>
+                  <Textarea
+                    id="interests"
+                    value={editedProfile.interests || ''}
+                    onChange={(e) => setEditedProfile({ ...editedProfile, interests: e.target.value })}
+                    placeholder="e.g., Science, Technology, Music"
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="achievements">Achievements & Awards</Label>
+                  <Textarea
+                    id="achievements"
+                    value={editedProfile.achievements || ''}
+                    onChange={(e) => setEditedProfile({ ...editedProfile, achievements: e.target.value })}
+                    placeholder="List your achievements and awards"
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="languages_known">Languages Known</Label>
+                  <Input
+                    id="languages_known"
+                    value={editedProfile.languages_known || ''}
+                    onChange={(e) => setEditedProfile({ ...editedProfile, languages_known: e.target.value })}
+                    placeholder="e.g., English, Hindi, Tamil"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <InfoRow label="Hobbies" value={profile.hobbies} />
+                <InfoRow label="Interests/Skills" value={profile.interests} />
+                <InfoRow label="Achievements/Awards" value={profile.achievements} />
+                <InfoRow label="Languages Known" value={profile.languages_known} />
+              </>
+            )}
           </CardContent>
         </Card>
 
