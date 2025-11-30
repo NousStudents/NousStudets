@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { useRole } from "@/hooks/useRole";
 import { useTheme } from "next-themes";
 import { useSound } from "@/contexts/SoundContext";
+import StudentProfile from "@/pages/student/StudentProfile";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -24,6 +25,11 @@ export default function Profile() {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const { isMuted, toggleMute, playClick } = useSound();
+
+  // Redirect students to their detailed profile page
+  if (!roleLoading && role === "student") {
+    return <StudentProfile />;
+  }
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
