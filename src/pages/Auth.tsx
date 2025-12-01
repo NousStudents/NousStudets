@@ -101,8 +101,15 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     setLoginLoading(true);
-    await signInWithGoogle();
-    setLoginLoading(false);
+    
+    try {
+      await signInWithGoogle();
+      // Loading state will persist until OAuth redirect completes
+      // After redirect back, onAuthStateChange will verify role and redirect to dashboard
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      setLoginLoading(false);
+    }
   };
 
   const [signupRole, setSignupRole] = useState<'student' | 'teacher' | 'parent'>('student');
@@ -291,11 +298,11 @@ const Auth = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full"
+                    className="w-full gap-2"
                     onClick={handleGoogleSignIn}
                     disabled={loginLoading}
                   >
-                    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                    <svg className="h-5 w-5" viewBox="0 0 24 24">
                       <path
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                         fill="#4285F4"
@@ -313,8 +320,12 @@ const Auth = () => {
                         fill="#EA4335"
                       />
                     </svg>
-                    {loginLoading ? 'Signing in...' : 'Sign in with Google'}
+                    <span>{loginLoading ? 'Redirecting to Google...' : 'Continue with Google'}</span>
                   </Button>
+                  
+                  <p className="text-xs text-center text-muted-foreground mt-2">
+                    Google Sign-In available for registered users only
+                  </p>
                 </form>
               </TabsContent>
 
