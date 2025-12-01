@@ -31,42 +31,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
         
-        // Handle sign-in events (including OAuth)
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Verify user has a valid role in the system
-          const { data: userRole, error: roleError } = await supabase.rpc(
-            'get_user_role_for_auth',
-            { user_id: session.user.id }
-          );
-
-          console.log('Role verification:', { userRole, roleError });
-
-          // If no role found, user is not registered in the system
-          if (roleError || !userRole) {
-            console.log('No role found, signing out');
-            await supabase.auth.signOut();
-            
-            toast({
-              variant: "destructive",
-              title: "Access Denied",
-              description: "You are not registered in the NousStudents system. Contact your school admin.",
-            });
-            
-            setSession(null);
-            setUser(null);
-            setLoading(false);
-            return;
-          }
-
-          console.log('User authenticated successfully with role:', userRole);
-        }
-        
+        // Update session state immediately
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Handle sign-in events (including OAuth) - defer Supabase calls
+        if (event === 'SIGNED_IN' && session?.user) {
+          setTimeout(async () => {
+            // Verify user has a valid role in the system
+            const { data: userRole, error: roleError } = await supabase.rpc(
+              'get_user_role_for_auth',
+              { user_id: session.user.id }
+            );
+
+            console.log('Role verification:', { userRole, roleError });
+
+            // If no role found, user is not registered in the system
+            if (roleError || !userRole) {
+              console.log('No role found, signing out');
+              await supabase.auth.signOut();
+              
+              toast({
+                variant: "destructive",
+                title: "Access Denied",
+                description: "You are not registered in the NousStudents system. Contact your school admin.",
+              });
+              
+              setSession(null);
+              setUser(null);
+            } else {
+              console.log('User authenticated successfully with role:', userRole);
+            }
+          }, 0);
+        }
       }
     );
 
