@@ -43,11 +43,6 @@ export default function Profile() {
     confirmPassword: "",
   });
 
-  // Redirect students to their detailed profile page
-  if (!roleLoading && role === "student") {
-    return <StudentProfile />;
-  }
-
   useEffect(() => {
     if (user && role && !roleLoading) {
       fetchProfile();
@@ -320,6 +315,11 @@ export default function Profile() {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // Redirect students to their detailed profile page
+  if (role === "student") {
+    return <StudentProfile />;
   }
 
   return (
