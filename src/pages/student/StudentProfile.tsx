@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { 
   Loader2, User, Phone, Mail, MapPin, Heart, GraduationCap, 
-  Stethoscope, Trophy, Users, FileText, Calendar, Edit2, Save, X
+  Stethoscope, Trophy, Users, FileText, Calendar, Edit2, Save, X, LogOut
 } from "lucide-react";
 
 interface StudentProfile {
@@ -99,7 +99,7 @@ interface StudentProfile {
 }
 
 export default function StudentProfile() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
@@ -257,23 +257,31 @@ export default function StudentProfile() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <BackButton />
-        {!isEditing ? (
-          <Button onClick={handleEdit} variant="outline">
-            <Edit2 className="h-4 w-4 mr-2" />
-            Edit Profile
-          </Button>
-        ) : (
-          <div className="flex gap-2">
-            <Button onClick={handleSave} disabled={updating}>
-              {updating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-              Save Changes
-            </Button>
-            <Button onClick={handleCancel} variant="outline" disabled={updating}>
-              <X className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          {!isEditing ? (
+            <>
+              <Button onClick={handleEdit} variant="outline">
+                <Edit2 className="h-4 w-4 mr-2" />
+                Edit Profile
+              </Button>
+              <Button onClick={signOut} variant="destructive">
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={handleSave} disabled={updating}>
+                {updating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                Save Changes
+              </Button>
+              <Button onClick={handleCancel} variant="outline" disabled={updating}>
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+            </>
+          )}
+        </div>
       </div>
       
       {/* Header with Profile Picture */}
