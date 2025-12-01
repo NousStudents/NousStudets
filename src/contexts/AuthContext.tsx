@@ -31,7 +31,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
+        
+        // Handle sign-in events (including OAuth)
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Verify user has a valid role in the system
+          const { data: userRole, error: roleError } = await supabase.rpc(
+            'get_user_role_for_auth',
+            { user_id: session.user.id }
+          );
+
+          console.log('Role verification:', { userRole, roleError });
+
+          // If no role found, user is not registered in the system
+          if (roleError || !userRole) {
+            console.log('No role found, signing out');
+            await supabase.auth.signOut();
+            
+            toast({
+              variant: "destructive",
+              title: "Access Denied",
+              description: "You are not registered in the NousStudents system. Contact your school admin.",
+            });
+            
+            setSession(null);
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+
+          console.log('User authenticated successfully with role:', userRole);
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -46,7 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   const signIn = async (email: string, password: string, selectedRole: string) => {
     try {
@@ -125,14 +157,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
+      console.log('Initiating Google OAuth...');
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
       
       if (error) {
+        console.error('Google OAuth error:', error);
         toast({
           variant: "destructive",
           title: "Login Failed",
@@ -141,8 +180,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { error };
       }
       
+      // OAuth redirect will happen, verification occurs in onAuthStateChange
       return { error: null };
     } catch (error: any) {
+      console.error('Google sign-in error:', error);
       toast({
         variant: "destructive",
         title: "Login Failed",
