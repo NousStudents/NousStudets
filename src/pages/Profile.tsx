@@ -26,10 +26,6 @@ export default function Profile() {
   const { theme, setTheme } = useTheme();
   const { isMuted, toggleMute, playClick } = useSound();
 
-  // Redirect students to their detailed profile page
-  if (!roleLoading && role === "student") {
-    return <StudentProfile />;
-  }
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -46,6 +42,11 @@ export default function Profile() {
     newPassword: "",
     confirmPassword: "",
   });
+
+  // Redirect students to their detailed profile page
+  if (!roleLoading && role === "student") {
+    return <StudentProfile />;
+  }
 
   useEffect(() => {
     if (user && role && !roleLoading) {
