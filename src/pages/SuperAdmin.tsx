@@ -156,9 +156,14 @@ export default function SuperAdmin() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Super Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage schools and administrators</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Super Admin Dashboard</h1>
+          <p className="text-muted-foreground">Manage schools and administrators</p>
+        </div>
+        <Button variant="outline" onClick={() => navigate("/super-admin/profile")}>
+          View All Schools & Users
+        </Button>
       </div>
 
       <Tabs defaultValue="school" className="max-w-3xl">

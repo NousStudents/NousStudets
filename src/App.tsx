@@ -36,6 +36,7 @@ import WhitelistedParentsManagement from "./pages/admin/WhitelistedParentsManage
 import SuperAdmin from "./pages/SuperAdmin";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
 import SuperAdminSignup from "./pages/SuperAdminSignup";
+import SuperAdminProfile from "./pages/SuperAdminProfile";
 import NotFound from "./pages/NotFound";
 import AIAssistant from "./pages/AIAssistant";
 import StudentOverview from "./pages/student/StudentOverview";
@@ -82,6 +83,14 @@ const App = () => (
               element={
                 <SuperAdminProtectedRoute>
                   <SuperAdmin />
+                </SuperAdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/super-admin/profile"
+              element={
+                <SuperAdminProtectedRoute>
+                  <SuperAdminProfile />
                 </SuperAdminProtectedRoute>
               }
             />
