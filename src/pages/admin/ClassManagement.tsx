@@ -39,6 +39,7 @@ export default function ClassManagement() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<Class | null>(null);
@@ -67,35 +68,58 @@ export default function ClassManagement() {
 
   const fetchData = async () => {
     try {
-      const { data: adminData, error: adminError } = await supabase
+      // Try to get admin data first
+      let schoolId: string | null = null;
+      
+      const { data: adminData } = await supabase
         .from("admins")
         .select("school_id, admin_id")
         .eq("auth_user_id", user?.id)
-        .single();
+        .maybeSingle();
 
-      if (adminError) {
-        console.error("Admin error:", adminError);
+      if (adminData?.school_id) {
+        schoolId = adminData.school_id;
+      } else {
+        // Check if user is super admin - if so, get first school or show all
+        const { data: superAdminData } = await supabase
+          .from("super_admins")
+          .select("super_admin_id")
+          .eq("auth_user_id", user?.id)
+          .maybeSingle();
+
+        if (superAdminData) {
+          // Super admin - get the first school for now
+          const { data: schoolData } = await supabase
+            .from("schools")
+            .select("school_id")
+            .limit(1)
+            .maybeSingle();
+          
+          if (schoolData) {
+            schoolId = schoolData.school_id;
+          }
+        }
+      }
+
+      if (!schoolId) {
         toast.error("Unable to find your school information");
         setLoading(false);
         return;
       }
 
-      if (!adminData?.school_id) {
-        toast.error("Unable to find your school information");
-        setLoading(false);
-        return;
-      }
+      // Store school ID for later use
+      setCurrentSchoolId(schoolId);
 
       // Fetch all data in parallel
       const [classesRes, teachersRes] = await Promise.all([
         supabase
           .from("classes")
           .select("class_id, class_name, section, class_teacher_id, school_id")
-          .eq("school_id", adminData.school_id),
+          .eq("school_id", schoolId),
         supabase
           .from("teachers")
           .select("teacher_id, full_name, email, status")
-          .eq("school_id", adminData.school_id)
+          .eq("school_id", schoolId)
           .eq("status", "active")
       ]);
 
@@ -156,13 +180,7 @@ export default function ClassManagement() {
     e.preventDefault();
 
     try {
-      const { data: adminData } = await supabase
-        .from("admins")
-        .select("school_id")
-        .eq("auth_user_id", user?.id)
-        .single();
-
-      if (!adminData?.school_id) {
+      if (!currentSchoolId) {
         toast.error("Unable to find your school information");
         return;
       }
@@ -183,7 +201,7 @@ export default function ClassManagement() {
             class_teacher_id: teacherId,
           })
           .eq("class_id", editingClass.class_id)
-          .eq("school_id", adminData.school_id);
+          .eq("school_id", currentSchoolId);
 
         if (error) {
           console.error("Error updating class:", error);
@@ -202,7 +220,7 @@ export default function ClassManagement() {
             class_name: formData.class_name.trim(),
             section: formData.section.trim(),
             class_teacher_id: teacherId,
-            school_id: adminData.school_id,
+            school_id: currentSchoolId,
           });
 
         if (error) {
@@ -229,13 +247,7 @@ export default function ClassManagement() {
     if (!editingClass) return;
 
     try {
-      const { data: adminData } = await supabase
-        .from("admins")
-        .select("school_id")
-        .eq("auth_user_id", user?.id)
-        .single();
-
-      if (!adminData?.school_id) {
+      if (!currentSchoolId) {
         toast.error("Unable to find your school information");
         return;
       }
@@ -244,7 +256,7 @@ export default function ClassManagement() {
         .from("classes")
         .delete()
         .eq("class_id", editingClass.class_id)
-        .eq("school_id", adminData.school_id);
+        .eq("school_id", currentSchoolId);
 
       if (error) {
         console.error("Error deleting class:", error);
