@@ -16,12 +16,29 @@ export const useRole = () => {
       }
 
       try {
-        // Check each role-specific table to determine user's role
-        const { data: adminData } = await supabase
+        // Use the server-side function to get role (bypasses RLS)
+        const { data: roleData, error: roleError } = await supabase
+          .rpc('get_user_role_for_auth', { user_id: user.id });
+
+        if (roleError) {
+          console.error('Error fetching role via RPC:', roleError);
+        }
+
+        if (roleData) {
+          console.log('Role from RPC:', roleData);
+          setRole(roleData);
+          setLoading(false);
+          return;
+        }
+
+        // Fallback: Check each role-specific table to determine user's role
+        const { data: adminData, error: adminError } = await supabase
           .from('admins')
           .select('admin_id')
           .eq('auth_user_id', user.id)
           .maybeSingle();
+
+        console.log('Admin check:', { adminData, adminError });
 
         if (adminData) {
           setRole('admin');
