@@ -26,17 +26,17 @@ export default function UsersList() {
   const fetchUsers = async () => {
     try {
       const [adminsRes, teachersRes, studentsRes, parentsRes] = await Promise.all([
-        supabase.from('admins').select('admin_id as id, full_name, email, status'),
-        supabase.from('teachers').select('teacher_id as id, full_name, email, status'),
-        supabase.from('students').select('student_id as id, full_name, email, status'),
-        supabase.from('parents').select('parent_id as id, full_name, email, status')
+        supabase.from('admins').select('admin_id, full_name, email, status'),
+        supabase.from('teachers').select('teacher_id, full_name, email, status'),
+        supabase.from('students').select('student_id, full_name, email, status'),
+        supabase.from('parents').select('parent_id, full_name, email, status')
       ]);
 
       const allUsers: UserData[] = [
-        ...((adminsRes.data || []) as any[]).map(u => ({ ...u, role: 'admin' as const })),
-        ...((teachersRes.data || []) as any[]).map(u => ({ ...u, role: 'teacher' as const })),
-        ...((studentsRes.data || []) as any[]).map(u => ({ ...u, role: 'student' as const })),
-        ...((parentsRes.data || []) as any[]).map(u => ({ ...u, role: 'parent' as const }))
+        ...((adminsRes.data || []) as any[]).map(u => ({ id: u.admin_id, full_name: u.full_name, email: u.email, status: u.status, role: 'admin' as const })),
+        ...((teachersRes.data || []) as any[]).map(u => ({ id: u.teacher_id, full_name: u.full_name, email: u.email, status: u.status, role: 'teacher' as const })),
+        ...((studentsRes.data || []) as any[]).map(u => ({ id: u.student_id, full_name: u.full_name, email: u.email, status: u.status, role: 'student' as const })),
+        ...((parentsRes.data || []) as any[]).map(u => ({ id: u.parent_id, full_name: u.full_name, email: u.email, status: u.status, role: 'parent' as const }))
       ];
 
       // Sort: admins first, then alphabetically
