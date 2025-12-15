@@ -253,11 +253,77 @@ export default function TeacherManagement() {
     if (!selectedTeacher) return;
 
     try {
-      // Delete teacher record (auth deletion handled by trigger)
+      const teacherId = selectedTeacher.teacher_id;
+
+      // Clear foreign key references before deleting
+      // 1. Unassign from subjects
+      await supabase
+        .from("subjects")
+        .update({ teacher_id: null })
+        .eq("teacher_id", teacherId);
+
+      // 2. Unassign as class teacher
+      await supabase
+        .from("classes")
+        .update({ class_teacher_id: null })
+        .eq("class_teacher_id", teacherId);
+
+      // 3. Clear timetable entries
+      await supabase
+        .from("timetable")
+        .delete()
+        .eq("teacher_id", teacherId);
+
+      // 4. Clear leave request reviewed_by references
+      await supabase
+        .from("leave_requests")
+        .update({ reviewed_by: null })
+        .eq("reviewed_by", teacherId);
+
+      // 5. Delete class announcements
+      await supabase
+        .from("class_announcements")
+        .delete()
+        .eq("teacher_id", teacherId);
+
+      // 6. Delete AI-related records
+      await supabase
+        .from("ai_lesson_plans")
+        .delete()
+        .eq("teacher_id", teacherId);
+
+      await supabase
+        .from("ai_generated_assignments")
+        .delete()
+        .eq("teacher_id", teacherId);
+
+      await supabase
+        .from("ai_attendance_analysis")
+        .delete()
+        .eq("teacher_id", teacherId);
+
+      await supabase
+        .from("ai_report_comments")
+        .delete()
+        .eq("teacher_id", teacherId);
+
+      // 7. Delete payroll records
+      await supabase
+        .from("payroll")
+        .delete()
+        .eq("teacher_id", teacherId);
+
+      // 8. Delete teacher performance analytics
+      await supabase
+        .from("teacher_performance_analytics")
+        .delete()
+        .eq("teacher_id", teacherId);
+
+      // Now delete the teacher record
       const { error } = await supabase
         .from("teachers")
         .delete()
-        .eq("teacher_id", selectedTeacher.teacher_id);
+        .eq("teacher_id", teacherId);
 
       if (error) throw error;
       toast.success("Teacher deleted successfully");
@@ -265,6 +331,7 @@ export default function TeacherManagement() {
       setDeleteDialogOpen(false);
       setSelectedTeacher(null);
     } catch (error: any) {
+      console.error("Delete error:", error);
       toast.error(`Failed to delete teacher: ${error.message}`);
     }
   };
