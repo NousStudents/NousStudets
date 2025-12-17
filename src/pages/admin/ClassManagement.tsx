@@ -27,6 +27,29 @@ interface Teacher {
   full_name: string;
 }
 
+interface WhitelistedTeacher {
+  id: string;
+  full_name: string;
+}
+
+// Class name options
+const CLASS_NAME_OPTIONS = [
+  "Preschool",
+  "Class 1",
+  "Class 2",
+  "Class 3",
+  "Class 4",
+  "Class 5",
+  "Class 6",
+  "Class 7",
+  "Class 8",
+  "Class 9",
+  "Class 10",
+];
+
+// Section options A-Z
+const SECTION_OPTIONS = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
+
 interface Subject {
   subject_id: string;
   subject_name: string;
@@ -38,6 +61,7 @@ export default function ClassManagement() {
   const { user } = useAuth();
   const [classes, setClasses] = useState<Class[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [whitelistedTeachers, setWhitelistedTeachers] = useState<WhitelistedTeacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -111,7 +135,7 @@ export default function ClassManagement() {
       setCurrentSchoolId(schoolId);
 
       // Fetch all data in parallel
-      const [classesRes, teachersRes] = await Promise.all([
+      const [classesRes, teachersRes, whitelistedRes] = await Promise.all([
         supabase
           .from("classes")
           .select("class_id, class_name, section, class_teacher_id, school_id")
@@ -120,7 +144,11 @@ export default function ClassManagement() {
           .from("teachers")
           .select("teacher_id, full_name, email, status")
           .eq("school_id", schoolId)
-          .eq("status", "active")
+          .eq("status", "active"),
+        supabase
+          .from("whitelisted_teachers")
+          .select("id, full_name")
+          .eq("school_id", schoolId)
       ]);
 
       if (classesRes.error) {
@@ -133,7 +161,11 @@ export default function ClassManagement() {
         toast.error(`Failed to load teachers: ${teachersRes.error.message}`);
       }
 
-      // Create a map of teacher_id to teacher name
+      if (whitelistedRes.error) {
+        console.error("Error fetching whitelisted teachers:", whitelistedRes.error);
+      }
+
+      // Create a map of teacher_id to teacher name (for existing classes display)
       const teacherMap = new Map<string, string>();
       if (teachersRes.data) {
         teachersRes.data.forEach((teacher: any) => {
@@ -157,7 +189,7 @@ export default function ClassManagement() {
         setClasses([]);
       }
 
-      // Format teachers for dropdown
+      // Format teachers for subject dropdown
       if (teachersRes.data) {
         const formattedTeachers = teachersRes.data.map((teacher: any) => ({
           teacher_id: teacher.teacher_id,
@@ -166,7 +198,18 @@ export default function ClassManagement() {
         setTeachers(formattedTeachers);
       } else {
         setTeachers([]);
-        console.warn("No active teachers found for school");
+      }
+
+      // Format whitelisted teachers for class teacher dropdown
+      if (whitelistedRes.data) {
+        const formattedWhitelisted = whitelistedRes.data.map((t: any) => ({
+          id: t.id,
+          full_name: t.full_name,
+        }));
+        setWhitelistedTeachers(formattedWhitelisted);
+      } else {
+        setWhitelistedTeachers([]);
+        console.warn("No whitelisted teachers found for school");
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -515,20 +558,40 @@ export default function ClassManagement() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="class_name">Class Name *</Label>
-              <Input
-                id="class_name"
-                value={formData.class_name}
-                onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
-                required
-              />
+              <Select 
+                value={formData.class_name} 
+                onValueChange={(v) => setFormData({ ...formData, class_name: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Class" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  {CLASS_NAME_OPTIONS.map((className) => (
+                    <SelectItem key={className} value={className}>
+                      {className}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="section">Section</Label>
-              <Input
-                id="section"
-                value={formData.section}
-                onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-              />
+              <Select 
+                value={formData.section || "none"} 
+                onValueChange={(v) => setFormData({ ...formData, section: v === "none" ? "" : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Section" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50 max-h-60">
+                  <SelectItem value="none">None</SelectItem>
+                  {SECTION_OPTIONS.map((section) => (
+                    <SelectItem key={section} value={section}>
+                      {section}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="class_teacher_id">Class Teacher</Label>
@@ -556,11 +619,11 @@ export default function ClassManagement() {
               </Select>
               {teachers.length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  No active teachers found. Please add teachers first.
+                  No active teachers found. Teachers must sign up before they can be assigned to classes.
                 </p>
               )}
             </div>
-            <Button type="submit">{editingClass ? "Update" : "Create"}</Button>
+            <Button type="submit" className="w-full">{editingClass ? "Update" : "Create"}</Button>
           </form>
         </DialogContent>
       </Dialog>
