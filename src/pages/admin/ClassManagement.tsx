@@ -595,29 +595,38 @@ export default function ClassManagement() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="class_teacher_id">Class Teacher</Label>
-              <Select 
-                value={formData.class_teacher_id || "none"} 
-                onValueChange={(v) => setFormData({ ...formData, class_teacher_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Teacher" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  <SelectItem value="none">None</SelectItem>
-                  {teachers.length === 0 ? (
-                    <SelectItem value="no-teachers" disabled>
-                      No active teachers available
-                    </SelectItem>
-                  ) : (
-                    teachers.map((t) => (
-                      <SelectItem key={t.teacher_id} value={t.teacher_id}>
-                        {t.full_name}
+              {loading ? (
+                <div className="h-10 bg-muted animate-pulse rounded-md" />
+              ) : (
+                <Select 
+                  value={formData.class_teacher_id || "none"} 
+                  onValueChange={(v) => setFormData({ ...formData, class_teacher_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Teacher">
+                      {formData.class_teacher_id && formData.class_teacher_id !== "none" 
+                        ? teachers.find(t => t.teacher_id === formData.class_teacher_id)?.full_name || "Select Teacher"
+                        : "None"
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-[100]">
+                    <SelectItem value="none">None</SelectItem>
+                    {teachers.length > 0 ? (
+                      teachers.map((t) => (
+                        <SelectItem key={t.teacher_id} value={t.teacher_id}>
+                          {t.full_name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-teachers" disabled>
+                        No active teachers available
                       </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              {teachers.length === 0 && (
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+              {!loading && teachers.length === 0 && (
                 <p className="text-sm text-muted-foreground">
                   No active teachers found. Teachers must sign up before they can be assigned to classes.
                 </p>
