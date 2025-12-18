@@ -14,6 +14,14 @@ import {
 import { BackButton } from '@/components/BackButton';
 import { useAuth } from '@/contexts/AuthContext';
 import TeacherRecentSubmissions from '@/components/TeacherRecentSubmissions';
+import { format } from 'date-fns';
+
+interface TodayScheduleItem {
+  time: string;
+  class: string;
+  subject: string;
+  room: string;
+}
 
 export default function TeacherOverview() {
   const navigate = useNavigate();
@@ -21,6 +29,7 @@ export default function TeacherOverview() {
   const [teacherId, setTeacherId] = useState<string | null>(null);
   const [isClassTeacher, setIsClassTeacher] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [todaySchedule, setTodaySchedule] = useState<TodayScheduleItem[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -46,6 +55,33 @@ export default function TeacherOverview() {
           .limit(1);
         
         setIsClassTeacher((classTeacherData?.length || 0) > 0);
+
+        // Fetch today's schedule from timetable
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const today = days[new Date().getDay()];
+        
+        const { data: timetableData } = await supabase
+          .from('timetable')
+          .select(`
+            start_time,
+            end_time,
+            room_number,
+            subjects (subject_name),
+            classes (class_name, section)
+          `)
+          .eq('teacher_id', teacherInfo.teacher_id)
+          .eq('day_of_week', today)
+          .order('start_time');
+
+        if (timetableData) {
+          const schedule = timetableData.map((item: any) => ({
+            time: `${item.start_time?.slice(0, 5) || ''} - ${item.end_time?.slice(0, 5) || ''}`,
+            class: `${item.classes?.class_name || 'Unknown'} ${item.classes?.section || ''}`.trim(),
+            subject: item.subjects?.subject_name || 'Unknown Subject',
+            room: item.room_number || 'TBD'
+          }));
+          setTodaySchedule(schedule);
+        }
       }
     } catch (error) {
       console.error('Error fetching teacher data:', error);
@@ -97,24 +133,26 @@ export default function TeacherOverview() {
               <Calendar className="h-5 w-5 text-primary" />
               Today's Schedule
             </CardTitle>
-            <CardDescription>Monday, November 8, 2025</CardDescription>
+            <CardDescription>{format(new Date(), 'EEEE, MMMM d, yyyy')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              { time: '09:00 - 10:00', class: 'Grade 9B', subject: 'Mathematics', room: 'Room 101' },
-              { time: '10:15 - 11:15', class: 'Grade 10A', subject: 'Mathematics', room: 'Room 101' },
-              { time: '11:30 - 12:30', class: 'Grade 8C', subject: 'Mathematics', room: 'Room 101' },
-              { time: '14:00 - 15:00', class: 'Grade 10B', subject: 'Mathematics', room: 'Room 101' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-start gap-4 p-3 rounded-lg bg-muted/50">
-                <div className="text-sm font-medium text-muted-foreground w-24">{item.time}</div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-foreground">{item.class}</h4>
-                  <p className="text-sm text-muted-foreground">{item.subject} • {item.room}</p>
+            {todaySchedule.length > 0 ? (
+              todaySchedule.map((item, i) => (
+                <div key={i} className="flex items-start gap-4 p-3 rounded-lg bg-muted/50">
+                  <div className="text-sm font-medium text-muted-foreground w-24">{item.time}</div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-foreground">{item.class}</h4>
+                    <p className="text-sm text-muted-foreground">{item.subject} • {item.room}</p>
+                  </div>
+                  <Button size="sm" variant="outline">Start</Button>
                 </div>
-                <Button size="sm" variant="outline">Start</Button>
+              ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No classes scheduled for today</p>
               </div>
-            ))}
+            )}
           </CardContent>
         </Card>
 
