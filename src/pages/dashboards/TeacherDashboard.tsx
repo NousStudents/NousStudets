@@ -1,88 +1,103 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import TeacherTimetable from '@/components/TeacherTimetable';
 import TeacherRecentSubmissions from '@/components/TeacherRecentSubmissions';
-import { 
-  Users, 
-  Calendar, 
-  CheckSquare, 
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  Users,
+  Calendar,
+  CheckSquare,
   BookOpen,
   FileText,
   MessageSquare,
-  ClipboardList,
-  BarChart3,
-  Settings,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
 
-export default function TeacherDashboard({ profile }: { profile: any }) {
+export default function TeacherDashboard({ profile }: { profile: any | null }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
   const [classes, setClasses] = useState<any[]>([]);
   const [teacherId, setTeacherId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isClassTeacher, setIsClassTeacher] = useState(false);
 
-  useEffect(() => {
-    if (profile?.auth_user_id) {
-      fetchTeacherData();
-    }
-  }, [profile]);
+  const authUserId = useMemo(() => profile?.auth_user_id ?? user?.id ?? null, [profile, user]);
 
-  const fetchTeacherData = async () => {
-    if (!profile?.auth_user_id) {
+  useEffect(() => {
+    if (!authUserId) {
       setLoading(false);
       return;
     }
-    
+
+    fetchTeacherData(authUserId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUserId]);
+
+  const fetchTeacherData = async (auth_user_id: string) => {
     try {
       // Get teacher_id directly
-      const { data: teacherInfo } = await supabase
+      const { data: teacherInfo, error: teacherError } = await supabase
         .from('teachers')
         .select('teacher_id')
-        .eq('auth_user_id', profile.auth_user_id)
-        .single();
+        .eq('auth_user_id', auth_user_id)
+        .maybeSingle();
 
-      if (teacherInfo) {
-        setTeacherId(teacherInfo.teacher_id);
-        
-        // Check if teacher is a class teacher
-        const { data: classTeacherData } = await supabase
-          .from('classes')
-          .select('class_id')
-          .eq('class_teacher_id', teacherInfo.teacher_id)
-          .limit(1);
-        
-        setIsClassTeacher((classTeacherData?.length || 0) > 0);
-        
-        // Get classes from timetable assignments
-        const { data: timetableData } = await supabase
-          .from('timetable')
-          .select(`
+      if (teacherError) throw teacherError;
+
+      if (!teacherInfo?.teacher_id) {
+        setTeacherId(null);
+        setIsClassTeacher(false);
+        setClasses([]);
+        return;
+      }
+
+      setTeacherId(teacherInfo.teacher_id);
+
+      // Check if teacher is a class teacher
+      const { data: classTeacherData, error: classTeacherError } = await supabase
+        .from('classes')
+        .select('class_id')
+        .eq('class_teacher_id', teacherInfo.teacher_id)
+        .limit(1);
+
+      if (classTeacherError) throw classTeacherError;
+      setIsClassTeacher((classTeacherData?.length || 0) > 0);
+
+      // Get classes from timetable assignments
+      const { data: timetableData, error: timetableError } = await supabase
+        .from('timetable')
+        .select(
+          `
             class_id,
             classes (
               class_id,
               class_name,
               section
             )
-          `)
-          .eq('teacher_id', teacherInfo.teacher_id);
+          `
+        )
+        .eq('teacher_id', teacherInfo.teacher_id);
 
-        if (timetableData) {
-          // Get unique classes
-          const uniqueClasses = Array.from(
-            new Map(
-              timetableData
-                .filter(t => t.classes)
-                .map(t => [t.classes.class_id, t.classes])
-            ).values()
-          );
-          setClasses(uniqueClasses);
-        }
+      if (timetableError) throw timetableError;
+
+      if (timetableData) {
+        // Get unique classes
+        const uniqueClasses = Array.from(
+          new Map(
+            timetableData
+              .filter((t) => t.classes)
+              .map((t) => [(t.classes as any).class_id, t.classes])
+          ).values()
+        );
+        setClasses(uniqueClasses as any[]);
+      } else {
+        setClasses([]);
       }
     } catch (error) {
       console.error('Error fetching teacher data:', error);
@@ -92,7 +107,15 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading teacher dashboard...</div>;
+    return <div className="text-center py-8 text-muted-foreground">Loading teacher dashboard...</div>;
+  }
+
+  if (!authUserId) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Unable to load your teacher profile. Please sign out and sign in again.
+      </div>
+    );
   }
 
   return (
