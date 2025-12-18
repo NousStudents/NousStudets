@@ -558,14 +558,14 @@ export default function ClassManagement() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="class_name">Class Name *</Label>
-              <Select 
-                value={formData.class_name} 
+              <Select
+                value={formData.class_name || undefined}
                 onValueChange={(v) => setFormData({ ...formData, class_name: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Class" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
+                <SelectContent className="bg-background border shadow-lg z-[100] max-h-60">
                   {CLASS_NAME_OPTIONS.map((className) => (
                     <SelectItem key={className} value={className}>
                       {className}
@@ -574,17 +574,17 @@ export default function ClassManagement() {
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="section">Section</Label>
-              <Select 
-                value={formData.section || "none"} 
-                onValueChange={(v) => setFormData({ ...formData, section: v === "none" ? "" : v })}
+              <Select
+                value={formData.section || undefined}
+                onValueChange={(v) => setFormData({ ...formData, section: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Section" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover z-50 max-h-60">
-                  <SelectItem value="none">None</SelectItem>
+                <SelectContent className="bg-background border shadow-lg z-[100] max-h-60">
                   {SECTION_OPTIONS.map((section) => (
                     <SelectItem key={section} value={section}>
                       {section}
