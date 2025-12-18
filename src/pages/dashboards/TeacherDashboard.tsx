@@ -28,10 +28,17 @@ export default function TeacherDashboard({ profile }: { profile: any }) {
   const [isClassTeacher, setIsClassTeacher] = useState(false);
 
   useEffect(() => {
-    fetchTeacherData();
+    if (profile?.auth_user_id) {
+      fetchTeacherData();
+    }
   }, [profile]);
 
   const fetchTeacherData = async () => {
+    if (!profile?.auth_user_id) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       // Get teacher_id directly
       const { data: teacherInfo } = await supabase
