@@ -21,6 +21,7 @@ interface UserProfile {
   role: string;
   school_id: string;
   profile_image?: string;
+  auth_user_id?: string;
 }
 
 const Dashboard = () => {
@@ -63,11 +64,11 @@ const Dashboard = () => {
       } else if (role === 'teacher') {
         const { data: teacherData, error } = await supabase
           .from('teachers')
-          .select('teacher_id, full_name, email, school_id, profile_image')
+          .select('teacher_id, full_name, email, school_id, profile_image, auth_user_id')
           .eq('auth_user_id', user.id)
           .single();
         if (error) throw error;
-        data = { ...teacherData, user_id: teacherData?.teacher_id };
+        data = { ...teacherData, user_id: teacherData?.teacher_id, auth_user_id: teacherData?.auth_user_id };
         school_id = teacherData?.school_id;
       } else if (role === 'student') {
         const { data: studentData, error } = await supabase
