@@ -39,14 +39,23 @@ const Dashboard = () => {
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    if (user) {
+    // Wait for role resolution before fetching the role-specific profile
+    if (user && role) {
       fetchUserProfile();
+    } else if (!user) {
+      setProfile(null);
+      setLoadingData(false);
     }
-  }, [user]);
+  }, [user, role]);
 
   const fetchUserProfile = async () => {
+    setLoadingData(true);
+
     try {
-      if (!user || !role) return;
+      if (!user || !role) {
+        setProfile(null);
+        return;
+      }
 
       let data: any = null;
       let school_id: string = '';
@@ -55,43 +64,60 @@ const Dashboard = () => {
       if (role === 'admin') {
         const { data: adminData, error } = await supabase
           .from('admins')
-          .select('admin_id, full_name, email, school_id, profile_image')
+          .select('admin_id, full_name, email, school_id, profile_image, auth_user_id')
           .eq('auth_user_id', user.id)
-          .single();
+          .maybeSingle();
         if (error) throw error;
-        data = { ...adminData, user_id: adminData?.admin_id };
-        school_id = adminData?.school_id;
+        if (!adminData) {
+          setProfile(null);
+          return;
+        }
+        data = { ...adminData, user_id: adminData.admin_id, auth_user_id: adminData.auth_user_id };
+        school_id = adminData.school_id;
       } else if (role === 'teacher') {
         const { data: teacherData, error } = await supabase
           .from('teachers')
           .select('teacher_id, full_name, email, school_id, profile_image, auth_user_id')
           .eq('auth_user_id', user.id)
-          .single();
+          .maybeSingle();
         if (error) throw error;
-        data = { ...teacherData, user_id: teacherData?.teacher_id, auth_user_id: teacherData?.auth_user_id };
-        school_id = teacherData?.school_id;
+        if (!teacherData) {
+          setProfile(null);
+          return;
+        }
+        data = { ...teacherData, user_id: teacherData.teacher_id, auth_user_id: teacherData.auth_user_id };
+        school_id = teacherData.school_id;
       } else if (role === 'student') {
         const { data: studentData, error } = await supabase
           .from('students')
-          .select('student_id, full_name, email, class_id, profile_picture, classes(school_id)')
+          .select('student_id, full_name, email, class_id, profile_picture, auth_user_id, classes(school_id)')
           .eq('auth_user_id', user.id)
-          .single();
+          .maybeSingle();
         if (error) throw error;
-        data = { 
-          ...studentData, 
-          user_id: studentData?.student_id,
-          profile_image: studentData?.profile_picture 
+        if (!studentData) {
+          setProfile(null);
+          return;
+        }
+        data = {
+          ...studentData,
+          user_id: studentData.student_id,
+          auth_user_id: (studentData as any).auth_user_id,
+          profile_image: studentData.profile_picture,
         };
         school_id = (studentData?.classes as any)?.school_id;
       } else if (role === 'parent') {
         const { data: parentData, error } = await supabase
           .from('parents')
-          .select('parent_id, full_name, email, school_id, profile_image')
+          .select('parent_id, full_name, email, school_id, profile_image, auth_user_id')
           .eq('auth_user_id', user.id)
-          .single();
+          .maybeSingle();
         if (error) throw error;
-        data = { ...parentData, user_id: parentData?.parent_id };
-        school_id = parentData?.school_id;
+        if (!parentData) {
+          setProfile(null);
+          return;
+        }
+        data = { ...parentData, user_id: parentData.parent_id, auth_user_id: parentData.auth_user_id };
+        school_id = parentData.school_id;
       }
 
       if (data) {
@@ -99,6 +125,7 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      setProfile(null);
     } finally {
       setLoadingData(false);
     }
