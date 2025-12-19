@@ -62,27 +62,53 @@ export default function TimetableManagement() {
 
   const fetchData = async () => {
     try {
+      // Get admin's school_id first
+      const { data: adminData } = await supabase
+        .from('admins')
+        .select('school_id')
+        .single();
+
+      const schoolId = adminData?.school_id;
+      
+      let timetableQuery = supabase
+        .from('timetable')
+        .select(`
+          *,
+          classes(class_name, section),
+          subjects(subject_name),
+          period_types(type_name, color_code)
+        `)
+        .order('day_of_week')
+        .order('start_time');
+        
+      let classesQuery = supabase.from('classes').select('*').order('class_name');
+      let subjectsQuery = supabase.from('subjects').select('*').order('subject_name');
+      let teachersQuery = supabase.from('teachers').select('teacher_id, full_name');
+      
+      // Filter by school_id if available
+      if (schoolId) {
+        classesQuery = classesQuery.eq('school_id', schoolId);
+        teachersQuery = teachersQuery.eq('school_id', schoolId);
+      }
+
       const [timetableRes, classesRes, subjectsRes, teachersRes, periodTypesRes] = await Promise.all([
-        supabase
-          .from('timetable')
-          .select(`
-            *,
-            classes(class_name, section),
-            subjects(subject_name),
-            period_types(type_name, color_code)
-          `)
-          .order('day_of_week')
-          .order('start_time'),
-        supabase.from('classes').select('*').order('class_name'),
-        supabase.from('subjects').select('*').order('subject_name'),
-        supabase.from('teachers').select('teacher_id, full_name'),
+        timetableQuery,
+        classesQuery,
+        subjectsQuery,
+        teachersQuery,
         supabase.from('period_types').select('*').order('type_name')
       ]);
 
+      // Log any errors for debugging
+      if (classesRes.error) console.error('Classes fetch error:', classesRes.error);
+      if (subjectsRes.error) console.error('Subjects fetch error:', subjectsRes.error);
+      if (teachersRes.error) console.error('Teachers fetch error:', teachersRes.error);
+
       // Enrich timetable with teacher names
-      if (timetableRes.data && teachersRes.data) {
+      const teachersList = teachersRes.data || [];
+      if (timetableRes.data) {
         const enrichedData = timetableRes.data.map((entry: any) => {
-          const teacher = teachersRes.data.find((t: any) => t.teacher_id === entry.teacher_id);
+          const teacher = teachersList.find((t: any) => t.teacher_id === entry.teacher_id);
           return { 
             ...entry, 
             teacher_name: teacher?.full_name || 'N/A'
@@ -91,11 +117,7 @@ export default function TimetableManagement() {
         setTimetableEntries(enrichedData);
       }
 
-      // Teachers already have full_name from the query
-      if (teachersRes.data) {
-        setTeachers(teachersRes.data);
-      }
-
+      setTeachers(teachersList);
       setClasses(classesRes.data || []);
       setSubjects(subjectsRes.data || []);
       setPeriodTypes(periodTypesRes.data || []);

@@ -63,13 +63,38 @@ export default function WeeklyTimetable() {
 
   const fetchData = async () => {
     try {
+      // Get admin's school_id first for proper filtering
+      const { data: adminData } = await supabase
+        .from('admins')
+        .select('school_id')
+        .single();
+
+      const schoolId = adminData?.school_id;
+      
+      let classesQuery = supabase.from('classes').select('*').order('class_name');
+      let subjectsQuery = supabase.from('subjects').select('*').order('subject_name');
+      let teachersQuery = supabase.from('teachers').select('teacher_id, full_name');
+      let timetableQuery = supabase.from('timetable').select('*');
+      
+      // Filter by school_id if available
+      if (schoolId) {
+        classesQuery = classesQuery.eq('school_id', schoolId);
+        teachersQuery = teachersQuery.eq('school_id', schoolId);
+      }
+
       const [classesRes, subjectsRes, teachersRes, periodTypesRes, timetableRes] = await Promise.all([
-        supabase.from('classes').select('*').order('class_name'),
-        supabase.from('subjects').select('*').order('subject_name'),
-        supabase.from('teachers').select('teacher_id, full_name'),
+        classesQuery,
+        subjectsQuery,
+        teachersQuery,
         supabase.from('period_types').select('*'),
-        supabase.from('timetable').select('*')
+        timetableQuery
       ]);
+
+      // Log any errors for debugging
+      if (classesRes.error) console.error('Classes fetch error:', classesRes.error);
+      if (subjectsRes.error) console.error('Subjects fetch error:', subjectsRes.error);
+      if (teachersRes.error) console.error('Teachers fetch error:', teachersRes.error);
+      if (timetableRes.error) console.error('Timetable fetch error:', timetableRes.error);
 
       setClasses(classesRes.data || []);
       setSubjects(subjectsRes.data || []);
