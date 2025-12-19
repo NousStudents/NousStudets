@@ -172,7 +172,14 @@ export default function AllowedStudentsManagement() {
               />
               <Select
                 value={newStudent.classId}
-                onValueChange={(value) => setNewStudent({ ...newStudent, classId: value })}
+                onValueChange={(value) => {
+                  const selected = classes?.find((c) => c.class_id === value);
+                  setNewStudent({ 
+                    ...newStudent, 
+                    classId: value, 
+                    section: selected?.section || "" 
+                  });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Class (Optional)" />
@@ -180,15 +187,16 @@ export default function AllowedStudentsManagement() {
                 <SelectContent>
                   {classes?.map((cls) => (
                     <SelectItem key={cls.class_id} value={cls.class_id}>
-                      {cls.class_name}
+                      {cls.class_name} - {cls.section}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Input
-                placeholder="Section (Optional)"
+                placeholder="Section"
                 value={newStudent.section}
                 onChange={(e) => setNewStudent({ ...newStudent, section: e.target.value })}
+                disabled={!!newStudent.classId}
               />
               <Input
                 placeholder="Roll Number (Optional)"
