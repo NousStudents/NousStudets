@@ -546,12 +546,15 @@ export function EditStudentDialogTabs({ formData, setFormData, classes, parents 
           <h4 className="font-semibold mb-4">Parent Association</h4>
           <div className="space-y-2">
             <Label htmlFor="parent_id">Select Parent (if registered)</Label>
-            <Select value={formData.parent_id} onValueChange={(v) => setFormData({ ...formData, parent_id: v })}>
+            <Select 
+              value={formData.parent_id || "none"} 
+              onValueChange={(v) => setFormData({ ...formData, parent_id: v === "none" ? "" : v })}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select parent (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No parent linked</SelectItem>
+                <SelectItem value="none">No parent linked</SelectItem>
                 {parents.map((p) => (
                   <SelectItem key={p.parent_id} value={p.parent_id}>
                     {p.full_name}
