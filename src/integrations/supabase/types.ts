@@ -2887,6 +2887,7 @@ export type Database = {
       execute_sql_query: { Args: { query_text: string }; Returns: Json }
       get_admin_id: { Args: never; Returns: string }
       get_parent_id: { Args: never; Returns: string }
+      get_student_class_id: { Args: never; Returns: string }
       get_student_id: { Args: never; Returns: string }
       get_teacher_class_ids: { Args: never; Returns: string[] }
       get_teacher_id: { Args: never; Returns: string }
