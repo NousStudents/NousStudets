@@ -47,22 +47,27 @@ export default function ClassTeacherDashboard() {
       // Get classes where this teacher is class teacher
       const { data: classesData, error } = await supabase
         .from('classes')
-        .select(`
-          class_id,
-          class_name,
-          section,
-          students:students(count)
-        `)
+        .select('class_id, class_name, section')
         .eq('class_teacher_id', teacherData.teacher_id);
 
       if (error) throw error;
 
-      const formattedClasses = classesData?.map(cls => ({
-        class_id: cls.class_id,
-        class_name: cls.class_name,
-        section: cls.section,
-        student_count: cls.students?.[0]?.count || 0
-      })) || [];
+      // Fetch student counts for each class separately to avoid RLS issues
+      const formattedClasses = await Promise.all(
+        (classesData || []).map(async (cls) => {
+          const { count } = await supabase
+            .from('students')
+            .select('*', { count: 'exact', head: true })
+            .eq('class_id', cls.class_id);
+          
+          return {
+            class_id: cls.class_id,
+            class_name: cls.class_name,
+            section: cls.section,
+            student_count: count || 0
+          };
+        })
+      );
 
       setClasses(formattedClasses);
       
