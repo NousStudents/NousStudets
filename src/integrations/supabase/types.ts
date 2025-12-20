@@ -2893,6 +2893,7 @@ export type Database = {
       get_teacher_class_ids: { Args: never; Returns: string[] }
       get_teacher_class_ids_for_students: { Args: never; Returns: string[] }
       get_teacher_id: { Args: never; Returns: string }
+      get_teacher_school_id: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
       get_user_role_for_auth: { Args: { user_id: string }; Returns: string }
       has_role: { Args: { _role: string }; Returns: boolean }
