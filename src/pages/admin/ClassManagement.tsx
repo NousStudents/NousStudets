@@ -735,20 +735,25 @@ export default function ClassManagement() {
                 onValueChange={(v) => setSubjectFormData({ ...subjectFormData, teacher_id: v })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Teacher" />
+                  <SelectValue placeholder="Select Teacher">
+                    {subjectFormData.teacher_id && subjectFormData.teacher_id !== "none" 
+                      ? teachers.find(t => t.teacher_id === subjectFormData.teacher_id)?.full_name || "Select Teacher"
+                      : "None"
+                    }
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
+                <SelectContent className="bg-background border shadow-lg z-[200]">
                   <SelectItem value="none">None</SelectItem>
-                  {teachers.length === 0 ? (
-                    <SelectItem value="no-teachers" disabled>
-                      No active teachers available
-                    </SelectItem>
-                  ) : (
+                  {teachers.length > 0 ? (
                     teachers.map((t) => (
                       <SelectItem key={t.teacher_id} value={t.teacher_id}>
                         {t.full_name}
                       </SelectItem>
                     ))
+                  ) : (
+                    <SelectItem value="no-teachers" disabled>
+                      No active teachers available
+                    </SelectItem>
                   )}
                 </SelectContent>
               </Select>
