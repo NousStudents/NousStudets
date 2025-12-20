@@ -2886,6 +2886,7 @@ export type Database = {
       current_school_id: { Args: never; Returns: string }
       execute_sql_query: { Args: { query_text: string }; Returns: Json }
       get_admin_id: { Args: never; Returns: string }
+      get_parent_children_class_ids: { Args: never; Returns: string[] }
       get_parent_id: { Args: never; Returns: string }
       get_student_class_id: { Args: never; Returns: string }
       get_student_id: { Args: never; Returns: string }
