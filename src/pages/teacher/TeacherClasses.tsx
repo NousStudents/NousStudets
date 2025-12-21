@@ -13,6 +13,7 @@ interface ClassData {
   class_name: string;
   section: string | null;
   isClassTeacher?: boolean;
+  subjects?: string[];
 }
 
 export default function TeacherClasses() {
@@ -53,48 +54,37 @@ export default function TeacherClasses() {
         }));
         setClassTeacherClasses(ctClasses);
 
-        // Fetch from timetable and subjects for teaching assignments
-        const [timetableData, subjectsData] = await Promise.all([
-          supabase
-            .from('timetable')
-            .select(`
+        // Fetch subjects with class info for teaching assignments
+        const { data: subjectsData } = await supabase
+          .from('subjects')
+          .select(`
+            subject_id,
+            subject_name,
+            class_id,
+            classes (
               class_id,
-              classes (
-                class_id,
-                class_name,
-                section
-              )
-            `)
-            .eq('teacher_id', teacherInfo.teacher_id),
-          supabase
-            .from('subjects')
-            .select(`
-              class_id,
-              classes (
-                class_id,
-                class_name,
-                section
-              )
-            `)
-            .eq('teacher_id', teacherInfo.teacher_id)
-        ]);
+              class_name,
+              section
+            )
+          `)
+          .eq('teacher_id', teacherInfo.teacher_id);
 
-        // Combine and deduplicate teaching classes (excluding class teacher classes)
+        // Group subjects by class
         const classesMap = new Map<string, ClassData>();
         const ctClassIds = new Set(ctClasses.map(c => c.class_id));
         
-        if (timetableData.data) {
-          timetableData.data.forEach(t => {
-            if (t.classes && !ctClassIds.has(t.classes.class_id)) {
-              classesMap.set(t.classes.class_id, t.classes as ClassData);
-            }
-          });
-        }
-
-        if (subjectsData.data) {
-          subjectsData.data.forEach(s => {
+        if (subjectsData) {
+          subjectsData.forEach(s => {
             if (s.classes && !ctClassIds.has(s.classes.class_id)) {
-              classesMap.set(s.classes.class_id, s.classes as ClassData);
+              const existing = classesMap.get(s.classes.class_id);
+              if (existing) {
+                existing.subjects = [...(existing.subjects || []), s.subject_name];
+              } else {
+                classesMap.set(s.classes.class_id, {
+                  ...s.classes as ClassData,
+                  subjects: [s.subject_name]
+                });
+              }
             }
           });
         }
@@ -180,7 +170,7 @@ export default function TeacherClasses() {
             <CardContent>
               {subjectClasses.length > 0 ? (
                 <div className="space-y-4">
-                  {subjectClasses.map((cls) => (
+                {subjectClasses.map((cls) => (
                     <div key={cls.class_id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-lg">
@@ -189,9 +179,18 @@ export default function TeacherClasses() {
                         <div>
                           <h4 className="font-semibold text-foreground">{cls.class_name}</h4>
                           <p className="text-sm text-muted-foreground">Section: {cls.section || 'A'}</p>
+                          {cls.subjects && cls.subjects.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {cls.subjects.map((subject, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs">
+                                  {subject}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <Button variant="outline">View Details</Button>
+                      <Button variant="outline" onClick={() => navigate('/teacher/subjects')}>View Subjects</Button>
                     </div>
                   ))}
                 </div>
