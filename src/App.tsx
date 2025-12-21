@@ -47,6 +47,7 @@ import TeacherOverview from "./pages/teacher/TeacherOverview";
 import TeacherAcademicPage from "./pages/academic/TeacherAcademic";
 import TeacherClasses from "./pages/teacher/TeacherClasses";
 import TeacherStudents from "./pages/teacher/TeacherStudents";
+import TeacherSubjects from "./pages/teacher/TeacherSubjects";
 import TeacherAIAssistant from "./pages/teacher/TeacherAIAssistant";
 import ParentOverview from "./pages/parent/ParentOverview";
 import ParentAcademicPage from "./pages/academic/ParentAcademic";
@@ -174,6 +175,7 @@ const App = () => (
             <Route path="/teacher/academic" element={<ProtectedRoute roles={["teacher"]}><TeacherAcademicPage /></ProtectedRoute>} />
             <Route path="/teacher/classes" element={<ProtectedRoute roles={["teacher"]}><TeacherClasses /></ProtectedRoute>} />
             <Route path="/teacher/students" element={<ProtectedRoute roles={["teacher"]}><TeacherStudents /></ProtectedRoute>} />
+            <Route path="/teacher/subjects" element={<ProtectedRoute roles={["teacher"]}><TeacherSubjects /></ProtectedRoute>} />
             <Route path="/teacher/ai-assistant" element={<ProtectedRoute roles={["teacher"]}><TeacherAIAssistant /></ProtectedRoute>} />
             <Route path="/class-teacher" element={<ProtectedRoute roles={["teacher"]}><ClassTeacherDashboard /></ProtectedRoute>} />
 

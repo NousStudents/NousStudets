@@ -69,36 +69,56 @@ export default function TeacherDashboard({ profile }: { profile: any | null }) {
       if (classTeacherError) throw classTeacherError;
       setIsClassTeacher((classTeacherData?.length || 0) > 0);
 
-      // Get classes from timetable assignments
-      const { data: timetableData, error: timetableError } = await supabase
-        .from('timetable')
-        .select(
-          `
-            class_id,
-            classes (
+      // Get classes from timetable AND subjects assignments
+      const [timetableData, subjectsData] = await Promise.all([
+        supabase
+          .from('timetable')
+          .select(
+            `
               class_id,
-              class_name,
-              section
-            )
-          `
-        )
-        .eq('teacher_id', teacherInfo.teacher_id);
+              classes (
+                class_id,
+                class_name,
+                section
+              )
+            `
+          )
+          .eq('teacher_id', teacherInfo.teacher_id),
+        supabase
+          .from('subjects')
+          .select(
+            `
+              class_id,
+              classes (
+                class_id,
+                class_name,
+                section
+              )
+            `
+          )
+          .eq('teacher_id', teacherInfo.teacher_id)
+      ]);
 
-      if (timetableError) throw timetableError;
-
-      if (timetableData) {
-        // Get unique classes
-        const uniqueClasses = Array.from(
-          new Map(
-            timetableData
-              .filter((t) => t.classes)
-              .map((t) => [(t.classes as any).class_id, t.classes])
-          ).values()
-        );
-        setClasses(uniqueClasses as any[]);
-      } else {
-        setClasses([]);
+      // Combine classes from timetable and subjects
+      const classesMap = new Map<string, any>();
+      
+      if (timetableData.data) {
+        timetableData.data.forEach((t) => {
+          if (t.classes) {
+            classesMap.set((t.classes as any).class_id, t.classes);
+          }
+        });
       }
+      
+      if (subjectsData.data) {
+        subjectsData.data.forEach((s) => {
+          if (s.classes) {
+            classesMap.set((s.classes as any).class_id, s.classes);
+          }
+        });
+      }
+      
+      setClasses(Array.from(classesMap.values()));
     } catch (error) {
       console.error('Error fetching teacher data:', error);
     } finally {
@@ -161,6 +181,9 @@ export default function TeacherDashboard({ profile }: { profile: any | null }) {
           </Button>
           <Button variant="ghost" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/teacher/classes')}>
             Classes
+          </Button>
+          <Button variant="ghost" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/teacher/subjects')}>
+            Subjects
           </Button>
           <Button variant="ghost" size="sm" className="flex-1 min-w-[100px]" onClick={() => navigate('/assignments')}>
             Assignments
