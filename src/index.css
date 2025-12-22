@@ -297,24 +297,28 @@ All colors MUST be HSL.
   [data-radix-popover-content],
   [data-radix-dropdown-menu-content],
   [data-radix-select-content] {
-    z-index: 150 !important;
+    z-index: 200 !important;
+    background-color: hsl(var(--popover));
   }
 
   /* Fix for scroll behavior in modals */
   [data-radix-dialog-content],
   [data-radix-alert-dialog-content] {
-    max-height: 90vh;
+    max-height: 85vh;
     overflow-y: auto;
     overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 
   /* Mobile-specific fixes */
   @media (max-width: 767px) {
     [data-radix-dialog-content],
     [data-radix-alert-dialog-content] {
-      max-height: 85vh;
-      margin: 1rem;
-      max-width: calc(100vw - 2rem);
+      max-height: 80vh;
+      margin: 0.5rem;
+      max-width: calc(100vw - 1rem);
+      padding-bottom: 1.5rem;
     }
   }
 
@@ -322,6 +326,8 @@ All colors MUST be HSL.
   body:has([data-radix-dialog-content]),
   body:has([data-radix-alert-dialog-content]) {
     overflow: hidden;
+    position: fixed;
+    width: 100%;
   }
 
   /* Fix for input focus on mobile */
