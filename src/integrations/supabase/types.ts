@@ -2888,8 +2888,10 @@ export type Database = {
       get_admin_id: { Args: never; Returns: string }
       get_parent_children_class_ids: { Args: never; Returns: string[] }
       get_parent_id: { Args: never; Returns: string }
+      get_student_assigned_assignment_ids: { Args: never; Returns: string[] }
       get_student_class_id: { Args: never; Returns: string }
       get_student_id: { Args: never; Returns: string }
+      get_teacher_assignment_ids: { Args: never; Returns: string[] }
       get_teacher_class_ids: { Args: never; Returns: string[] }
       get_teacher_class_ids_for_students: { Args: never; Returns: string[] }
       get_teacher_id: { Args: never; Returns: string }

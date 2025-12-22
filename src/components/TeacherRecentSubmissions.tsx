@@ -34,26 +34,38 @@ export default function TeacherRecentSubmissions({ teacherId }: { teacherId: str
 
   const fetchSubmissions = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('submissions')
         .select(`
           submission_id,
           submitted_at,
+          marks_obtained,
           students (full_name),
-          assignments!inner (
+          assignments (
             title,
             class_id,
             subject_id,
             subjects (subject_name)
           )
         `)
-        .in('assignments.class_id', classIds)
-        .in('assignments.subject_id', subjectIds)
         .is('marks_obtained', null)
         .order('submitted_at', { ascending: false })
-        .limit(5);
+        .limit(20);
 
-      setSubmissions(data || []);
+      if (error) {
+        console.error('Submissions query error:', error);
+        setSubmissions([]);
+        return;
+      }
+
+      // Filter client-side to only include submissions for teacher's classes/subjects
+      const filtered = (data || []).filter(sub => {
+        const assignment = sub.assignments;
+        if (!assignment) return false;
+        return classIds.includes(assignment.class_id) && subjectIds.includes(assignment.subject_id);
+      }).slice(0, 5);
+
+      setSubmissions(filtered);
     } catch (error) {
       console.error('Error fetching submissions:', error);
     } finally {
