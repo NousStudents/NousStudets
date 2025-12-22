@@ -59,7 +59,12 @@ const Index = () => {
               <Button size="lg" onClick={() => navigate('/auth')} className="w-full sm:w-auto">
                 Start Free Trial
               </Button>
-              <Button size="lg" variant="outline" className="w-full sm:w-auto">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="w-full sm:w-auto"
+                onClick={() => window.open('https://nousstunets.online/', '_blank')}
+              >
                 Learn More
               </Button>
             </div>
