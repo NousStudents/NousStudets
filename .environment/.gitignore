@@ -1,0 +1,7 @@
+# Ignore all environment files except examples
+*.env
+!*.env.example
+
+# Never commit actual secrets
+*.local
+*.secret
