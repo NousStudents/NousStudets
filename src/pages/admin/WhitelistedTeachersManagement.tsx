@@ -7,8 +7,13 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, BookOpen } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
+import { useDeleteConfirmation } from "@/hooks/useDeleteConfirmation";
 
 export default function WhitelistedTeachersManagement() {
+  const { confirmDelete, DeleteConfirmationDialog } = useDeleteConfirmation({
+    title: "Remove Teacher from Whitelist",
+    description: "Are you sure you want to remove this teacher from the whitelist? They will no longer be able to sign up.",
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -202,7 +207,10 @@ export default function WhitelistedTeachersManagement() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => deleteMutation.mutate(teacher.id)}
+                  onClick={() => confirmDelete(
+                    () => deleteMutation.mutate(teacher.id),
+                    `Are you sure you want to remove "${teacher.full_name}" from the whitelist?`
+                  )}
                   disabled={deleteMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -214,6 +222,8 @@ export default function WhitelistedTeachersManagement() {
           <p className="text-muted-foreground">No whitelisted teachers yet</p>
         )}
       </Card>
+      
+      <DeleteConfirmationDialog />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Users } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
+import { useDeleteConfirmation } from "@/hooks/useDeleteConfirmation";
 import {
   Select,
   SelectContent,
@@ -16,6 +17,10 @@ import {
 } from "@/components/ui/select";
 
 export default function WhitelistedParentsManagement() {
+  const { confirmDelete, DeleteConfirmationDialog } = useDeleteConfirmation({
+    title: "Remove Parent from Whitelist",
+    description: "Are you sure you want to remove this parent from the whitelist? They will no longer be able to sign up.",
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -264,7 +269,10 @@ export default function WhitelistedParentsManagement() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => deleteMutation.mutate(parent.id)}
+                  onClick={() => confirmDelete(
+                    () => deleteMutation.mutate(parent.id),
+                    `Are you sure you want to remove "${parent.full_name}" from the whitelist?`
+                  )}
                   disabled={deleteMutation.isPending}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -276,6 +284,8 @@ export default function WhitelistedParentsManagement() {
           <p className="text-muted-foreground">No whitelisted parents yet</p>
         )}
       </Card>
+      
+      <DeleteConfirmationDialog />
     </div>
   );
 }
