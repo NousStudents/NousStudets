@@ -9,8 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Trash2, UserPlus } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
+import { useDeleteConfirmation } from "@/hooks/useDeleteConfirmation";
 
 export default function AllowedStudentsManagement() {
+  const { confirmDelete, DeleteConfirmationDialog } = useDeleteConfirmation({
+    title: "Remove Student from Whitelist",
+    description: "Are you sure you want to remove this student from the whitelist? They will no longer be able to sign up.",
+  });
   const queryClient = useQueryClient();
   const [newStudent, setNewStudent] = useState({
     email: "",
@@ -250,7 +255,10 @@ export default function AllowedStudentsManagement() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => deleteStudentMutation.mutate(student.id)}
+                          onClick={() => confirmDelete(
+                            () => deleteStudentMutation.mutate(student.id),
+                            `Are you sure you want to remove "${student.full_name}" from the whitelist?`
+                          )}
                           disabled={deleteStudentMutation.isPending}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -264,6 +272,8 @@ export default function AllowedStudentsManagement() {
           )}
         </CardContent>
       </Card>
+      
+      <DeleteConfirmationDialog />
     </div>
   );
 }

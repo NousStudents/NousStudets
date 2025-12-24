@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Users, UserMinus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useDeleteConfirmation } from "@/hooks/useDeleteConfirmation";
 
 interface GroupMember {
   user_id: string;
@@ -36,6 +37,10 @@ export function GroupInfoDialog({
 }: GroupInfoDialogProps) {
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(false);
+  const { confirmDelete, DeleteConfirmationDialog } = useDeleteConfirmation({
+    title: "Remove Member",
+    description: "Are you sure you want to remove this member from the group?",
+  });
 
   useEffect(() => {
     if (open) {
@@ -206,7 +211,10 @@ export function GroupInfoDialog({
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => removeMember(member.user_id)}
+                          onClick={() => confirmDelete(
+                            () => removeMember(member.user_id),
+                            `Are you sure you want to remove "${member.full_name}" from the group?`
+                          )}
                         >
                           <UserMinus className="h-4 w-4" />
                         </Button>
@@ -218,6 +226,8 @@ export function GroupInfoDialog({
             )}
           </div>
         </div>
+        
+        <DeleteConfirmationDialog />
       </DialogContent>
     </Dialog>
   );
