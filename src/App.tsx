@@ -60,6 +60,7 @@ import UsersList from './pages/admin/UsersList';
 import AdminFinancialPage from "./pages/financial/AdminFinancial";
 import AdminReportsPage from "./pages/reports/AdminReports";
 import ClassTeacherDashboard from "./pages/dashboards/ClassTeacherDashboard";
+import AdminAcademicPage from "./pages/academic/AdminAcademic";
 
 const queryClient = new QueryClient();
 
@@ -199,6 +200,7 @@ const App = () => (
             <Route path="/admin/users-list" element={<ProtectedRoute roles={["admin"]}><UsersList /></ProtectedRoute>} />
             <Route path="/admin/financial" element={<ProtectedRoute roles={["admin"]}><AdminFinancialPage /></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute roles={["admin"]}><AdminReportsPage /></ProtectedRoute>} />
+            <Route path="/admin/academic" element={<ProtectedRoute roles={["admin"]}><AdminAcademicPage /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute roles={["admin"]}><UserManagement /></ProtectedRoute>} />
             <Route path="/admin/timetable" element={<ProtectedRoute roles={["admin"]}><TimetableManagement /></ProtectedRoute>} />
             <Route path="/admin/weekly-timetable" element={<ProtectedRoute roles={["admin"]}><WeeklyTimetable /></ProtectedRoute>} />
