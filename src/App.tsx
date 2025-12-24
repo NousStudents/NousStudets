@@ -97,7 +97,14 @@ const App = () => (
             />
 
             {/* ========== SHARED PROTECTED ROUTES ========== */}
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute roles={["admin", "teacher", "parent", "student"]}>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="/profile" 
               element={
