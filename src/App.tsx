@@ -26,7 +26,7 @@ import StudentManagement from "./pages/admin/StudentManagement";
 import ClassManagement from "./pages/admin/ClassManagement";
 import TeacherManagement from "./pages/admin/TeacherManagement";
 import ParentManagement from "./pages/admin/ParentManagement";
-import CleanupUtility from "./pages/admin/CleanupUtility";
+
 import SQLEditor from "./pages/admin/SQLEditor";
 import BulkUsersPage from "./pages/admin/BulkUsersPage";
 import ExamTimetableManagement from "./pages/admin/ExamTimetableManagement";
@@ -209,7 +209,7 @@ const App = () => (
             <Route path="/admin/classes" element={<ProtectedRoute roles={["admin"]}><ClassManagement /></ProtectedRoute>} />
             <Route path="/admin/teachers" element={<ProtectedRoute roles={["admin"]}><TeacherManagement /></ProtectedRoute>} />
             <Route path="/admin/parents" element={<ProtectedRoute roles={["admin"]}><ParentManagement /></ProtectedRoute>} />
-            <Route path="/admin/cleanup" element={<ProtectedRoute roles={["admin"]}><CleanupUtility /></ProtectedRoute>} />
+            
             <Route path="/admin/sql-editor" element={<ProtectedRoute roles={["admin"]}><SQLEditor /></ProtectedRoute>} />
             <Route path="/admin/bulk-users" element={<ProtectedRoute roles={["admin"]}><BulkUsersPage /></ProtectedRoute>} />
             <Route path="/admin/exam-timetable" element={<ProtectedRoute roles={["admin"]}><ExamTimetableManagement /></ProtectedRoute>} />

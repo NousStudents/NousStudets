@@ -50,13 +50,11 @@ export default function UserManagement() {
     title: string;
     description: string;
     details?: string;
-    showCleanupButton: boolean;
   }>({
     open: false,
     title: "",
     description: "",
     details: "",
-    showCleanupButton: false,
   });
   
   const [formData, setFormData] = useState({
@@ -332,7 +330,6 @@ export default function UserManagement() {
           ? `A user with the email "${formData.email}" already exists in the database.`
           : "An error occurred while creating the user.",
         details: error.message || "Failed to create user",
-        showCleanupButton: isDuplicateError,
       });
     } finally {
       setLoading(false);
@@ -355,20 +352,10 @@ export default function UserManagement() {
                   <p className="text-sm font-mono text-muted-foreground">{errorDialog.details}</p>
                 </div>
               )}
-              {errorDialog.showCleanupButton && (
-                <p className="text-sm font-medium">
-                  This may be due to orphaned records in the database. Use the Database Cleanup Utility to resolve this issue.
-                </p>
-              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Close</AlertDialogCancel>
-            {errorDialog.showCleanupButton && (
-              <AlertDialogAction onClick={() => navigate("/admin/cleanup")}>
-                Open Cleanup Utility
-              </AlertDialogAction>
-            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
