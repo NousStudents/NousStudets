@@ -156,7 +156,7 @@ export default {
   					transform: 'translateY(-5px)'
   				}
   			},
-  			'shimmer': {
+  			shimmer: {
   				'0%': {
   					backgroundPosition: '-200% 0'
   				},
@@ -164,7 +164,7 @@ export default {
   					backgroundPosition: '200% 0'
   				}
   			},
-  			'float': {
+  			float: {
   				'0%, 100%': {
   					transform: 'translateY(0px)'
   				},
@@ -189,13 +189,13 @@ export default {
   			'scale-in': 'scale-in 0.3s ease-out',
   			'slide-up': 'slide-up 0.5s ease-out',
   			'bounce-soft': 'bounce-soft 2s ease-in-out infinite',
-  			'shimmer': 'shimmer 3s linear infinite',
-  			'float': 'float 3s ease-in-out infinite',
+  			shimmer: 'shimmer 3s linear infinite',
+  			float: 'float 3s ease-in-out infinite',
   			'pulse-soft': 'pulse-soft 2s ease-in-out infinite'
   		},
   		fontFamily: {
   			sans: [
-  				'Lato',
+  				'Space Grotesk',
   				'ui-sans-serif',
   				'system-ui',
   				'-apple-system',
@@ -208,7 +208,7 @@ export default {
   				'sans-serif'
   			],
   			serif: [
-  				'EB Garamond',
+  				'Lora',
   				'ui-serif',
   				'Georgia',
   				'Cambria',
@@ -217,7 +217,7 @@ export default {
   				'serif'
   			],
   			mono: [
-  				'Fira Code',
+  				'Space Mono',
   				'ui-monospace',
   				'SFMono-Regular',
   				'Menlo',
