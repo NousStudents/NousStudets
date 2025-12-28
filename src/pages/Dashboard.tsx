@@ -4,9 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRole } from '@/hooks/useRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { GraduationCap, Bell, MessageCircle, Video } from 'lucide-react';
+import { Bell, MessageCircle, Video, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProfileSheet } from '@/components/ProfileSheet';
 import StudentDashboard from './dashboards/StudentDashboard';
@@ -39,7 +38,6 @@ const Dashboard = () => {
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    // Wait for role resolution before fetching the role-specific profile
     if (user && role) {
       fetchUserProfile();
     } else if (!user) {
@@ -60,7 +58,6 @@ const Dashboard = () => {
       let data: any = null;
       let school_id: string = '';
 
-      // Fetch from role-specific table
       if (role === 'admin') {
         const { data: adminData, error } = await supabase
           .from('admins')
@@ -140,18 +137,32 @@ const Dashboard = () => {
       .slice(0, 2);
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   if (loading || roleLoading || loadingData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
-          <p className="text-muted-foreground">Loading your dashboard...</p>
+        <div className="text-center space-y-6">
+          <div className="relative">
+            <div className="h-16 w-16 rounded-full border-2 border-muted animate-pulse mx-auto" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-12 w-12 rounded-full border-t-2 border-primary animate-spin" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-lg font-medium text-foreground">Loading your dashboard</p>
+            <p className="text-sm text-muted-foreground">Please wait...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Render role-specific dashboard component
   const renderDashboard = () => {
     switch (role) {
       case 'student':
@@ -176,53 +187,60 @@ const Dashboard = () => {
       <ProfileSheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen} />
       
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-2 bg-primary rounded-xl">
-                <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+        {/* Premium Header */}
+        <header className="bg-card/80 backdrop-blur-xl border-b border-border/50 sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              {/* Logo & Greeting */}
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-accent-purple to-accent-blue flex items-center justify-center">
+                    <span className="text-lg font-bold text-white">N</span>
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-success border-2 border-card" />
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-sm text-muted-foreground">{getGreeting()}</p>
+                  <h1 className="text-lg font-semibold text-foreground tracking-tight">
+                    {profile?.full_name?.split(' ')[0] || 'User'}
+                  </h1>
+                </div>
               </div>
-              <div>
-                <h1 className="text-lg sm:text-xl font-bold text-foreground">Nous</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">School Management</p>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              <Link to="/messages">
-                <Button variant="ghost" size="icon">
-                  <MessageCircle className="h-5 w-5" />
+              {/* Actions */}
+              <div className="flex items-center gap-2">
+                <Link to="/messages">
+                  <Button variant="ghost" size="icon" className="relative">
+                    <MessageCircle className="h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link to="/meetings">
+                  <Button variant="ghost" size="icon">
+                    <Video className="h-5 w-5" />
+                  </Button>
+                </Link>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-accent-gold" />
                 </Button>
-              </Link>
-              <Link to="/meetings">
-                <Button variant="ghost" size="icon">
-                  <Video className="h-5 w-5" />
-                </Button>
-              </Link>
-              <Button variant="ghost" size="icon">
-                <Bell className="h-5 w-5" />
-              </Button>
-              <div className="hidden md:flex flex-col items-end">
-                <p className="text-sm font-medium text-foreground">{profile?.full_name}</p>
-                <Badge variant="secondary" className="text-xs capitalize">{role}</Badge>
+                
+                <div className="h-6 w-px bg-border mx-1" />
+                
+                <Avatar 
+                  className="cursor-pointer ring-2 ring-border hover:ring-primary transition-all duration-200 h-10 w-10"
+                  onClick={() => navigate('/profile')}
+                >
+                  <AvatarImage src={profile?.profile_image} />
+                  <AvatarFallback className="bg-secondary text-secondary-foreground font-medium">
+                    {profile?.full_name ? getInitials(profile.full_name) : 'U'}
+                  </AvatarFallback>
+                </Avatar>
               </div>
-              <Avatar 
-                className="cursor-pointer hover:ring-2 ring-primary transition-all"
-                onClick={() => navigate('/profile')}
-              >
-                <AvatarImage src={profile?.profile_image} />
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {profile?.full_name ? getInitials(profile.full_name) : 'U'}
-                </AvatarFallback>
-              </Avatar>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 py-6 md:py-8">
           {renderDashboard()}
         </main>
       </div>

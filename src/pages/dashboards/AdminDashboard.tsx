@@ -292,7 +292,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <Button 
-              variant="pastelPurple" 
+              variant="secondary" 
               className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/school')}
             >
@@ -300,7 +300,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               <span className="text-sm font-medium">School</span>
             </Button>
             <Button 
-              variant="pastelBlue" 
+              variant="secondary" 
               className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/students')}
             >
@@ -308,7 +308,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               <span className="text-sm font-medium">Students</span>
             </Button>
             <Button 
-              variant="pastelGreen" 
+              variant="secondary" 
               className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/teachers')}
             >
@@ -316,7 +316,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               <span className="text-sm font-medium">Teachers</span>
             </Button>
             <Button 
-              variant="pastelPink" 
+              variant="secondary" 
               className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/parents')}
             >
@@ -324,7 +324,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               <span className="text-sm font-medium">Parents</span>
             </Button>
             <Button
-              variant="pastelYellow" 
+              variant="secondary" 
               className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/users')}
             >
@@ -333,14 +333,14 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             </Button>
             <Button 
               variant="outline" 
-              className="h-auto flex-col gap-3 py-5 rounded-2xl border-2 border-pastel-coral/40 hover:bg-pastel-coral/10"
+              className="h-auto flex-col gap-3 py-5 rounded-2xl border border-destructive/30 hover:bg-destructive/10"
               onClick={() => navigate('/admin/cleanup')}
             >
-              <AlertCircle className="h-7 w-7 text-pastel-coral" />
+              <AlertCircle className="h-7 w-7 text-destructive" />
               <span className="text-sm font-medium">Cleanup</span>
             </Button>
             <Button 
-              variant="pastelBlue" 
+              variant="secondary" 
               className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/sql-editor')}
             >
@@ -348,7 +348,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
               <span className="text-sm font-medium">SQL Editor</span>
             </Button>
             <Button 
-              variant="pastelGreen" 
+              variant="secondary" 
               className="h-auto flex-col gap-3 py-5 rounded-2xl"
               onClick={() => navigate('/admin/timetable')}
             >
