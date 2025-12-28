@@ -157,7 +157,7 @@ export default function Meetings() {
         </h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="pastelBlue" className="gap-2">
+            <Button variant="default" className="gap-2">
               <Plus className="w-4 h-4" />
               Schedule Meeting
             </Button>
@@ -201,7 +201,7 @@ export default function Meetings() {
                   }
                 />
               </div>
-              <Button onClick={createMeeting} className="w-full" variant="pastelPurple">
+              <Button onClick={createMeeting} className="w-full" variant="default">
                 Create Meeting
               </Button>
             </div>
@@ -241,7 +241,7 @@ export default function Meetings() {
                 <Button
                   onClick={() => joinMeeting(meeting.meeting_url)}
                   className="w-full mt-2"
-                  variant="pastelPurple"
+                  variant="default"
                 >
                   Join Meeting
                 </Button>
@@ -259,7 +259,7 @@ export default function Meetings() {
             <p className="text-muted-foreground mb-4">
               Create your first meeting to get started with virtual collaboration
             </p>
-            <Button onClick={() => setIsDialogOpen(true)} variant="pastelPurple">
+            <Button onClick={() => setIsDialogOpen(true)} variant="default">
               Schedule Meeting
             </Button>
           </CardContent>
