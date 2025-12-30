@@ -31,10 +31,10 @@ export default function SchoolManagement() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (user && schoolId) {
+    if (user) {
       fetchSchoolData();
     }
-  }, [user, schoolId]);
+  }, [user]);
 
   const fetchSchoolData = async () => {
     try {
