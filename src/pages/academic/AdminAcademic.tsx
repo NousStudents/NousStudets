@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useTenant } from "@/contexts/TenantContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,8 +45,9 @@ interface ExamData {
 }
 
 export default function AdminAcademic() {
-  const { schoolId } = useTenant();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [schoolId, setSchoolId] = useState<string | null>(null);
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [subjects, setSubjects] = useState<SubjectData[]>([]);
   const [exams, setExams] = useState<ExamData[]>([]);
@@ -61,14 +62,28 @@ export default function AdminAcademic() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchSchoolId = async () => {
+      if (!user) return;
+      
+      const { data: adminData } = await supabase
+        .from("admins")
+        .select("school_id")
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
+      
+      if (adminData?.school_id) {
+        setSchoolId(adminData.school_id);
+      } else {
+        setLoading(false);
+      }
+    };
+    
+    fetchSchoolId();
+  }, [user]);
+
+  useEffect(() => {
     if (schoolId) {
       fetchAcademicData();
-    } else {
-      // If no schoolId, stop loading after a short delay to allow context to load
-      const timer = setTimeout(() => {
-        setLoading(false);
-      }, 2000);
-      return () => clearTimeout(timer);
     }
   }, [schoolId]);
 
