@@ -222,7 +222,7 @@
 
   *::-webkit-scrollbar-thumb {
     background: hsl(var(--muted));
-    border-radius: 100px;
+    border-radius: 0;
   }
 
   *::-webkit-scrollbar-thumb:hover {
@@ -273,7 +273,7 @@
 
   /* Premium card styles */
   .premium-card {
-    @apply bg-card rounded-2xl border border-border/50 transition-all duration-300;
+    @apply bg-card rounded-none border border-border transition-all duration-300;
     box-shadow: var(--shadow-card);
   }
 
@@ -323,7 +323,7 @@
   .gradient-border {
     position: relative;
     background: hsl(var(--card));
-    border-radius: 1rem;
+    border-radius: 0;
   }
 
   .gradient-border::before {
