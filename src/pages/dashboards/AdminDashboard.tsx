@@ -157,10 +157,10 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             {/* Bulk Users Card */}
             <button
               onClick={() => navigate('/admin/bulk-users')}
-              className="group relative overflow-hidden rounded-2xl border-2 border-pastel-blue/40 bg-pastel-blue/20 p-6 text-left transition-all hover:border-pastel-blue hover:shadow-lg hover:scale-105"
+              className="group relative overflow-hidden rounded-none border-2 border-pastel-blue/40 bg-pastel-blue/20 p-6 text-left transition-all hover:border-pastel-blue hover:shadow-lg hover:scale-105"
             >
               <div className="flex flex-col items-start gap-3">
-                <div className="rounded-xl bg-pastel-blue/30 p-3">
+                <div className="rounded-none bg-pastel-blue/30 p-3">
                   <Users className="h-8 w-8 text-pastel-blue" />
                 </div>
                 <div>
@@ -175,10 +175,10 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             {/* Whitelist Students Card */}
             <button
               onClick={() => navigate('/admin/allowed-students')}
-              className="group relative overflow-hidden rounded-2xl border-2 border-pastel-yellow/40 bg-pastel-yellow/20 p-6 text-left transition-all hover:border-pastel-yellow hover:shadow-lg hover:scale-105"
+              className="group relative overflow-hidden rounded-none border-2 border-pastel-yellow/40 bg-pastel-yellow/20 p-6 text-left transition-all hover:border-pastel-yellow hover:shadow-lg hover:scale-105"
             >
               <div className="flex flex-col items-start gap-3">
-                <div className="rounded-xl bg-pastel-yellow/30 p-3">
+                <div className="rounded-none bg-pastel-yellow/30 p-3">
                   <Shield className="h-8 w-8 text-pastel-yellow" />
                 </div>
                 <div>
@@ -193,10 +193,10 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             {/* Whitelist Teachers Card */}
             <button
               onClick={() => navigate('/admin/whitelisted-teachers')}
-              className="group relative overflow-hidden rounded-2xl border-2 border-blue-500/40 bg-blue-500/20 p-6 text-left transition-all hover:border-blue-500 hover:shadow-lg hover:scale-105"
+              className="group relative overflow-hidden rounded-none border-2 border-blue-500/40 bg-blue-500/20 p-6 text-left transition-all hover:border-blue-500 hover:shadow-lg hover:scale-105"
             >
               <div className="flex flex-col items-start gap-3">
-                <div className="rounded-xl bg-blue-500/30 p-3">
+                <div className="rounded-none bg-blue-500/30 p-3">
                   <BookOpen className="h-8 w-8 text-blue-500" />
                 </div>
                 <div>
@@ -211,10 +211,10 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             {/* Whitelist Parents Card */}
             <button
               onClick={() => navigate('/admin/whitelisted-parents')}
-              className="group relative overflow-hidden rounded-2xl border-2 border-purple-500/40 bg-purple-500/20 p-6 text-left transition-all hover:border-purple-500 hover:shadow-lg hover:scale-105"
+              className="group relative overflow-hidden rounded-none border-2 border-purple-500/40 bg-purple-500/20 p-6 text-left transition-all hover:border-purple-500 hover:shadow-lg hover:scale-105"
             >
               <div className="flex flex-col items-start gap-3">
-                <div className="rounded-xl bg-purple-500/30 p-3">
+                <div className="rounded-none bg-purple-500/30 p-3">
                   <Users className="h-8 w-8 text-purple-500" />
                 </div>
                 <div>
@@ -229,10 +229,10 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             {/* Classes Card */}
             <button
               onClick={() => navigate('/admin/classes')}
-              className="group relative overflow-hidden rounded-2xl border-2 border-pastel-mint/40 bg-pastel-mint/20 p-6 text-left transition-all hover:border-pastel-mint hover:shadow-lg hover:scale-105"
+              className="group relative overflow-hidden rounded-none border-2 border-pastel-mint/40 bg-pastel-mint/20 p-6 text-left transition-all hover:border-pastel-mint hover:shadow-lg hover:scale-105"
             >
               <div className="flex flex-col items-start gap-3">
-                <div className="rounded-xl bg-pastel-mint/30 p-3">
+                <div className="rounded-none bg-pastel-mint/30 p-3">
                   <School className="h-8 w-8 text-pastel-mint" />
                 </div>
                 <div>
@@ -247,10 +247,10 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             {/* Exam Timetable Card */}
             <button
               onClick={() => navigate('/admin/exam-timetable')}
-              className="group relative overflow-hidden rounded-2xl border-2 border-pastel-peach/40 bg-pastel-peach/20 p-6 text-left transition-all hover:border-pastel-peach hover:shadow-lg hover:scale-105"
+              className="group relative overflow-hidden rounded-none border-2 border-pastel-peach/40 bg-pastel-peach/20 p-6 text-left transition-all hover:border-pastel-peach hover:shadow-lg hover:scale-105"
             >
               <div className="flex flex-col items-start gap-3">
-                <div className="rounded-xl bg-pastel-peach/30 p-3">
+                <div className="rounded-none bg-pastel-peach/30 p-3">
                   <FileText className="h-8 w-8 text-pastel-coral" />
                 </div>
                 <div>
@@ -265,10 +265,10 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             {/* Class Timetable Card */}
             <button
               onClick={() => navigate('/admin/weekly-timetable')}
-              className="group relative overflow-hidden rounded-2xl border-2 border-pastel-lavender/40 bg-pastel-lavender/20 p-6 text-left transition-all hover:border-pastel-lavender hover:shadow-lg hover:scale-105"
+              className="group relative overflow-hidden rounded-none border-2 border-pastel-lavender/40 bg-pastel-lavender/20 p-6 text-left transition-all hover:border-pastel-lavender hover:shadow-lg hover:scale-105"
             >
               <div className="flex flex-col items-start gap-3">
-                <div className="rounded-xl bg-pastel-lavender/30 p-3">
+                <div className="rounded-none bg-pastel-lavender/30 p-3">
                   <Calendar className="h-8 w-8 text-pastel-lavender" />
                 </div>
                 <div>
@@ -293,7 +293,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <Button 
               variant="secondary" 
-              className="h-auto flex-col gap-3 py-5 rounded-2xl"
+              className="h-auto flex-col gap-3 py-5 rounded-none"
               onClick={() => navigate('/admin/school')}
             >
               <Building2 className="h-7 w-7" />
@@ -301,7 +301,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             </Button>
             <Button 
               variant="secondary" 
-              className="h-auto flex-col gap-3 py-5 rounded-2xl"
+              className="h-auto flex-col gap-3 py-5 rounded-none"
               onClick={() => navigate('/admin/students')}
             >
               <GraduationCap className="h-7 w-7" />
@@ -309,7 +309,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             </Button>
             <Button 
               variant="secondary" 
-              className="h-auto flex-col gap-3 py-5 rounded-2xl"
+              className="h-auto flex-col gap-3 py-5 rounded-none"
               onClick={() => navigate('/admin/teachers')}
             >
               <UserCheck className="h-7 w-7" />
@@ -317,7 +317,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             </Button>
             <Button 
               variant="secondary" 
-              className="h-auto flex-col gap-3 py-5 rounded-2xl"
+              className="h-auto flex-col gap-3 py-5 rounded-none"
               onClick={() => navigate('/admin/parents')}
             >
               <Users className="h-7 w-7" />
@@ -325,7 +325,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             </Button>
             <Button
               variant="secondary" 
-              className="h-auto flex-col gap-3 py-5 rounded-2xl"
+              className="h-auto flex-col gap-3 py-5 rounded-none"
               onClick={() => navigate('/admin/users')}
             >
               <UserPlus className="h-7 w-7" />
@@ -333,7 +333,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             </Button>
             <Button 
               variant="outline" 
-              className="h-auto flex-col gap-3 py-5 rounded-2xl border border-destructive/30 hover:bg-destructive/10"
+              className="h-auto flex-col gap-3 py-5 rounded-none border border-destructive/30 hover:bg-destructive/10"
               onClick={() => navigate('/admin/cleanup')}
             >
               <AlertCircle className="h-7 w-7 text-destructive" />
@@ -341,7 +341,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             </Button>
             <Button 
               variant="secondary" 
-              className="h-auto flex-col gap-3 py-5 rounded-2xl"
+              className="h-auto flex-col gap-3 py-5 rounded-none"
               onClick={() => navigate('/admin/sql-editor')}
             >
               <Database className="h-7 w-7" />
@@ -349,7 +349,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
             </Button>
             <Button 
               variant="secondary" 
-              className="h-auto flex-col gap-3 py-5 rounded-2xl"
+              className="h-auto flex-col gap-3 py-5 rounded-none"
               onClick={() => navigate('/admin/timetable')}
             >
               <Calendar className="h-7 w-7" />
@@ -362,7 +362,7 @@ export default function AdminDashboard({ profile }: { profile: any }) {
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6 pb-20 md:pb-6">
         {/* Desktop Navigation */}
-        <div className="hidden md:flex gap-2 bg-card border border-border p-2 rounded-lg flex-wrap">
+        <div className="hidden md:flex gap-2 bg-card border border-border p-2 rounded-none flex-wrap">
           <Button variant="secondary" size="sm" className="flex-1 min-w-[120px]" onClick={() => navigate('/admin/overview')}>
             Overview
           </Button>
