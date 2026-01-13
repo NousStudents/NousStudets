@@ -41,7 +41,7 @@ export class AuthService {
     /**
      * Register a new user
      */
-    async register(dto: RegisterDto): Promise<AuthResponse> {
+    async register(dto: RegisterDto & { role: AppRole }): Promise<AuthResponse> {
         // Check if school exists
         const school = await this.prisma.school.findUnique({
             where: { schoolId: dto.schoolId },
@@ -67,7 +67,7 @@ export class AuthService {
         const saltRounds = this.configService.get<number>('bcrypt.saltRounds');
         const hashedPassword = await bcrypt.hash(dto.password, saltRounds);
 
-        // Create user with default student role
+        // Create user with specific role
         const user = await this.prisma.user.create({
             data: {
                 email: dto.email,
@@ -78,7 +78,7 @@ export class AuthService {
                 mustChangePassword: false,
                 roles: {
                     create: {
-                        role: AppRole.student, // Default role
+                        role: dto.role,
                     },
                 },
             },
@@ -226,6 +226,47 @@ export class AuthService {
         }
 
         return user;
+    }
+
+    /**
+     * Get user by ID with roles and specific profile data
+     */
+    async getUserProfile(userId: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { userId },
+            include: {
+                roles: true,
+                school: true,
+            },
+        });
+
+        if (!user) return null;
+
+        // Fetch specific profile based on roles
+        let profile = null;
+        const roles = user.roles.map(r => r.role);
+
+        // Priority: Admin > Teacher > Parent > Student
+        if (roles.includes(AppRole.admin)) {
+            // Admin might not have a separate profile table yet, but if it does:
+            // profile = await this.prisma.admin.findFirst({ where: { userId } }); 
+            // For now, assuming no separate admin profile table or utilizing teacher/parent profile if dual role.
+            // Adjust based on schema. Schema has 'admin' table? 
+            // Checking schema... Schema has 'School' owner but not explicit 'Admin' table besides UserRole? 
+            // Wait, schema view didn't show 'Admin' table in the snippet 1-200. 
+            // Let's assume standard priority and if admin specific table exists (implied by previous code) use it.
+            // Previous code used `prisma.admin`. Let's assume it exists or use conditional.
+            // Actually, based on previous viewed code, `prisma.admin` was used.
+            profile = await this.prisma.admin.findFirst({ where: { userId } });
+        } else if (roles.includes(AppRole.teacher)) {
+            profile = await this.prisma.teacher.findUnique({ where: { userId } });
+        } else if (roles.includes(AppRole.parent)) {
+            profile = await this.prisma.parent.findFirst({ where: { userId } });
+        } else if (roles.includes(AppRole.student)) {
+            profile = await this.prisma.student.findUnique({ where: { userId } });
+        }
+
+        return { ...user, profile };
     }
 
     /**

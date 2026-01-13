@@ -11,19 +11,55 @@ import { AuthService, AuthResponse } from './auth.service';
 import { RegisterDto, LoginDto, ChangePasswordDto, RefreshTokenDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AppRole } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) { }
 
     /**
-     * Register a new user
+     * Register a new student
+     * POST /auth/register/student
+     */
+    @Post('register/student')
+    @HttpCode(HttpStatus.CREATED)
+    async registerStudent(@Body() dto: RegisterDto): Promise<AuthResponse> {
+        // Enforce role
+        const studentDto = { ...dto, role: AppRole.student };
+        // Ideally validate student-specific fields here or in service
+        return this.authService.register(studentDto);
+    }
+
+    /**
+     * Register a new teacher
+     * POST /auth/register/teacher
+     */
+    @Post('register/teacher')
+    @HttpCode(HttpStatus.CREATED)
+    async registerTeacher(@Body() dto: RegisterDto): Promise<AuthResponse> {
+        const teacherDto = { ...dto, role: AppRole.teacher };
+        return this.authService.register(teacherDto);
+    }
+
+    /**
+     * Register a new parent
+     * POST /auth/register/parent
+     */
+    @Post('register/parent')
+    @HttpCode(HttpStatus.CREATED)
+    async registerParent(@Body() dto: RegisterDto): Promise<AuthResponse> {
+        const parentDto = { ...dto, role: AppRole.parent };
+        return this.authService.register(parentDto);
+    }
+
+    /**
+     * Register a new user (Generic - defaulting to student)
      * POST /auth/register
      */
     @Post('register')
     @HttpCode(HttpStatus.CREATED)
     async register(@Body() dto: RegisterDto): Promise<AuthResponse> {
-        return this.authService.register(dto);
+        return this.authService.register({ ...dto, role: AppRole.student });
     }
 
     /**
@@ -67,7 +103,18 @@ export class AuthController {
     @Get('me')
     @UseGuards(JwtAuthGuard)
     async getProfile(@CurrentUser('userId') userId: string) {
-        const user = await this.authService.getUserWithRoles(userId);
+        const user = await this.authService.getUserProfile(userId);
+        if (!user) return null;
+
+        // Determine primary role for frontend (Admin > Teacher > Parent > Student)
+        const roles = user.roles.map(r => r.role);
+        let primaryRole = roles[0]?.role;
+
+        if (roles.includes(AppRole.admin)) primaryRole = AppRole.admin;
+        else if (roles.includes(AppRole.teacher)) primaryRole = AppRole.teacher;
+        else if (roles.includes(AppRole.parent)) primaryRole = AppRole.parent;
+        else if (roles.includes(AppRole.student)) primaryRole = AppRole.student;
+
         return {
             userId: user.userId,
             email: user.email,
@@ -76,7 +123,8 @@ export class AuthController {
             avatar: user.avatar,
             schoolId: user.schoolId,
             school: user.school,
-            roles: user.roles.map((r) => r.role),
+            role: primaryRole,
+            profile: user.profile,
             mustChangePassword: user.mustChangePassword,
             status: user.status,
             createdAt: user.createdAt,

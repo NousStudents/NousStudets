@@ -36,9 +36,12 @@ export class SchoolsController {
      * Get all schools (Super Admin only)
      * GET /schools
      */
+    /**
+     * Get all schools (Public for login selection)
+     * GET /schools
+     */
     @Get()
-    @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(AppRole.admin)
+    @Public()
     async findAll() {
         return this.schoolsService.findAll();
     }
