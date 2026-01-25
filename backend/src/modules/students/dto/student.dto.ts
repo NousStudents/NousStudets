@@ -8,14 +8,11 @@ import {
     IsNumber,
     Min,
 } from 'class-validator';
-import { VALID_ROLES } from '../../../common/types/role.type';
-import type { Role } from '../../../common/types/role.type';
 import { Type } from 'class-transformer';
 
-// Valid status values (matching SQL schema)
 const VALID_STATUSES = ['active', 'inactive', 'suspended'];
 
-export class CreateUserDto {
+export class CreateStudentDto {
     @IsEmail()
     @IsNotEmpty()
     email: string;
@@ -28,17 +25,16 @@ export class CreateUserDto {
     @IsOptional()
     phone?: string;
 
-    @IsIn(VALID_ROLES)
-    @IsNotEmpty()
-    role: Role;
-
-    // For students - optional classId
     @IsUUID()
     @IsOptional()
     classId?: string;
+
+    @IsString()
+    @IsOptional()
+    rollNumber?: string;
 }
 
-export class UpdateUserDto {
+export class UpdateStudentDto {
     @IsString()
     @IsOptional()
     fullName?: string;
@@ -47,15 +43,23 @@ export class UpdateUserDto {
     @IsOptional()
     phone?: string;
 
+    @IsUUID()
+    @IsOptional()
+    classId?: string;
+
+    @IsString()
+    @IsOptional()
+    rollNumber?: string;
+
     @IsIn(VALID_STATUSES)
     @IsOptional()
     status?: string;
 }
 
-export class UserQueryDto {
-    @IsIn(VALID_ROLES)
+export class StudentQueryDto {
+    @IsUUID()
     @IsOptional()
-    role?: Role;
+    classId?: string;
 
     @IsIn(VALID_STATUSES)
     @IsOptional()
@@ -76,25 +80,4 @@ export class UserQueryDto {
     @Min(1)
     @IsOptional()
     limit?: number;
-}
-
-// Legacy DTOs - kept for API compatibility but functionality deprecated
-export class AssignRoleDto {
-    @IsUUID()
-    @IsNotEmpty()
-    userId: string;
-
-    @IsIn(VALID_ROLES)
-    @IsNotEmpty()
-    role: Role;
-}
-
-export class RemoveRoleDto {
-    @IsUUID()
-    @IsNotEmpty()
-    userId: string;
-
-    @IsIn(VALID_ROLES)
-    @IsNotEmpty()
-    role: Role;
 }

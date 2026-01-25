@@ -13,7 +13,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: configService.get<string>('jwt.secret'),
+            secretOrKey: configService.get<string>('jwt.secret') ?? 'change-me',
         });
     }
 
@@ -25,13 +25,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         }
 
         // Return user data that will be attached to request.user
+        // Using auth_user_id as the subject (sub) to identify the user
         return {
-            userId: user.userId,
-            email: user.email,
-            fullName: user.fullName,
+            sub: user.authUserId,           // auth_user_id for JWT subject
+            authUserId: user.authUserId,
+            role: user.role,
             schoolId: user.schoolId,
-            roles: user.roles.map((r) => r.role),
-            status: user.status,
+            profile: user.profile,
         };
     }
 }

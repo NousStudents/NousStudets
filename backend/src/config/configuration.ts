@@ -2,7 +2,7 @@ export default () => ({
     // Application
     app: {
         name: process.env.APP_NAME || 'School Management System',
-        port: parseInt(process.env.PORT, 10) || 3000,
+        port: Number.parseInt(process.env.PORT ?? '3000', 10),
         environment: process.env.NODE_ENV || 'development',
         apiPrefix: process.env.API_PREFIX || 'api',
         corsOrigins: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:3000'],
@@ -29,12 +29,12 @@ export default () => ({
 
     // Password hashing
     bcrypt: {
-        saltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 12,
+        saltRounds: Number.parseInt(process.env.BCRYPT_SALT_ROUNDS ?? '12', 10),
     },
 
     // Rate limiting
     rateLimit: {
-        ttl: parseInt(process.env.RATE_LIMIT_TTL, 10) || 60,
-        limit: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
+        ttl: Number.parseInt(process.env.RATE_LIMIT_TTL ?? '60', 10),
+        limit: Number.parseInt(process.env.RATE_LIMIT_MAX ?? '100', 10),
     },
 });

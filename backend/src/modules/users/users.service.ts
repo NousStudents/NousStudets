@@ -1,111 +1,170 @@
 import {
     Injectable,
     NotFoundException,
-    ConflictException,
     BadRequestException,
+    ForbiddenException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma';
-import { CreateUserDto, UpdateUserDto, UserQueryDto, AssignRoleDto, RemoveRoleDto } from './dto';
-import { AppRole } from '@prisma/client';
+import { CreateUserDto, UpdateUserDto, UserQueryDto } from './dto';
+import type { Role } from '../../common/types/role.type';
 
+/**
+ * Users Service
+ * 
+ * Handles all user operations. In the new schema:
+ * - Role is determined by which table (admins/teachers/students/parents) has the auth_user_id
+ * - The 'users' table is a reference table for general queries
+ * - Role-specific tables store the actual profile data
+ */
 @Injectable()
 export class UsersService {
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly configService: ConfigService,
-    ) { }
+    constructor(private readonly prisma: PrismaService) { }
 
     /**
-     * Create a new user
+     * Get full user profile by auth_user_id
+     * Checks all role tables to find the user and returns complete profile
      */
-    async create(dto: CreateUserDto, grantedBy?: string) {
-        // Check if user exists in this school
-        const existingUser = await this.prisma.user.findFirst({
-            where: {
-                email: dto.email,
-                schoolId: dto.schoolId,
-            },
+    async getFullProfile(authUserId: string) {
+        // Check each role table in priority order
+        const admin = await this.prisma.admin.findFirst({
+            where: { authUserId },
+            include: { school: true },
         });
-
-        if (existingUser) {
-            throw new ConflictException('User with this email already exists in this school');
+        if (admin && admin.status === 'active') {
+            return this.formatProfile(admin, 'admin');
         }
 
-        // Hash password if provided
-        let hashedPassword: string | undefined;
-        if (dto.password) {
-            const saltRounds = this.configService.get<number>('bcrypt.saltRounds');
-            hashedPassword = await bcrypt.hash(dto.password, saltRounds);
+        const teacher = await this.prisma.teacher.findFirst({
+            where: { authUserId },
+            include: { school: true },
+        });
+        if (teacher && teacher.status === 'active') {
+            return this.formatProfile(teacher, 'teacher');
         }
 
-        // Create user with roles
-        const user = await this.prisma.user.create({
-            data: {
-                email: dto.email,
-                password: hashedPassword,
-                fullName: dto.fullName,
-                phone: dto.phone,
-                schoolId: dto.schoolId,
-                mustChangePassword: !!dto.password, // Must change if password was set
-                roles: dto.roles?.length
-                    ? {
-                        create: dto.roles.map((role) => ({
-                            role,
-                            grantedBy,
-                        })),
-                    }
-                    : undefined,
-            },
+        const student = await this.prisma.student.findFirst({
+            where: { authUserId },
             include: {
-                roles: true,
-                school: true,
+                class: { include: { school: true } },
+                parent: true,
             },
         });
+        if (student && student.status === 'active') {
+            const schoolId = student.class?.school?.schoolId || null;
+            return this.formatProfile({ ...student, schoolId, school: student.class?.school }, 'student');
+        }
 
-        return this.formatUser(user);
+        const parent = await this.prisma.parent.findFirst({
+            where: { authUserId },
+            include: {
+                school: true,
+                children: true,
+            },
+        });
+        if (parent && parent.status === 'active') {
+            return this.formatProfile(parent, 'parent');
+        }
+
+        throw new NotFoundException('User not found or inactive');
     }
 
     /**
-     * Find all users with filtering and pagination
+     * Find all users in a school (from role-specific tables)
+     * REQUIRES role filter for accurate pagination
      */
     async findAll(schoolId: string, query: UserQueryDto) {
-        const { role, status, search, page = 1, limit = 20 } = query;
-        const skip = (page - 1) * limit;
+        const { role, status = 'active', search, page = 1, limit = 20 } = query;
 
-        const where: any = { schoolId };
-
-        if (status) {
-            where.status = status;
+        // Require role filter for accurate pagination
+        if (!role) {
+            throw new BadRequestException(
+                'Role filter is required for pagination. Use /users?role=admin|teacher|student|parent or /users/role/:role'
+            );
         }
 
-        if (search) {
-            where.OR = [
-                { fullName: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } },
-            ];
+        return this.findByRole(schoolId, role, { search, skip: (page - 1) * limit, limit, status });
+    }
+
+    /**
+     * Find users by specific role with proper pagination
+     */
+    async findByRole(schoolId: string, role: Role, options?: { search?: string; skip?: number; limit?: number; status?: string }) {
+        const { search, skip = 0, limit = 20, status = 'active' } = options || {};
+        const where = this.buildWhere(schoolId, status, search);
+
+        let data: any[] = [];
+        let total = 0;
+
+        switch (role) {
+            case 'admin':
+                [data, total] = await Promise.all([
+                    this.prisma.admin.findMany({
+                        where,
+                        include: { school: true },
+                        skip,
+                        take: limit,
+                    }),
+                    this.prisma.admin.count({ where }),
+                ]);
+                data = data.map(u => this.formatProfile(u, 'admin'));
+                break;
+
+            case 'teacher':
+                [data, total] = await Promise.all([
+                    this.prisma.teacher.findMany({
+                        where,
+                        include: { school: true },
+                        skip,
+                        take: limit,
+                    }),
+                    this.prisma.teacher.count({ where }),
+                ]);
+                data = data.map(u => this.formatProfile(u, 'teacher'));
+                break;
+
+            case 'student':
+                const studentWhere = {
+                    status: status || undefined,
+                    class: { schoolId },
+                    ...(search && {
+                        OR: [
+                            { fullName: { contains: search, mode: 'insensitive' as const } },
+                            { email: { contains: search, mode: 'insensitive' as const } },
+                        ],
+                    }),
+                };
+                [data, total] = await Promise.all([
+                    this.prisma.student.findMany({
+                        where: studentWhere,
+                        include: { class: { include: { school: true } } },
+                        skip,
+                        take: limit,
+                    }),
+                    this.prisma.student.count({ where: studentWhere }),
+                ]);
+                data = data.map(u => this.formatProfile({ ...u, schoolId, school: u.class?.school }, 'student'));
+                break;
+
+            case 'parent':
+                [data, total] = await Promise.all([
+                    this.prisma.parent.findMany({
+                        where,
+                        include: { school: true },
+                        skip,
+                        take: limit,
+                    }),
+                    this.prisma.parent.count({ where }),
+                ]);
+                data = data.map(u => this.formatProfile(u, 'parent'));
+                break;
+
+            default:
+                return { data: [], pagination: { total: 0, page: 1, limit, pages: 0 } };
         }
 
-        if (role) {
-            where.roles = {
-                some: { role },
-            };
-        }
-
-        const [users, total] = await Promise.all([
-            this.prisma.user.findMany({
-                where,
-                include: { roles: true },
-                skip,
-                take: limit,
-                orderBy: { createdAt: 'desc' },
-            }),
-            this.prisma.user.count({ where }),
-        ]);
-
+        const page = Math.floor(skip / limit) + 1;
         return {
-            data: users.map(this.formatUser),
+            data,
             pagination: {
                 total,
                 page,
@@ -116,207 +175,336 @@ export class UsersService {
     }
 
     /**
-     * Find a single user by ID
+     * Resolve role-specific ID to authUserId
+     * Useful for frontend that has studentId/teacherId but needs authUserId
      */
-    async findOne(userId: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { userId },
-            include: {
-                roles: true,
-                school: true,
-                teacher: true,
-                student: {
-                    include: {
-                        class: true,
-                        parent: { include: { user: true } },
-                    },
-                },
-                parent: {
-                    include: {
-                        children: { include: { user: true } },
-                    },
-                },
-            },
-        });
+    async resolveRoleId(role: Role, roleId: string, schoolId: string): Promise<{ authUserId: string; role: Role }> {
+        let authUserId: string | null = null;
 
-        if (!user) {
-            throw new NotFoundException('User not found');
-        }
-
-        return this.formatUser(user);
-    }
-
-    /**
-     * Update a user
-     */
-    async update(userId: string, dto: UpdateUserDto) {
-        const user = await this.prisma.user.findUnique({
-            where: { userId },
-        });
-
-        if (!user) {
-            throw new NotFoundException('User not found');
-        }
-
-        const updatedUser = await this.prisma.user.update({
-            where: { userId },
-            data: dto,
-            include: { roles: true, school: true },
-        });
-
-        return this.formatUser(updatedUser);
-    }
-
-    /**
-     * Delete a user
-     */
-    async remove(userId: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { userId },
-        });
-
-        if (!user) {
-            throw new NotFoundException('User not found');
-        }
-
-        await this.prisma.user.delete({
-            where: { userId },
-        });
-
-        return { message: 'User deleted successfully' };
-    }
-
-    /**
-     * Assign a role to a user
-     */
-    async assignRole(dto: AssignRoleDto, grantedBy: string) {
-        // Check if user exists
-        const user = await this.prisma.user.findUnique({
-            where: { userId: dto.userId },
-        });
-
-        if (!user) {
-            throw new NotFoundException('User not found');
-        }
-
-        // Check if role already exists
-        const existingRole = await this.prisma.userRole.findUnique({
-            where: {
-                userId_role: {
-                    userId: dto.userId,
-                    role: dto.role,
-                },
-            },
-        });
-
-        if (existingRole) {
-            throw new ConflictException('User already has this role');
-        }
-
-        // Add role
-        await this.prisma.userRole.create({
-            data: {
-                userId: dto.userId,
-                role: dto.role,
-                grantedBy,
-            },
-        });
-
-        // If role is teacher, student, or parent, create profile record if not exists
-        await this.createProfileRecord(dto.userId, dto.role);
-
-        return this.findOne(dto.userId);
-    }
-
-    /**
-     * Remove a role from a user
-     */
-    async removeRole(dto: RemoveRoleDto) {
-        const role = await this.prisma.userRole.findUnique({
-            where: {
-                userId_role: {
-                    userId: dto.userId,
-                    role: dto.role,
-                },
-            },
-        });
-
-        if (!role) {
-            throw new NotFoundException('User does not have this role');
-        }
-
-        await this.prisma.userRole.delete({
-            where: { id: role.id },
-        });
-
-        return this.findOne(dto.userId);
-    }
-
-    /**
-     * Get users by role within a school
-     */
-    async findByRole(schoolId: string, role: AppRole) {
-        const users = await this.prisma.user.findMany({
-            where: {
-                schoolId,
-                roles: {
-                    some: { role },
-                },
-            },
-            include: { roles: true },
-        });
-
-        return users.map(this.formatUser);
-    }
-
-    /**
-     * Create profile record based on role
-     */
-    private async createProfileRecord(userId: string, role: AppRole) {
         switch (role) {
-            case AppRole.teacher:
-                const existingTeacher = await this.prisma.teacher.findUnique({
-                    where: { userId },
+            case 'admin':
+                const admin = await this.prisma.admin.findFirst({
+                    where: { adminId: roleId, schoolId },
+                    select: { authUserId: true },
                 });
-                if (!existingTeacher) {
-                    await this.prisma.teacher.create({
-                        data: { userId },
-                    });
+                authUserId = admin?.authUserId || null;
+                break;
+
+            case 'teacher':
+                const teacher = await this.prisma.teacher.findFirst({
+                    where: { teacherId: roleId, schoolId },
+                    select: { authUserId: true },
+                });
+                authUserId = teacher?.authUserId || null;
+                break;
+
+            case 'student':
+                const student = await this.prisma.student.findFirst({
+                    where: { studentId: roleId },
+                    include: { class: true },
+                });
+                // Verify student belongs to school via class
+                if (student && student.class?.schoolId === schoolId) {
+                    authUserId = student.authUserId;
                 }
                 break;
 
-            case AppRole.student:
-                const existingStudent = await this.prisma.student.findUnique({
-                    where: { userId },
+            case 'parent':
+                const parent = await this.prisma.parent.findFirst({
+                    where: { parentId: roleId, schoolId },
+                    select: { authUserId: true },
                 });
-                if (!existingStudent) {
-                    await this.prisma.student.create({
-                        data: { userId },
-                    });
-                }
-                break;
-
-            case AppRole.parent:
-                const existingParent = await this.prisma.parent.findUnique({
-                    where: { userId },
-                });
-                if (!existingParent) {
-                    await this.prisma.parent.create({
-                        data: { userId },
-                    });
-                }
+                authUserId = parent?.authUserId || null;
                 break;
         }
+
+        if (!authUserId) {
+            throw new NotFoundException(`${role} with ID ${roleId} not found in this school`);
+        }
+
+        return { authUserId, role };
     }
 
     /**
-     * Format user for response (remove sensitive data)
+     * Create a new user (Admin only)
+     * Creates record in role-specific table + reference users table
      */
-    private formatUser(user: any) {
-        const { password, authUserId, ...userData } = user;
+    async create(dto: CreateUserDto & { schoolId: string }, createdBy: string) {
+        const authUserId = crypto.randomUUID();
+        const { role, schoolId, fullName, email, phone } = dto;
+
+        // Create role-specific record
+        let profile: any;
+        switch (role) {
+            case 'admin':
+                profile = await this.prisma.admin.create({
+                    data: {
+                        authUserId,
+                        schoolId,
+                        fullName,
+                        email,
+                        phone,
+                        status: 'active',
+                    },
+                    include: { school: true },
+                });
+                break;
+
+            case 'teacher':
+                profile = await this.prisma.teacher.create({
+                    data: {
+                        authUserId,
+                        schoolId,
+                        fullName,
+                        email,
+                        phone,
+                        status: 'active',
+                    },
+                    include: { school: true },
+                });
+                break;
+
+            case 'student':
+                profile = await this.prisma.student.create({
+                    data: {
+                        authUserId,
+                        fullName,
+                        email,
+                        phone,
+                        classId: dto.classId,
+                        status: 'active',
+                    },
+                    include: { class: { include: { school: true } } },
+                });
+                break;
+
+            case 'parent':
+                profile = await this.prisma.parent.create({
+                    data: {
+                        authUserId,
+                        schoolId,
+                        fullName,
+                        email,
+                        phone,
+                        status: 'active',
+                    },
+                    include: { school: true },
+                });
+                break;
+
+            default:
+                throw new BadRequestException(`Invalid role: ${role}`);
+        }
+
+        // Create reference record in users table
+        await this.prisma.user.create({
+            data: {
+                authUserId,
+                schoolId,
+                fullName,
+                email,
+                phone,
+                role,
+                status: 'active',
+            },
+        });
+
+        return this.formatProfile(profile, role);
+    }
+
+    /**
+     * Update user profile
+     */
+    async update(authUserId: string, dto: UpdateUserDto) {
+        // Find which table the user is in
+        const roleData = await this.findUserRole(authUserId);
+        if (!roleData) {
+            throw new NotFoundException('User not found');
+        }
+
+        const { role, profile } = roleData;
+        const updateData = {
+            fullName: dto.fullName,
+            phone: dto.phone,
+            status: dto.status,
+        };
+
+        let updated: any;
+        switch (role) {
+            case 'admin':
+                updated = await this.prisma.admin.update({
+                    where: { adminId: profile.adminId },
+                    data: updateData,
+                    include: { school: true },
+                });
+                break;
+            case 'teacher':
+                updated = await this.prisma.teacher.update({
+                    where: { teacherId: profile.teacherId },
+                    data: updateData,
+                    include: { school: true },
+                });
+                break;
+            case 'student':
+                updated = await this.prisma.student.update({
+                    where: { studentId: profile.studentId },
+                    data: updateData,
+                    include: { class: { include: { school: true } } },
+                });
+                break;
+            case 'parent':
+                updated = await this.prisma.parent.update({
+                    where: { parentId: profile.parentId },
+                    data: updateData,
+                    include: { school: true },
+                });
+                break;
+        }
+
+        // Also update reference table
+        await this.prisma.user.updateMany({
+            where: { authUserId },
+            data: updateData,
+        });
+
+        return this.formatProfile(updated, role);
+    }
+
+    /**
+     * Soft-delete user by setting status to inactive
+     */
+    async remove(authUserId: string, schoolId: string) {
+        const roleData = await this.findUserRole(authUserId);
+        if (!roleData) {
+            throw new NotFoundException('User not found');
+        }
+
+        const { role, profile } = roleData;
+
+        // Verify tenant scope - students need special handling via class
+        if (role === 'student') {
+            const student = await this.prisma.student.findFirst({
+                where: { studentId: profile.studentId },
+                include: { class: true },
+            });
+
+            const schoolMatch =
+                student?.class?.schoolId === schoolId ||
+                (await this.prisma.user.findFirst({
+                    where: { authUserId },
+                    select: { schoolId: true },
+                }))?.schoolId === schoolId;
+
+            if (!schoolMatch) {
+                throw new ForbiddenException('User does not belong to your school');
+            }
+        } else if (profile.schoolId && profile.schoolId !== schoolId) {
+            throw new ForbiddenException('User does not belong to your school');
+        }
+
+        switch (role) {
+            case 'admin':
+                await this.prisma.admin.update({
+                    where: { adminId: profile.adminId },
+                    data: { status: 'inactive' },
+                });
+                break;
+            case 'teacher':
+                await this.prisma.teacher.update({
+                    where: { teacherId: profile.teacherId },
+                    data: { status: 'inactive' },
+                });
+                break;
+            case 'student':
+                await this.prisma.student.update({
+                    where: { studentId: profile.studentId },
+                    data: { status: 'inactive' },
+                });
+                break;
+            case 'parent':
+                await this.prisma.parent.update({
+                    where: { parentId: profile.parentId },
+                    data: { status: 'inactive' },
+                });
+                break;
+        }
+
+        // Update reference table
+        await this.prisma.user.updateMany({
+            where: { authUserId },
+            data: { status: 'inactive' },
+        });
+
+        return { message: 'User deactivated successfully' };
+    }
+
+    /**
+     * Find which role table a user is in
+     */
+    private async findUserRole(authUserId: string): Promise<{ role: Role; profile: any } | null> {
+        const admin = await this.prisma.admin.findFirst({ where: { authUserId } });
+        if (admin) return { role: 'admin', profile: admin };
+
+        const teacher = await this.prisma.teacher.findFirst({ where: { authUserId } });
+        if (teacher) return { role: 'teacher', profile: teacher };
+
+        const student = await this.prisma.student.findFirst({ where: { authUserId } });
+        if (student) return { role: 'student', profile: student };
+
+        const parent = await this.prisma.parent.findFirst({ where: { authUserId } });
+        if (parent) return { role: 'parent', profile: parent };
+
+        return null;
+    }
+
+    /**
+     * Build Prisma where clause for role table queries
+     */
+    private buildWhere(schoolId: string, status?: string, search?: string) {
         return {
-            ...userData,
-            roles: user.roles?.map((r: any) => r.role) || [],
+            schoolId,
+            status: status || undefined,
+            ...(search && {
+                OR: [
+                    { fullName: { contains: search, mode: 'insensitive' as const } },
+                    { email: { contains: search, mode: 'insensitive' as const } },
+                ],
+            }),
+        };
+    }
+
+    /**
+     * Format profile for API response
+     */
+    private formatProfile(profile: any, role: Role) {
+        const id = profile.adminId || profile.teacherId || profile.studentId || profile.parentId;
+        return {
+            id,
+            authUserId: profile.authUserId,
+            email: profile.email,
+            fullName: profile.fullName,
+            phone: profile.phone,
+            role,
+            status: profile.status,
+            schoolId: profile.schoolId,
+            school: profile.school,
+            createdAt: profile.createdAt,
+            // Role-specific fields
+            ...(role === 'teacher' && {
+                qualification: profile.qualification,
+                experience: profile.experience,
+                subjectSpecialization: profile.subjectSpecialization,
+            }),
+            ...(role === 'student' && {
+                classId: profile.classId,
+                class: profile.class,
+                rollNo: profile.rollNo,
+                section: profile.section,
+            }),
+            ...(role === 'parent' && {
+                relation: profile.relation,
+                children: profile.children,
+            }),
         };
     }
 }

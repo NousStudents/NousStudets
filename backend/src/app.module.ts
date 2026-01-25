@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 // Core Modules
 import { PrismaModule } from './prisma';
@@ -10,9 +11,9 @@ import configuration from './config/configuration';
 import { AuthModule } from './modules/auth';
 import { UsersModule } from './modules/users';
 import { SchoolsModule } from './modules/schools';
-// import { StudentsModule } from './modules/students';
-// import { TeachersModule } from './modules/teachers';
-// import { ClassesModule } from './modules/classes';
+import { StudentsModule } from './modules/students/students.module';
+import { TeachersModule } from './modules/teachers/teachers.module';
+import { ClassesModule } from './modules/classes/classes.module';
 // import { AttendanceModule } from './modules/attendance';
 // import { AssignmentsModule } from './modules/assignments';
 // import { ExamsModule } from './modules/exams';
@@ -30,6 +31,12 @@ import { JwtAuthGuard } from './common/guards';
       envFilePath: ['.env.local', '.env'],
     }),
 
+    // Rate Limiting - Global: 100 requests per 60 seconds per IP
+    ThrottlerModule.forRoot([{
+      ttl: 60, // 60 seconds (throttler uses seconds, not milliseconds)
+      limit: 100,
+    }]),
+
     // Core
     PrismaModule,
 
@@ -37,9 +44,9 @@ import { JwtAuthGuard } from './common/guards';
     AuthModule,
     UsersModule,
     SchoolsModule,
-    // StudentsModule,
-    // TeachersModule,
-    // ClassesModule,
+    StudentsModule,
+    TeachersModule,
+    ClassesModule,
     // AttendanceModule,
     // AssignmentsModule,
     // ExamsModule,
@@ -47,6 +54,11 @@ import { JwtAuthGuard } from './common/guards';
   ],
   controllers: [],
   providers: [
+    // Global Rate Limiting Guard
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     // Global JWT Auth Guard (optional - can require auth by default)
     // Uncomment to require authentication on all routes by default
     // {

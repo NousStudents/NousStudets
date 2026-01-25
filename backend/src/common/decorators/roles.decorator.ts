@@ -1,10 +1,10 @@
 import { SetMetadata } from '@nestjs/common';
-import { AppRole } from '@prisma/client';
+import { Role } from '../types/role.type';
 
 export const ROLES_KEY = 'roles';
 
 /**
  * Decorator to specify required roles for a route
- * Usage: @Roles(AppRole.admin, AppRole.teacher)
+ * Usage: @Roles('admin', 'teacher')
  */
-export const Roles = (...roles: AppRole[]) => SetMetadata(ROLES_KEY, roles);
+export const Roles = (...roles: Role[]) => SetMetadata(ROLES_KEY, roles);

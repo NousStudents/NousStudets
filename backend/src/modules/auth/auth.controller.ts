@@ -7,11 +7,11 @@ import {
     HttpCode,
     HttpStatus,
 } from '@nestjs/common';
-import { AuthService, AuthResponse } from './auth.service';
-import { RegisterDto, LoginDto, ChangePasswordDto, RefreshTokenDto } from './dto';
+import { Throttle } from '@nestjs/throttler';
+import { AuthService, AuthResponse, Role } from './auth.service';
+import { RegisterDto, LoginDto, RefreshTokenDto } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { AppRole } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -20,70 +20,73 @@ export class AuthController {
     /**
      * Register a new student
      * POST /auth/register/student
+     * Rate limited: 5 requests per 5 minutes (300s)
      */
     @Post('register/student')
+    @Throttle({ default: { limit: 5, ttl: 300 } }) // 5 requests per 5 minutes
     @HttpCode(HttpStatus.CREATED)
     async registerStudent(@Body() dto: RegisterDto): Promise<AuthResponse> {
-        // Enforce role
-        const studentDto = { ...dto, role: AppRole.student };
-        // Ideally validate student-specific fields here or in service
-        return this.authService.register(studentDto);
+        return this.authService.register({ ...dto, role: 'student' as Role });
     }
 
     /**
      * Register a new teacher
      * POST /auth/register/teacher
+     * Rate limited: 5 requests per 5 minutes (300s)
      */
     @Post('register/teacher')
+    @Throttle({ default: { limit: 5, ttl: 300 } })
     @HttpCode(HttpStatus.CREATED)
     async registerTeacher(@Body() dto: RegisterDto): Promise<AuthResponse> {
-        const teacherDto = { ...dto, role: AppRole.teacher };
-        return this.authService.register(teacherDto);
+        return this.authService.register({ ...dto, role: 'teacher' as Role });
     }
 
     /**
      * Register a new parent
      * POST /auth/register/parent
+     * Rate limited: 5 requests per 5 minutes (300s)
      */
     @Post('register/parent')
+    @Throttle({ default: { limit: 5, ttl: 300 } })
     @HttpCode(HttpStatus.CREATED)
     async registerParent(@Body() dto: RegisterDto): Promise<AuthResponse> {
-        const parentDto = { ...dto, role: AppRole.parent };
-        return this.authService.register(parentDto);
+        return this.authService.register({ ...dto, role: 'parent' as Role });
+    }
+
+    /**
+     * Register a new admin
+     * POST /auth/register/admin
+     * Rate limited: 5 requests per 5 minutes (300s)
+     */
+    @Post('register/admin')
+    @Throttle({ default: { limit: 5, ttl: 300 } })
+    @HttpCode(HttpStatus.CREATED)
+    async registerAdmin(@Body() dto: RegisterDto): Promise<AuthResponse> {
+        return this.authService.register({ ...dto, role: 'admin' as Role });
     }
 
     /**
      * Register a new user (Generic - defaulting to student)
      * POST /auth/register
+     * Rate limited: 5 requests per 5 minutes (300s)
      */
     @Post('register')
+    @Throttle({ default: { limit: 5, ttl: 300 } })
     @HttpCode(HttpStatus.CREATED)
     async register(@Body() dto: RegisterDto): Promise<AuthResponse> {
-        return this.authService.register({ ...dto, role: AppRole.student });
+        return this.authService.register({ ...dto, role: 'student' as Role });
     }
 
     /**
      * Login with email and password
      * POST /auth/login
+     * Rate limited: 5 requests per minute (60s) to prevent brute-force
      */
     @Post('login')
+    @Throttle({ default: { limit: 5, ttl: 60 } }) // 5 attempts per minute
     @HttpCode(HttpStatus.OK)
     async login(@Body() dto: LoginDto): Promise<AuthResponse> {
         return this.authService.login(dto);
-    }
-
-    /**
-     * Change password (requires authentication)
-     * POST /auth/change-password
-     */
-    @Post('change-password')
-    @UseGuards(JwtAuthGuard)
-    @HttpCode(HttpStatus.OK)
-    async changePassword(
-        @CurrentUser('userId') userId: string,
-        @Body() dto: ChangePasswordDto,
-    ): Promise<{ message: string }> {
-        return this.authService.changePassword(userId, dto);
     }
 
     /**
@@ -102,32 +105,19 @@ export class AuthController {
      */
     @Get('me')
     @UseGuards(JwtAuthGuard)
-    async getProfile(@CurrentUser('userId') userId: string) {
-        const user = await this.authService.getUserProfile(userId);
+    async getProfile(@CurrentUser('sub') authUserId: string) {
+        const user = await this.authService.getUserProfile(authUserId);
         if (!user) return null;
 
-        // Determine primary role for frontend (Admin > Teacher > Parent > Student)
-        const roles = user.roles.map(r => r.role);
-        let primaryRole = roles[0]?.role;
-
-        if (roles.includes(AppRole.admin)) primaryRole = AppRole.admin;
-        else if (roles.includes(AppRole.teacher)) primaryRole = AppRole.teacher;
-        else if (roles.includes(AppRole.parent)) primaryRole = AppRole.parent;
-        else if (roles.includes(AppRole.student)) primaryRole = AppRole.student;
-
         return {
-            userId: user.userId,
+            id: user.id,
+            authUserId: user.authUserId,
             email: user.email,
             fullName: user.fullName,
-            phone: user.phone,
-            avatar: user.avatar,
             schoolId: user.schoolId,
             school: user.school,
-            role: primaryRole,
+            role: user.role,
             profile: user.profile,
-            mustChangePassword: user.mustChangePassword,
-            status: user.status,
-            createdAt: user.createdAt,
         };
     }
 

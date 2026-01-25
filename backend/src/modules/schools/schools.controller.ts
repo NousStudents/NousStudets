@@ -14,7 +14,6 @@ import { SchoolsService } from './schools.service';
 import { CreateSchoolDto, UpdateSchoolDto } from './dto';
 import { JwtAuthGuard, RolesGuard } from '../../common/guards';
 import { Roles, CurrentUser, Public } from '../../common/decorators';
-import { AppRole } from '@prisma/client';
 
 @Controller('schools')
 export class SchoolsController {
@@ -26,16 +25,12 @@ export class SchoolsController {
      */
     @Post()
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(AppRole.admin)
+    @Roles('admin', 'super_admin')
     @HttpCode(HttpStatus.CREATED)
     async create(@Body() dto: CreateSchoolDto) {
         return this.schoolsService.create(dto);
     }
 
-    /**
-     * Get all schools (Super Admin only)
-     * GET /schools
-     */
     /**
      * Get all schools (Public for login selection)
      * GET /schools
@@ -72,7 +67,7 @@ export class SchoolsController {
      */
     @Get('stats')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(AppRole.admin)
+    @Roles('admin')
     async getStats(@CurrentUser('schoolId') schoolId: string) {
         return this.schoolsService.getStats(schoolId);
     }
@@ -93,7 +88,7 @@ export class SchoolsController {
      */
     @Put(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(AppRole.admin)
+    @Roles('admin')
     async update(
         @Param('id') schoolId: string,
         @Body() dto: UpdateSchoolDto,
@@ -107,7 +102,7 @@ export class SchoolsController {
      */
     @Delete(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
-    @Roles(AppRole.admin)
+    @Roles('super_admin')
     @HttpCode(HttpStatus.OK)
     async remove(@Param('id') schoolId: string) {
         return this.schoolsService.remove(schoolId);

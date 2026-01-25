@@ -6,16 +6,14 @@ import {
     IsUUID,
     IsIn,
     IsNumber,
+    IsArray,
     Min,
 } from 'class-validator';
-import { VALID_ROLES } from '../../../common/types/role.type';
-import type { Role } from '../../../common/types/role.type';
 import { Type } from 'class-transformer';
 
-// Valid status values (matching SQL schema)
 const VALID_STATUSES = ['active', 'inactive', 'suspended'];
 
-export class CreateUserDto {
+export class CreateTeacherDto {
     @IsEmail()
     @IsNotEmpty()
     email: string;
@@ -28,17 +26,16 @@ export class CreateUserDto {
     @IsOptional()
     phone?: string;
 
-    @IsIn(VALID_ROLES)
-    @IsNotEmpty()
-    role: Role;
-
-    // For students - optional classId
-    @IsUUID()
+    @IsString()
     @IsOptional()
-    classId?: string;
+    subject?: string;
+
+    @IsString()
+    @IsOptional()
+    qualification?: string;
 }
 
-export class UpdateUserDto {
+export class UpdateTeacherDto {
     @IsString()
     @IsOptional()
     fullName?: string;
@@ -47,15 +44,23 @@ export class UpdateUserDto {
     @IsOptional()
     phone?: string;
 
+    @IsString()
+    @IsOptional()
+    subject?: string;
+
+    @IsString()
+    @IsOptional()
+    qualification?: string;
+
     @IsIn(VALID_STATUSES)
     @IsOptional()
     status?: string;
 }
 
-export class UserQueryDto {
-    @IsIn(VALID_ROLES)
+export class TeacherQueryDto {
+    @IsString()
     @IsOptional()
-    role?: Role;
+    subject?: string;
 
     @IsIn(VALID_STATUSES)
     @IsOptional()
@@ -78,23 +83,8 @@ export class UserQueryDto {
     limit?: number;
 }
 
-// Legacy DTOs - kept for API compatibility but functionality deprecated
-export class AssignRoleDto {
-    @IsUUID()
-    @IsNotEmpty()
-    userId: string;
-
-    @IsIn(VALID_ROLES)
-    @IsNotEmpty()
-    role: Role;
-}
-
-export class RemoveRoleDto {
-    @IsUUID()
-    @IsNotEmpty()
-    userId: string;
-
-    @IsIn(VALID_ROLES)
-    @IsNotEmpty()
-    role: Role;
+export class AssignClassDto {
+    @IsArray()
+    @IsUUID('4', { each: true })
+    classIds: string[];
 }

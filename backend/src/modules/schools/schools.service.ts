@@ -16,7 +16,7 @@ export class SchoolsService {
     async create(dto: CreateSchoolDto) {
         // Check if subdomain is unique
         if (dto.subdomain) {
-            const existingSchool = await this.prisma.school.findUnique({
+            const existingSchool = await this.prisma.school.findFirst({
                 where: { subdomain: dto.subdomain },
             });
 
@@ -59,7 +59,6 @@ export class SchoolsService {
                         users: true,
                         classes: true,
                         exams: true,
-                        events: true,
                     },
                 },
             },
@@ -76,7 +75,7 @@ export class SchoolsService {
      * Find a school by subdomain
      */
     async findBySubdomain(subdomain: string) {
-        const school = await this.prisma.school.findUnique({
+        const school = await this.prisma.school.findFirst({
             where: { subdomain },
         });
 
@@ -101,7 +100,7 @@ export class SchoolsService {
 
         // Check if new subdomain is unique
         if (dto.subdomain && dto.subdomain !== school.subdomain) {
-            const existingSchool = await this.prisma.school.findUnique({
+            const existingSchool = await this.prisma.school.findFirst({
                 where: { subdomain: dto.subdomain },
             });
 
@@ -155,8 +154,8 @@ export class SchoolsService {
             totalSubjects,
         ] = await Promise.all([
             this.prisma.user.count({ where: { schoolId } }),
-            this.prisma.student.count({ where: { user: { schoolId } } }),
-            this.prisma.teacher.count({ where: { user: { schoolId } } }),
+            this.prisma.student.count({ where: { class: { schoolId } } }),
+            this.prisma.teacher.count({ where: { schoolId } }),
             this.prisma.class.count({ where: { schoolId } }),
             this.prisma.subject.count({ where: { class: { schoolId } } }),
         ]);
