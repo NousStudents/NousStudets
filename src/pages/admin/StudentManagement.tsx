@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client"; // Keep for bulk ops (no batch endpoints)
 import { useAuth } from "@/contexts/AuthContext";
+import { studentsService, Student as ApiStudent } from "@/services/students.service";
+import { classesService, Class as ApiClass } from "@/services/classes.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +17,8 @@ import { Users, Edit, Trash2, Filter, CheckSquare, Download, TrendingUp } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EditStudentDialog } from "@/components/admin/EditStudentDialog";
 
-interface Student {
+// Local interface matching component needs
+interface StudentItem {
   student_id: string;
   auth_user_id: string;
   full_name: string;
@@ -30,7 +33,7 @@ interface Student {
   status: string;
 }
 
-interface Class {
+interface ClassItem {
   class_id: string;
   class_name: string;
   section: string;
@@ -38,17 +41,17 @@ interface Class {
 
 export default function StudentManagement() {
   const { user } = useAuth();
-  const [students, setStudents] = useState<Student[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
+  const [students, setStudents] = useState<StudentItem[]>([]);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<StudentItem | null>(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [bulkAssignClassOpen, setBulkAssignClassOpen] = useState(false);
   const [bulkPromoteOpen, setBulkPromoteOpen] = useState(false);
   const [bulkTargetClassId, setBulkTargetClassId] = useState<string>("");
-  
+
   const [filters, setFilters] = useState({
     classId: "all",
     section: "all",
@@ -64,112 +67,60 @@ export default function StudentManagement() {
 
   const fetchData = async () => {
     try {
-      console.log("Fetching student data...");
-      const { data: adminData, error: adminError } = await supabase
-        .from("admins")
-        .select("school_id")
-        .eq("auth_user_id", user?.id)
-        .single();
+      // Fetch students and classes from NestJS API in parallel
+      const [studentsRes, classesRes] = await Promise.all([
+        studentsService.getAll({ status: 'all', limit: 500 }), // Get all including inactive
+        classesService.getAll({ limit: 100 }),
+      ]);
 
-      console.log("Admin data:", adminData, "Error:", adminError);
-
-      if (!adminData?.school_id) {
-        console.log("No school_id found for user");
-        toast.error("School information not found");
-        setLoading(false);
-        return;
+      // Create a map of classes for easy lookup
+      const classMap = new Map<string, ApiClass>();
+      if (classesRes.data) {
+        classesRes.data.forEach((c) => {
+          classMap.set(c.classId, c);
+        });
       }
 
-      // Fetch classes first
-      const { data: classesData, error: classesError } = await supabase
-        .from("classes")
-        .select("*")
-        .eq("school_id", adminData.school_id);
-
-      if (classesError) {
-        console.error("Classes query error:", classesError);
-        toast.error(`Failed to fetch classes: ${classesError.message}`);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch students
-      const { data: studentsData, error: studentsError } = await supabase
-        .from("students")
-        .select("*");
-
-      console.log("Students query result:", studentsData, "Error:", studentsError);
-
-      if (studentsError) {
-        console.error("Students query error:", studentsError);
-        toast.error(`Failed to fetch students: ${studentsError.message}`);
-        setLoading(false);
-        return;
-      }
-
-      if (studentsData && classesData) {
-        // Create a map of classes for easy lookup
-        const classMap = new Map(classesData.map(c => [c.class_id, c]));
-        
-        // Filter students by school and join with class data
-        const studentsInSchool = studentsData
-          .filter((s: any) => {
-            const studentClass = classMap.get(s.class_id);
-            return studentClass && studentClass.school_id === adminData.school_id;
-          })
-          .map((s: any) => {
-            const studentClass = classMap.get(s.class_id);
-            return {
-              ...s,
-              class_name: studentClass?.class_name || '',
-              section: studentClass?.section || ''
-            };
-          });
-
-        const formattedStudents = await Promise.all(
-          studentsInSchool.map(async (s: any) => {
-            let parent_name = "Not Assigned";
-            if (s.parent_id) {
-              const { data: parentData } = await supabase
-                .from("parents")
-                .select("full_name")
-                .eq("parent_id", s.parent_id)
-                .single();
-              parent_name = parentData?.full_name || "Not Assigned";
-            }
-
-            return {
-              student_id: s.student_id,
-              auth_user_id: s.auth_user_id,
-              full_name: s.full_name || "N/A",
-              email: s.email || "N/A",
-              phone: s.phone || "N/A",
-              roll_no: s.roll_no || "N/A",
-              class_id: s.class_id,
-              class_name: s.class_name 
-                ? `${s.class_name}${s.section ? ` (${s.section})` : ''}`
-                : "Not Assigned",
-              section: s.section || "",
-              gender: s.gender || "",
-              dob: s.dob || "",
-              admission_date: s.admission_date || "",
-              parent_name,
-              parent_id: s.parent_id,
-              status: s.status || "inactive",
-            };
-          })
-        );
-        console.log("Formatted students:", formattedStudents);
+      // Format students from API response
+      if (studentsRes.data) {
+        const formattedStudents: StudentItem[] = studentsRes.data.map((s) => {
+          const studentClass = s.classId ? classMap.get(s.classId) : null;
+          return {
+            student_id: s.studentId,
+            auth_user_id: s.authUserId,
+            full_name: s.fullName || "N/A",
+            email: s.email || "N/A",
+            roll_no: s.rollNo || "N/A",
+            class_id: s.classId || "",
+            class_name: studentClass?.className
+              ? `${studentClass.className}${studentClass.section ? ` (${studentClass.section})` : ''}`
+              : "Not Assigned",
+            section: studentClass?.section || "",
+            gender: "", // Not in current API response
+            dob: "", // Not in current API response
+            admission_date: "", // Not in current API response
+            status: s.status || "inactive",
+          };
+        });
         setStudents(formattedStudents);
       } else {
         setStudents([]);
       }
 
-      // Set classes state
-      setClasses(classesData || []);
-    } catch (error) {
+      // Format classes from API response
+      if (classesRes.data) {
+        const formattedClasses: ClassItem[] = classesRes.data.map((c) => ({
+          class_id: c.classId,
+          class_name: c.className,
+          section: c.section || "",
+        }));
+        setClasses(formattedClasses);
+      } else {
+        setClasses([]);
+      }
+    } catch (error: any) {
       console.error("Error fetching data:", error);
-      toast.error("Failed to load students");
+      toast.error(error.response?.data?.message || "Failed to load students");
     } finally {
       setLoading(false);
     }
@@ -179,39 +130,31 @@ export default function StudentManagement() {
     if (!selectedStudent) return;
 
     try {
-      // Delete student record (auth deletion handled by trigger)
-      const { error } = await supabase
-        .from("students")
-        .delete()
-        .eq("student_id", selectedStudent.student_id);
-
-      if (error) throw error;
+      // Use API for single delete (soft delete)
+      await studentsService.delete(selectedStudent.student_id);
       toast.success("Student deleted successfully");
       fetchData();
       setDeleteDialogOpen(false);
       setSelectedStudent(null);
     } catch (error: any) {
-      toast.error(`Failed to delete student: ${error.message}`);
+      toast.error(error.response?.data?.message || `Failed to delete student`);
     }
   };
 
-  const handleStatusToggle = async (student: Student) => {
+  const handleStatusToggle = async (student: StudentItem) => {
     try {
       const newStatus = student.status === "active" ? "inactive" : "active";
-      const { error } = await supabase
-        .from("students")
-        .update({ status: newStatus })
-        .eq("student_id", student.student_id);
-
-      if (error) throw error;
+      // Use API for single update
+      await studentsService.update(student.student_id, { status: newStatus });
       toast.success(`Student ${newStatus === "active" ? "activated" : "deactivated"}`);
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating status:", error);
-      toast.error("Failed to update student status");
+      toast.error(error.response?.data?.message || "Failed to update student status");
     }
   };
 
+  // Bulk operations stay on Supabase (no batch endpoints in backend yet)
   const handleBulkActivate = async () => {
     if (selectedStudentIds.length === 0) {
       toast.error("No students selected");
@@ -328,7 +271,7 @@ export default function StudentManagement() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     toast.success("Student list exported successfully");
   };
 

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client"; // Keep for subjects (no backend endpoint yet)
 import { useAuth } from "@/contexts/AuthContext";
+import { classesService, Class as ApiClass } from "@/services/classes.service";
+import { teachersService, Teacher as ApiTeacher } from "@/services/teachers.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +16,8 @@ import { School, Edit, Trash2, Plus, BookOpen } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 
-interface Class {
+// Local interface matching component needs (maps from API types)
+interface ClassItem {
   class_id: string;
   class_name: string;
   section: string;
@@ -22,7 +25,7 @@ interface Class {
   teacher_name: string;
 }
 
-interface Teacher {
+interface TeacherItem {
   teacher_id: string;
   full_name: string;
 }
@@ -59,22 +62,22 @@ interface Subject {
 
 export default function ClassManagement() {
   const { user } = useAuth();
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [teachers, setTeachers] = useState<TeacherItem[]>([]);
   const [whitelistedTeachers, setWhitelistedTeachers] = useState<WhitelistedTeacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [editingClass, setEditingClass] = useState<Class | null>(null);
+  const [editingClass, setEditingClass] = useState<ClassItem | null>(null);
   const [formData, setFormData] = useState({
     class_name: "",
     section: "",
     class_teacher_id: "",
   });
-  
+
   const [subjectsDialogOpen, setSubjectsDialogOpen] = useState(false);
-  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [subjectDialogOpen, setSubjectDialogOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
@@ -92,38 +95,8 @@ export default function ClassManagement() {
 
   const fetchData = async () => {
     try {
-      // Try to get admin data first
-      let schoolId: string | null = null;
-      
-      const { data: adminData } = await supabase
-        .from("admins")
-        .select("school_id, admin_id")
-        .eq("auth_user_id", user?.id)
-        .maybeSingle();
-
-      if (adminData?.school_id) {
-        schoolId = adminData.school_id;
-      } else {
-        // Check if user is super admin - if so, get first school or show all
-        const { data: superAdminData } = await supabase
-          .from("super_admins")
-          .select("super_admin_id")
-          .eq("auth_user_id", user?.id)
-          .maybeSingle();
-
-        if (superAdminData) {
-          // Super admin - get the first school for now
-          const { data: schoolData } = await supabase
-            .from("schools")
-            .select("school_id")
-            .limit(1)
-            .maybeSingle();
-          
-          if (schoolData) {
-            schoolId = schoolData.school_id;
-          }
-        }
-      }
+      // Get schoolId from current user context
+      const schoolId = user?.schoolId;
 
       if (!schoolId) {
         toast.error("Unable to find your school information");
@@ -131,57 +104,37 @@ export default function ClassManagement() {
         return;
       }
 
-      // Store school ID for later use
       setCurrentSchoolId(schoolId);
 
-      // Fetch all data in parallel
-      const [classesRes, teachersRes, whitelistedRes] = await Promise.all([
-        supabase
-          .from("classes")
-          .select("class_id, class_name, section, class_teacher_id, school_id")
-          .eq("school_id", schoolId),
-        supabase
-          .from("teachers")
-          .select("teacher_id, full_name, email, status")
-          .eq("school_id", schoolId)
-          .eq("status", "active"),
-        supabase
-          .from("whitelisted_teachers")
-          .select("id, full_name")
-          .eq("school_id", schoolId)
+      // Fetch classes and teachers from NestJS API in parallel
+      const [classesRes, teachersRes] = await Promise.all([
+        classesService.getAll({ limit: 100 }),
+        teachersService.getAll({ status: 'active', limit: 100 }),
       ]);
 
-      if (classesRes.error) {
-        console.error("Error fetching classes:", classesRes.error);
-        toast.error(`Failed to load classes: ${classesRes.error.message}`);
-      }
+      // Fetch whitelisted teachers from Supabase (no backend endpoint yet)
+      const { data: whitelistedRes } = await supabase
+        .from("whitelisted_teachers")
+        .select("id, full_name")
+        .eq("school_id", schoolId);
 
-      if (teachersRes.error) {
-        console.error("Error fetching teachers:", teachersRes.error);
-        toast.error(`Failed to load teachers: ${teachersRes.error.message}`);
-      }
-
-      if (whitelistedRes.error) {
-        console.error("Error fetching whitelisted teachers:", whitelistedRes.error);
-      }
-
-      // Create a map of teacher_id to teacher name (for existing classes display)
+      // Create a map of teacher_id to teacher name
       const teacherMap = new Map<string, string>();
       if (teachersRes.data) {
-        teachersRes.data.forEach((teacher: any) => {
-          teacherMap.set(teacher.teacher_id, teacher.full_name);
+        teachersRes.data.forEach((teacher) => {
+          teacherMap.set(teacher.teacherId, teacher.fullName);
         });
       }
 
-      // Format classes with teacher names
+      // Format classes from API response
       if (classesRes.data) {
-        const formattedClasses = classesRes.data.map((c: any) => ({
-          class_id: c.class_id,
-          class_name: c.class_name,
+        const formattedClasses: ClassItem[] = classesRes.data.map((c) => ({
+          class_id: c.classId,
+          class_name: c.className,
           section: c.section || "",
-          class_teacher_id: c.class_teacher_id,
-          teacher_name: c.class_teacher_id 
-            ? (teacherMap.get(c.class_teacher_id) || "Not Assigned")
+          class_teacher_id: c.classTeacherId || "",
+          teacher_name: c.classTeacherId
+            ? (teacherMap.get(c.classTeacherId) || c.classTeacher?.fullName || "Not Assigned")
             : "Not Assigned",
         }));
         setClasses(formattedClasses);
@@ -189,31 +142,30 @@ export default function ClassManagement() {
         setClasses([]);
       }
 
-      // Format teachers for subject dropdown
+      // Format teachers from API response
       if (teachersRes.data) {
-        const formattedTeachers = teachersRes.data.map((teacher: any) => ({
-          teacher_id: teacher.teacher_id,
-          full_name: teacher.full_name,
+        const formattedTeachers: TeacherItem[] = teachersRes.data.map((teacher) => ({
+          teacher_id: teacher.teacherId,
+          full_name: teacher.fullName,
         }));
         setTeachers(formattedTeachers);
       } else {
         setTeachers([]);
       }
 
-      // Format whitelisted teachers for class teacher dropdown
-      if (whitelistedRes.data) {
-        const formattedWhitelisted = whitelistedRes.data.map((t: any) => ({
+      // Format whitelisted teachers
+      if (whitelistedRes) {
+        const formattedWhitelisted = whitelistedRes.map((t: any) => ({
           id: t.id,
           full_name: t.full_name,
         }));
         setWhitelistedTeachers(formattedWhitelisted);
       } else {
         setWhitelistedTeachers([]);
-        console.warn("No whitelisted teachers found for school");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching data:", error);
-      toast.error("Failed to load classes");
+      toast.error(error.response?.data?.message || "Failed to load classes");
     } finally {
       setLoading(false);
     }
@@ -223,58 +175,28 @@ export default function ClassManagement() {
     e.preventDefault();
 
     try {
-      if (!currentSchoolId) {
-        toast.error("Unable to find your school information");
-        return;
-      }
-
       if (!formData.class_name.trim()) {
         toast.error("Class name is required");
         return;
       }
 
-      const teacherId = formData.class_teacher_id === "none" ? null : formData.class_teacher_id;
+      const teacherId = formData.class_teacher_id === "none" ? undefined : formData.class_teacher_id;
 
       if (editingClass) {
-        const { error } = await supabase
-          .from("classes")
-          .update({
-            class_name: formData.class_name.trim(),
-            section: formData.section.trim(),
-            class_teacher_id: teacherId,
-          })
-          .eq("class_id", editingClass.class_id)
-          .eq("school_id", currentSchoolId);
-
-        if (error) {
-          console.error("Error updating class:", error);
-          if (error.message.includes("Teacher does not belong")) {
-            toast.error("Selected teacher does not belong to your school");
-          } else {
-            toast.error(`Failed to update class: ${error.message}`);
-          }
-          return;
-        }
+        // Update using API (PUT)
+        await classesService.update(editingClass.class_id, {
+          className: formData.class_name.trim(),
+          section: formData.section.trim() || undefined,
+          classTeacherId: teacherId,
+        });
         toast.success("Class updated successfully");
       } else {
-        const { error } = await supabase
-          .from("classes")
-          .insert({
-            class_name: formData.class_name.trim(),
-            section: formData.section.trim(),
-            class_teacher_id: teacherId,
-            school_id: currentSchoolId,
-          });
-
-        if (error) {
-          console.error("Error creating class:", error);
-          if (error.message.includes("Teacher does not belong")) {
-            toast.error("Selected teacher does not belong to your school");
-          } else {
-            toast.error(`Failed to create class: ${error.message}`);
-          }
-          return;
-        }
+        // Create using API
+        await classesService.create({
+          className: formData.class_name.trim(),
+          section: formData.section.trim() || undefined,
+          classTeacherId: teacherId,
+        });
         toast.success("Class created successfully");
       }
 
@@ -282,7 +204,12 @@ export default function ClassManagement() {
       handleDialogClose();
     } catch (error: any) {
       console.error("Error saving class:", error);
-      toast.error(error.message || "Failed to save class");
+      const message = error.response?.data?.message || error.message || "Failed to save class";
+      if (message.includes("Teacher does not belong")) {
+        toast.error("Selected teacher does not belong to your school");
+      } else {
+        toast.error(message);
+      }
     }
   };
 
@@ -290,34 +217,19 @@ export default function ClassManagement() {
     if (!editingClass) return;
 
     try {
-      if (!currentSchoolId) {
-        toast.error("Unable to find your school information");
-        return;
-      }
-
-      const { error } = await supabase
-        .from("classes")
-        .delete()
-        .eq("class_id", editingClass.class_id)
-        .eq("school_id", currentSchoolId);
-
-      if (error) {
-        console.error("Error deleting class:", error);
-        toast.error(`Failed to delete class: ${error.message}`);
-        return;
-      }
-      
+      await classesService.delete(editingClass.class_id);
       toast.success("Class deleted successfully");
       fetchData();
       setDeleteDialogOpen(false);
       setEditingClass(null);
     } catch (error: any) {
       console.error("Error deleting class:", error);
-      toast.error(error.message || "Failed to delete class");
+      const message = error.response?.data?.message || error.message || "Failed to delete class";
+      toast.error(message);
     }
   };
 
-  const handleEdit = (classData: Class) => {
+  const handleEdit = (classData: ClassItem) => {
     setEditingClass(classData);
     setFormData({
       class_name: classData.class_name,
@@ -333,14 +245,14 @@ export default function ClassManagement() {
     setFormData({ class_name: "", section: "", class_teacher_id: "" });
   };
 
-  const handleManageSubjects = async (classData: Class) => {
+  const handleManageSubjects = async (classData: ClassItem) => {
     setSelectedClass(classData);
     setSubjectsDialogOpen(true);
-    // Re-fetch teachers to ensure fresh data
     await fetchData();
     await fetchSubjects(classData.class_id);
   };
 
+  // Subjects still use Supabase (no backend endpoint yet)
   const fetchSubjects = async (classId: string) => {
     try {
       const { data: subjectsData, error } = await supabase
@@ -598,13 +510,13 @@ export default function ClassManagement() {
               {loading ? (
                 <div className="h-10 bg-muted animate-pulse rounded-md" />
               ) : (
-                <Select 
-                  value={formData.class_teacher_id || "none"} 
+                <Select
+                  value={formData.class_teacher_id || "none"}
                   onValueChange={(v) => setFormData({ ...formData, class_teacher_id: v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select Teacher">
-                      {formData.class_teacher_id && formData.class_teacher_id !== "none" 
+                      {formData.class_teacher_id && formData.class_teacher_id !== "none"
                         ? teachers.find(t => t.teacher_id === formData.class_teacher_id)?.full_name || "Select Teacher"
                         : "None"
                       }
@@ -730,13 +642,13 @@ export default function ClassManagement() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="teacher_id">Teacher</Label>
-              <Select 
-                value={subjectFormData.teacher_id || "none"} 
+              <Select
+                value={subjectFormData.teacher_id || "none"}
                 onValueChange={(v) => setSubjectFormData({ ...subjectFormData, teacher_id: v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Teacher">
-                    {subjectFormData.teacher_id && subjectFormData.teacher_id !== "none" 
+                    {subjectFormData.teacher_id && subjectFormData.teacher_id !== "none"
                       ? teachers.find(t => t.teacher_id === subjectFormData.teacher_id)?.full_name || "Select Teacher"
                       : "None"
                     }

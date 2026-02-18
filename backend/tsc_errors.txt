@@ -1,0 +1,66 @@
+src/config/configuration.ts(5,24): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/config/configuration.ts(32,30): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/config/configuration.ts(37,23): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/config/configuration.ts(38,25): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/main.ts(13,23): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/main.ts(39,20): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'string | number'.
+  Type 'undefined' is not assignable to type 'string | number'.
+src/main.ts(47,22): error TS2532: Object is possibly 'undefined'.
+src/modules/auth/auth.module.ts(15,13): error TS2322: Type '(configService: ConfigService) => Promise<{ secret: string | undefined; signOptions: { expiresIn: string | undefined; }; }>' is not assignable to type '(...args: any[]) => JwtModuleOptions | Promise<JwtModuleOptions>'.
+  Type 'Promise<{ secret: string | undefined; signOptions: { expiresIn: string | undefined; }; }>' is not assignable to type 'JwtModuleOptions | Promise<JwtModuleOptions>'.
+    Type 'Promise<{ secret: string | undefined; signOptions: { expiresIn: string | undefined; }; }>' is not assignable to type 'Promise<JwtModuleOptions>'.
+      Type '{ secret: string | undefined; signOptions: { expiresIn: string | undefined; }; }' is not assignable to type 'JwtModuleOptions'.
+        The types of 'signOptions.expiresIn' are incompatible between these types.
+          Type 'string | undefined' is not assignable to type 'number | StringValue | undefined'.
+            Type 'string' is not assignable to type 'number | StringValue | undefined'.
+src/modules/auth/auth.service.ts(440,32): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(payload: string, options?: Omit<JwtSignOptions, keyof SignOptions> | undefined): string', gave the following error.
+    Argument of type 'JwtPayload' is not assignable to parameter of type 'string'.
+  Overload 2 of 3, '(payload: Buffer<ArrayBufferLike>, options?: JwtSignOptions | undefined): string', gave the following error.
+    Argument of type 'JwtPayload' is not assignable to parameter of type 'Buffer<ArrayBufferLike>'.
+      Type 'JwtPayload' is missing the following properties from type 'Buffer<ArrayBufferLike>': slice, subarray, write, toJSON, and 102 more.
+  Overload 3 of 3, '(payload: JwtPayload, options?: JwtSignOptions | undefined): string', gave the following error.
+    Type 'string' is not assignable to type 'number | StringValue | undefined'.
+src/modules/auth/auth.service.ts(446,32): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(payload: string, options?: Omit<JwtSignOptions, keyof SignOptions> | undefined): string', gave the following error.
+    Argument of type '{ sub: string; }' is not assignable to parameter of type 'string'.
+  Overload 2 of 3, '(payload: Buffer<ArrayBufferLike>, options?: JwtSignOptions | undefined): string', gave the following error.
+    Object literal may only specify known properties, and 'sub' does not exist in type 'Buffer<ArrayBufferLike>'.
+  Overload 3 of 3, '(payload: { sub: string; }, options?: JwtSignOptions | undefined): string', gave the following error.
+    Type 'string' is not assignable to type 'number | StringValue | undefined'.
+src/modules/auth/jwt.strategy.ts(13,15): error TS2345: Argument of type '[{ jwtFromRequest: JwtFromRequestFunction<any>; ignoreExpiration: false; secretOrKey: string | undefined; }]' is not assignable to parameter of type '[opt: StrategyOptionsWithRequest] | [opt: StrategyOptionsWithoutRequest]'.
+  Type '[{ jwtFromRequest: JwtFromRequestFunction<any>; ignoreExpiration: false; secretOrKey: string | undefined; }]' is not assignable to type '[opt: StrategyOptionsWithoutRequest]'.
+    Type '{ jwtFromRequest: JwtFromRequestFunction<any>; ignoreExpiration: false; secretOrKey: string | undefined; }' is not assignable to type 'StrategyOptionsWithoutRequest'.
+      Type '{ jwtFromRequest: JwtFromRequestFunction<any>; ignoreExpiration: false; secretOrKey: string | undefined; }' is not assignable to type 'Omit<WithSecretOrKey, "secretOrKeyProvider"> & { passReqToCallback?: false | undefined; }'.
+        Type '{ jwtFromRequest: JwtFromRequestFunction<any>; ignoreExpiration: false; secretOrKey: string | undefined; }' is not assignable to type 'Omit<WithSecretOrKey, "secretOrKeyProvider">'.
+          Types of property 'secretOrKey' are incompatible.
+            Type 'string | undefined' is not assignable to type 'string | Buffer<ArrayBufferLike>'.
+              Type 'undefined' is not assignable to type 'string | Buffer<ArrayBufferLike>'.
+src/modules/schools/schools.service.ts(20,17): error TS2322: Type '{ subdomain: string; }' is not assignable to type 'SchoolWhereUniqueInput'.
+  Type '{ subdomain: string; }' is not assignable to type '{ schoolId: string; } & { schoolId?: string | undefined; AND?: SchoolWhereInput | SchoolWhereInput[] | undefined; OR?: SchoolWhereInput[] | undefined; ... 35 more ...; users?: UserListRelationFilter | undefined; }'.
+    Property 'schoolId' is missing in type '{ subdomain: string; }' but required in type '{ schoolId: string; }'.
+src/modules/schools/schools.service.ts(62,25): error TS2353: Object literal may only specify known properties, and 'events' does not exist in type 'SchoolCountOutputTypeSelect<DefaultArgs>'.
+src/modules/schools/schools.service.ts(80,13): error TS2322: Type '{ subdomain: string; }' is not assignable to type 'SchoolWhereUniqueInput'.
+  Type '{ subdomain: string; }' is not assignable to type '{ schoolId: string; } & { schoolId?: string | undefined; AND?: SchoolWhereInput | SchoolWhereInput[] | undefined; OR?: SchoolWhereInput[] | undefined; ... 35 more ...; users?: UserListRelationFilter | undefined; }'.
+    Property 'schoolId' is missing in type '{ subdomain: string; }' but required in type '{ schoolId: string; }'.
+src/modules/schools/schools.service.ts(105,17): error TS2322: Type '{ subdomain: string; }' is not assignable to type 'SchoolWhereUniqueInput'.
+  Type '{ subdomain: string; }' is not assignable to type '{ schoolId: string; } & { schoolId?: string | undefined; AND?: SchoolWhereInput | SchoolWhereInput[] | undefined; OR?: SchoolWhereInput[] | undefined; ... 35 more ...; users?: UserListRelationFilter | undefined; }'.
+    Property 'schoolId' is missing in type '{ subdomain: string; }' but required in type '{ schoolId: string; }'.
+src/modules/schools/schools.service.ts(158,50): error TS2353: Object literal may only specify known properties, and 'user' does not exist in type 'StudentWhereInput'.
+src/modules/schools/schools.service.ts(159,50): error TS2353: Object literal may only specify known properties, and 'user' does not exist in type 'TeacherWhereInput'.
+src/modules/users/dto/user.dto.ts(37,12): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+src/modules/users/dto/user.dto.ts(65,11): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+src/modules/users/dto/user.dto.ts(75,11): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+src/modules/users/dto/user.dto.ts(85,12): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+src/modules/users/users.controller.ts(60,30): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+src/prisma/prisma.service.ts(32,22): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'string | symbol'.
+  Property '0' does not exist on type 'string | symbol'.
+src/prisma/prisma.service.ts(32,40): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'string | symbol'.
+  Property '0' does not exist on type 'string | symbol'.
+test/app.e2e-spec.ts(20,12): error TS2349: This expression is not callable.
+  Type '{ default: SuperTestStatic; Test: typeof Test; agent: typeof TestAgent & ((app?: App | undefined, options?: AgentOptions | undefined) => TestAgent<...>); }' has no call signatures.

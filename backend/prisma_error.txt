@@ -1,0 +1,13 @@
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma\schema.prisma.
+Datasource "db": PostgreSQL database "neondb", schema "public" at "ep-soft-breeze-a1ddbk03-pooler.ap-southeast-1.aws.neon.tech"
+Error: ERROR: schema "extensions" does not exist
+   0: sql_schema_connector::apply_migration::migration_step
+           with step=CreateTable { table_id: TableId(0) }
+             at schema-engine\connectors\sql-schema-connector\src\apply_migration.rs:28
+   1: sql_schema_connector::apply_migration::apply_migration
+             at schema-engine\connectors\sql-schema-connector\src\apply_migration.rs:11
+   2: schema_core::state::SchemaPush
+             at schema-engine\core\src\state.rs:531
+

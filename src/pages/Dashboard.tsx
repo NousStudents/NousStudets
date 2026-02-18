@@ -1,18 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRole } from '@/hooks/useRole';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, MessageCircle, Video, Settings } from 'lucide-react';
+import { Bell, MessageCircle, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProfileSheet } from '@/components/ProfileSheet';
 import StudentDashboard from './dashboards/StudentDashboard';
 import TeacherDashboard from './dashboards/TeacherDashboard';
 import ParentDashboard from './dashboards/ParentDashboard';
 import AdminDashboard from './dashboards/AdminDashboard';
+import { useState } from 'react';
 
+// Profile interface matching what sub-dashboards expect
 interface UserProfile {
   user_id: string;
   full_name: string;
@@ -25,108 +25,28 @@ interface UserProfile {
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
-  const { role, loading: roleLoading } = useRole();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loadingData, setLoadingData] = useState(true);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
 
+  // Redirect if not authenticated
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
 
-  useEffect(() => {
-    if (user && role) {
-      fetchUserProfile();
-    } else if (!user) {
-      setProfile(null);
-      setLoadingData(false);
-    }
-  }, [user, role]);
+  // Map AuthContext user to legacy profile format for sub-dashboards
+  const profile: UserProfile | null = user ? {
+    user_id: user.userId,
+    full_name: user.fullName,
+    email: user.email,
+    role: user.role,
+    school_id: user.schoolId,
+    profile_image: user.avatar,
+    auth_user_id: user.userId, // Same as user_id for compatibility
+  } : null;
 
-  const fetchUserProfile = async () => {
-    setLoadingData(true);
-
-    try {
-      if (!user || !role) {
-        setProfile(null);
-        return;
-      }
-
-      let data: any = null;
-      let school_id: string = '';
-
-      if (role === 'admin') {
-        const { data: adminData, error } = await supabase
-          .from('admins')
-          .select('admin_id, full_name, email, school_id, profile_image, auth_user_id')
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
-        if (error) throw error;
-        if (!adminData) {
-          setProfile(null);
-          return;
-        }
-        data = { ...adminData, user_id: adminData.admin_id, auth_user_id: adminData.auth_user_id };
-        school_id = adminData.school_id;
-      } else if (role === 'teacher') {
-        const { data: teacherData, error } = await supabase
-          .from('teachers')
-          .select('teacher_id, full_name, email, school_id, profile_image, auth_user_id')
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
-        if (error) throw error;
-        if (!teacherData) {
-          setProfile(null);
-          return;
-        }
-        data = { ...teacherData, user_id: teacherData.teacher_id, auth_user_id: teacherData.auth_user_id };
-        school_id = teacherData.school_id;
-      } else if (role === 'student') {
-        const { data: studentData, error } = await supabase
-          .from('students')
-          .select('student_id, full_name, email, class_id, profile_picture, auth_user_id, classes(school_id)')
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
-        if (error) throw error;
-        if (!studentData) {
-          setProfile(null);
-          return;
-        }
-        data = {
-          ...studentData,
-          user_id: studentData.student_id,
-          auth_user_id: (studentData as any).auth_user_id,
-          profile_image: studentData.profile_picture,
-        };
-        school_id = (studentData?.classes as any)?.school_id;
-      } else if (role === 'parent') {
-        const { data: parentData, error } = await supabase
-          .from('parents')
-          .select('parent_id, full_name, email, school_id, profile_image, auth_user_id')
-          .eq('auth_user_id', user.id)
-          .maybeSingle();
-        if (error) throw error;
-        if (!parentData) {
-          setProfile(null);
-          return;
-        }
-        data = { ...parentData, user_id: parentData.parent_id, auth_user_id: parentData.auth_user_id };
-        school_id = parentData.school_id;
-      }
-
-      if (data) {
-        setProfile({ ...data, role, school_id });
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      setProfile(null);
-    } finally {
-      setLoadingData(false);
-    }
-  };
+  const role = user?.role;
 
   const getInitials = (name: string) => {
     return name
@@ -144,7 +64,7 @@ const Dashboard = () => {
     return 'Good evening';
   };
 
-  if (loading || roleLoading || loadingData) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-6">
@@ -185,7 +105,7 @@ const Dashboard = () => {
   return (
     <>
       <ProfileSheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen} />
-      
+
       <div className="min-h-screen bg-background">
         {/* Premium Header */}
         <header className="bg-card/80 backdrop-blur-xl border-b border-border/50 sticky top-0 z-50">
@@ -223,10 +143,10 @@ const Dashboard = () => {
                   <Bell className="h-5 w-5" />
                   <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-accent-gold" />
                 </Button>
-                
+
                 <div className="h-6 w-px bg-border mx-1" />
-                
-                <Avatar 
+
+                <Avatar
                   className="cursor-pointer ring-2 ring-border hover:ring-primary transition-all duration-200 h-10 w-10"
                   onClick={() => navigate('/profile')}
                 >
